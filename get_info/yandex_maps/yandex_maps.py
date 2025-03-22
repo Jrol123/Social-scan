@@ -1,9 +1,14 @@
 import pandas as pd
 from yandex_reviews_parser.utils import YandexParser
-id_ya = 66936682838 #ID Компании Yandex
+id_ya = 1303073708 #ID Компании Yandex
 parser = YandexParser(id_ya)
 
-all_data = parser.parse() #Получаем все данные
-df = pd.DataFrame(all_data)
+while True:
+    all_data = parser.parse() #Получаем все данные
+    if all_data.get('company_info'):
+        break
+# all_data
+
+df = pd.DataFrame(all_data['company_reviews'])
 df.to_csv("lol.csv")
-print(all_data)
+# print(all_data)
