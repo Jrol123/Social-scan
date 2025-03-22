@@ -24,16 +24,20 @@ class YandexParser:
         driver.get(url)
         return driver, parser
 
-    def __click_element(self, driver, by, value):
+    def __click_element(self, driver, by, value, find_value = None):
         """ Функция для клика на элемент с ожиданием. """
         try:
             # Ожидание 10 секунд, пока элемент не станет кликабельным
             elements = driver.find_elements(by, value)
+            element = elements[0]
+            
+            # TODO: Костыль, т. к. не имею понятия, почему не работает xpath по нескольким критериям
             if len(elements) > 1:
-                element = elements[-2]
-                #! TODO: Это дикий костыль, потому как поиск по нескольким параметрам, почему-то не работает.
-            else:
-                element = elements[0]
+                for el in elements:
+                    if el.text == find_value:
+                        element = el
+                        break
+            
             element.click()
             time.sleep(1)  # Небольшая задержка для отработки клика
         except Exception as e:
@@ -58,7 +62,8 @@ class YandexParser:
             self.__click_element(driver, By.CLASS_NAME, 'rating-ranking-view')
 
             # Клик на второй div
-            self.__click_element(driver, By.CLASS_NAME, 'rating-ranking-view__popup-line')
+            self.__click_element(driver, By.CLASS_NAME, 'rating-ranking-view__popup-line', 'Сначала отрицательные')
+            
             
             # checker = driver.find_element(By.CLASS_NAME, value)
 
