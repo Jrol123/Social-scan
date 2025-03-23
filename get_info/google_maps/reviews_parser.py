@@ -45,7 +45,11 @@ def clean_text(text):
     
     return text
 
-def scrape_reviews(page, max_reviews=100, collect_extra=False):
+def scrape_reviews(page, max_reviews=100, sorting='relevant', collect_extra=False):
+    assert sorting in ('relevant', 'new', 'increase', 'decrease')
+
+    sortings = {'relevant': 'Самые релевантные', 'new': 'Сначала новые', 
+                'increase': 'По возрастанию рейтинга', 'decrease': 'По убыванию рейтинга'}
     reviews = []
     try:
         # Wait for the business details to load
@@ -58,11 +62,12 @@ def scrape_reviews(page, max_reviews=100, collect_extra=False):
         page.wait_for_timeout(3000)
 
         # Choose sorting by date
-        page.locator('text=Самые релевантные').click()
-        page.wait_for_timeout(1000)
+        if sorting != 'relevant':
+            page.locator('text=Самые релевантные').click()
+            page.wait_for_timeout(1000)
 
-        page.locator('text=Сначала новые').click(force=True)
-        page.wait_for_timeout(2000)
+            page.locator('text=' + sortings[sorting]).click(force=True)
+            page.wait_for_timeout(2000)
 
         # Scroll to load more reviews
         # logger.info("Loading reviews...")
