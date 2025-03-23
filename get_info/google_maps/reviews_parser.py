@@ -207,7 +207,7 @@ def google_maps_parse(object, max_reviews=100, file="google_reviews.csv"):
     playwright, browser, page = initialize_browser(object)
     try:
         # search_google_maps(page, object)
-        reviews = scrape_reviews(page, max_reviews=max_reviews, collect_extra=True)
+        reviews = scrape_reviews(page, max_reviews=max_reviews, sorting='new', collect_extra=True)
         save_reviews_to_csv(reviews, file)
     finally:
         page.wait_for_timeout(5000)
