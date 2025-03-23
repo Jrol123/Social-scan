@@ -111,12 +111,15 @@ class Parser:
             xpath_count_rating = ".//div[@class='business-summary-rating-badge-view__rating-count']/span[@class='business-rating-amount-view _summary']"
             count_rating_list = rating_block.find_element(By.XPATH, xpath_count_rating).text
             count_rating = ParserHelper.list_to_num(count_rating_list)
-            xpath_stars = ".//div[@class='business-rating-badge-view__stars']/span"
-            stars = ParserHelper.get_count_star(rating_block.find_elements(By.XPATH, xpath_stars))
+            xpath_stars = ".//div[@class='business-summary-rating-badge-view__rating']"
+            stars_text = rating_block.find_element(By.XPATH, xpath_stars).text
+            stars_text_split = stars_text.split('\n')[-1].replace(',', '.')
+            stars = float(stars_text_split)
         except NoSuchElementException:
             rating = 0
             count_rating = 0
             stars = 0
+        # TODO: Переделать try на каждый элемент
 
         item = Info(
             name=name,

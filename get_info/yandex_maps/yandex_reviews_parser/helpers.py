@@ -50,20 +50,3 @@ class ParserHelper:
         """
         datetime_object: datetime = datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%S.%fZ")
         return datetime_object.timestamp()
-
-    @staticmethod
-    def get_count_star(review_stars: list) -> Union[float, int]:
-        """
-        Считаем рейтинг по звездам
-        :param review_stars: Массив элементов звезд рейтинга
-        :return: Рейтинг
-        """
-        star_count: float = 0
-        for review_star in review_stars:
-            if '_empty' in review_star.get_attribute('class'):
-                continue
-            if '_half' in review_star.get_attribute('class'):
-                star_count = star_count + 0.5
-                continue
-            star_count = star_count + 1
-        return star_count
