@@ -41,7 +41,8 @@ class YandexParser:
             element.click()
             time.sleep(1)  # Небольшая задержка для отработки клика
         except Exception as e:
-            print(f"Не удалось кликнуть на элемент: {value}, ошибка: {e}")
+            # TODO: Почему-то периодически вылезает "неудалось кликнуть"
+            print(f"Неудалось кликнуть на элемент: {value}, ошибка: {e}")
 
     def parse(self, type_parse: str = 'default') -> dict:
         """
