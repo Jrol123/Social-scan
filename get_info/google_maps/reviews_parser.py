@@ -3,13 +3,12 @@ import emoji
 import pandas as pd
 import re
 import time
-import undetected_chromedriver
+# import undetected_chromedriver
 from datetime import datetime, timedelta
 
-from numba.cuda.simulator.cudadrv.driver import driver
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
+# from selenium.webdriver.chrome.options import Options
+# from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
@@ -93,13 +92,28 @@ def click_element(driver, by=By.CSS_SELECTOR, value=None, find_value=None):
 
 
 def scroll_reviews(driver, reviews_section):
-    driver.execute_script(
-        "arguments[0].scrollIntoView()",
-        reviews_section.find_elements(
-            By.XPATH, "//span[contains(text(), 'Нравится')]")[-1])
-    driver.execute_script(
-        "arguments[0].scrollTop = arguments[0].scrollHeight",
-        reviews_section)
+    last_element = driver.find_elements(
+        By.CSS_SELECTOR, 'div.AyRUI[aria-hidden="true"]')[-1]
+    driver.execute_script("arguments[0].scrollIntoView();",
+                          last_element)
+    # print(last_element.find_elements(By.CSS_SELECTOR, "button[data-photo-index]"))
+    # if last_element.find_element(By.XPATH, "//span[contains(text(), 'Нравится')]"):
+    #     driver.execute_script(
+    #         "arguments[0].scrollIntoView()",
+    #         reviews_section.find_elements(
+    #             By.XPATH, "//span[contains(text(), 'Нравится')]")[-1])
+    # elif len(last_element.find_elements(By.CSS_SELECTOR, "button[data-photo-index]")) > 0:
+    #     driver.execute_script(
+    #         "arguments[0].scrollIntoView()",
+    #         last_element.find_elements(
+    #             By.CSS_SELECTOR, "button[data-photo-index]")[-1])
+    #     print('ЫЫЫ')
+    # else:
+    #     driver.execute_script("arguments[0].scrollIntoView()", last_element)
+    
+    # driver.execute_script(
+    #     "arguments[0].scrollTop = arguments[0].scrollHeight",
+    #     reviews_section)
     time.sleep(2)
     
 
@@ -110,21 +124,21 @@ def expand_reviews(driver):
             EC.presence_of_all_elements_located(
                 (By.XPATH, "//button[contains(text(), 'Ещё')]"))
         )
-        
-        print(load_more_buttons)
         # Проверяем, есть ли кнопки для нажатия
         if not load_more_buttons:
             print("Нет кнопок 'Ещё' для загрузки.")
             return
         
         # Проходим по каждой кнопке, чтобы кликнуть
+        driver.execute_script("arguments[0].scrollIntoView();",
+                              load_more_buttons[0])
+        time.sleep(1)
         for button in load_more_buttons:
             # Прокручиваем до кнопки
             driver.execute_script("arguments[0].scrollIntoView();", button)
             
             # Проверяем, если кнопка кликабельна
             if button.is_displayed() and button.is_enabled():
-                print(button)
                 try:
                     button.click()
                 except Exception:
@@ -184,32 +198,73 @@ def scrape_reviews(driver, max_reviews=None, sorting='relevant', collect_extra=F
         # Choose sorting type
         if sorting != 'relevant':
             click_element(driver, By.XPATH, "//div[contains(text(), 'Самые релевантные')]")
-            time.sleep(1)
+            time.sleep(0.5)
             click_element(driver, By.XPATH,
                           f"//div[contains(text(), '{sortings[sorting]}')]")
-            time.sleep(1)
+            time.sleep(3)
 
         # Scroll to load more reviews
         # logger.info("Loading reviews...")
         
         reviews_section = driver.find_element(
             By.XPATH,
-            "//*[@id='QA0Szd']/div/div/div[1]/div[2]/div/div[1]"
+            "//*[@id='QA0Szd']/div/div/div[1]/div[2]/div/div[1]/div/div"
         )
-        prev_element = driver.find_elements(By.CSS_SELECTOR,
-                                            "div[class*='jJc9Ad']")[-1]
         if max_reviews is None:
+            # previous_height = driver.execute_script(
+            #     "return document.body.scrollHeight")
+            
+            # while True:
+                # last_element = driver.find_elements(
+                #     By.CSS_SELECTOR, 'div.AyRUI[aria-hidden="true"]')[-1]
+                # driver.execute_script("arguments[0].scrollIntoView();",
+                #                       last_element)
+                # driver.execute_script(
+                #     "arguments[0].scrollTop = arguments[0].scrollHeight",
+                #     last_element)
+                # for _ in range(5):
+                    # driver.execute_script(
+                    #     "arguments[0].scrollTop = arguments[0].scrollHeight",
+                    #     reviews_section)
+                    # driver.execute_script(
+                    #     "window.scrollTo(0, document.body.scrollHeight);")
+                    # time.sleep(0.3)
+                    # print('sss')
+                    
+                # time.sleep(2.5)  # Задержка для загрузки отзывов
+                #
+                # new_height = driver.execute_script(
+                #     "return document.body.scrollHeight")
+                # if new_height == previous_height:
+                #     break
+                #
+                # previous_height = new_height
+            
+            prev_element = driver.find_elements(By.CSS_SELECTOR,
+                                                "div[class*='jJc9Ad']")[-1]
+            # total_reviews = driver.find_element(
+            #     By.XPATH, "//div[contains(text(), 'Отзывов:')]").text
+            # total_reviews = int(total_reviews.split(': ', 1)[1].replace(' ', '')
+            #                     .replace('&nbsp;', '').strip()) // 10
+            # print(total_reviews * 10)
+            i = 0
             while True:
                 scroll_reviews(driver, reviews_section)
+                # time.sleep(3)
                 curr_element = driver.find_elements(By.CSS_SELECTOR,
-                                            "div[class*='jJc9Ad']")[-1]
+                                                    "div[class*='jJc9Ad']")[-1]
+                time.sleep(2)
                 if prev_element == curr_element:
+                    print(i)
+                    print(curr_element.text)
                     break
-                
+                else:
+                    i -= 1
+
                 prev_element = curr_element
-                
+                i += 1
         else:
-            for _ in range(max_reviews // 10):
+            for _ in range(max_reviews // 10 - 1):
                 scroll_reviews(driver, reviews_section)
         
         expand_reviews(driver)
@@ -358,7 +413,7 @@ def main():
     try:
         # Search and scrape reviews
         # search_google_maps(page, business_name)
-        reviews = scrape_reviews(driver, max_reviews=50, sorting='new', collect_extra=True)
+        reviews = scrape_reviews(driver, max_reviews=None, sorting='new', collect_extra=False)
         
         # Save results
         save_reviews_to_csv(reviews)
