@@ -24,7 +24,8 @@ class Parser:
             elem
         )
         time.sleep(1)
-        new_elem = self.driver.find_elements(By.CLASS_NAME, "business-reviews-card-view__review")[-1]
+        checker = self.driver.find_elements(By.CLASS_NAME, "business-reviews-card-view__review")
+        new_elem = checker[-1]
         if elem == new_elem:
             return
         self.__scroll_to_bottom(new_elem)
@@ -105,25 +106,27 @@ class Parser:
         try:
             xpath_rating_block = ".//div[@class='business-summary-rating-badge-view__rating-and-stars']"
             rating_block = self.driver.find_element(By.XPATH, xpath_rating_block)
-            xpath_rating = ".//div[@class='business-summary-rating-badge-view__rating']/span[contains(@class, 'business-summary-rating-badge-view__rating-text')]"
-            rating = rating_block.find_elements(By.XPATH, xpath_rating)
-            rating = ParserHelper.format_rating(rating)
-            xpath_count_rating = ".//div[@class='business-summary-rating-badge-view__rating-count']/span[@class='business-rating-amount-view _summary']"
-            count_rating_list = rating_block.find_element(By.XPATH, xpath_count_rating).text
-            count_rating = ParserHelper.list_to_num(count_rating_list)
-            xpath_stars = ".//div[@class='business-summary-rating-badge-view__rating']"
-            stars_text = rating_block.find_element(By.XPATH, xpath_stars).text
-            stars_text_split = stars_text.split('\n')[-1].replace(',', '.')
-            stars = float(stars_text_split)
+            try:
+                xpath_count_rating = ".//div[@class='business-summary-rating-badge-view__rating-count']/span[@class='business-rating-amount-view _summary']"
+                count_rating_list = rating_block.find_element(By.XPATH, xpath_count_rating).text
+                count_rating = ParserHelper.list_to_num(count_rating_list)
+            except NoSuchElementException:
+                count_rating = 0
+            try:
+                xpath_stars = ".//div[@class='business-summary-rating-badge-view__rating']"
+                stars_text = rating_block.find_element(By.XPATH, xpath_stars).text
+                stars_text_split = stars_text.split('\n')[-1].replace(',', '.')
+                # TODO: Переделать на нормальный элемент, без split-а.
+                stars = float(stars_text_split)
+            except NoSuchElementException:
+                stars = 0
         except NoSuchElementException:
-            rating = 0
             count_rating = 0
             stars = 0
         # TODO: Переделать try на каждый элемент
 
         item = Info(
             name=name,
-            rating=rating,
             count_rating=count_rating,
             stars=stars
         )
@@ -154,7 +157,6 @@ class Parser:
         {
              company_info:{
                     name: str
-                    rating: float
                     count_rating: int
                     stars: float
             },
@@ -202,7 +204,6 @@ class Parser:
             company_info:
                 {
                     name: str
-                    rating: float
                     count_rating: int
                     stars: float
                 }

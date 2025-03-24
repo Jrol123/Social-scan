@@ -15,6 +15,5 @@ class Review:
 @dataclass
 class Info:
     name: str
-    rating: float
     count_rating: int
     stars: float

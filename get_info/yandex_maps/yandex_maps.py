@@ -5,7 +5,7 @@ parser = YandexParser(id_ya)
 
 while True:
     # TODO: Почему-то периодически вылезает "неудалось кликнуть"
-    all_data = parser.parse("company") #Получаем все данные
+    all_data = parser.parse() #Получаем все данные
     if all_data.get('company_info'):
         break
 print(all_data)
