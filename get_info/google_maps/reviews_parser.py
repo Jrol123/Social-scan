@@ -1,9 +1,17 @@
 import emoji
-import logging
+# import logging
 import pandas as pd
 import re
+import time
+# import undetected_chromedriver
 from datetime import datetime, timedelta
-from playwright.sync_api import sync_playwright
+
+from selenium import webdriver
+# from selenium.webdriver.chrome.options import Options
+# from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.wait import WebDriverWait
 
 
 # Configure logging
@@ -12,15 +20,10 @@ from playwright.sync_api import sync_playwright
 
 
 def initialize_browser(url=None):
-    playwright = sync_playwright().start()
-    browser = playwright.chromium.launch(headless=False)
-    context = browser.new_context()
-    page = context.new_page()
-
-    page.goto("https://www.google.com/maps" if url is None else url)
-    page.wait_for_timeout(4000)
-    return playwright, browser, page
-
+    driver = webdriver.Chrome()
+    driver.get("https://www.google.com/maps" if url is None else url)
+    # time.sleep(2)
+    return driver
 
 # def search_google_maps(page, business_name):
 #     page.goto("https://www.google.com/maps")
@@ -45,7 +48,69 @@ def clean_text(text):
     
     return text
 
-def scrape_reviews(page, max_reviews=100, sorting='relevant', collect_extra=False):
+def click_element(driver, by=By.CSS_SELECTOR, value=None, find_value=None):
+    elements = driver.find_elements(by, value)
+    if len(elements) == 0:
+        return
+    
+    for i, elem in enumerate(elements):
+        if find_value and find_value in elem.text:
+            continue
+            
+        try:
+            element = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable(elem)
+            )
+            break
+        except Exception as e:
+            print(f"Элемент {i + 1} не кликабельный или возникла ошибка: {e}")
+    
+    try:
+        element.click()
+    except Exception:
+        driver.execute_script("arguments[0].click();", element)
+
+def scroll_reviews(driver, reviews_section):
+    last_element = driver.find_elements(
+        By.CSS_SELECTOR, 'div.AyRUI[aria-hidden="true"]')[-1]
+    driver.execute_script("arguments[0].scrollIntoView();",
+                          last_element)
+    time.sleep(2)
+    
+def expand_reviews(driver):
+    try:
+        # Trying to load buttons for review texts expenditure
+        load_more_buttons = WebDriverWait(driver, 30).until(
+            EC.presence_of_all_elements_located(
+                (By.XPATH, "//button[contains(text(), 'Ещё')]"))
+        )
+        if not load_more_buttons:
+            print("Нет кнопок 'Ещё' для загрузки.")
+            return
+        
+        # Go to the first button on page
+        driver.execute_script("arguments[0].scrollIntoView();",
+                              load_more_buttons[0])
+        time.sleep(2)
+        for button in load_more_buttons:
+            driver.execute_script("arguments[0].scrollIntoView();", button)
+            
+            # Check if button is clickable
+            if button.is_displayed() and button.is_enabled():
+                try:
+                    button.click()
+                except Exception:
+                    driver.execute_script("arguments[0].click();", button)
+        else:
+            # Если цикл завершился без нахождения кнопки для нажатия
+            print("There are no any 'Ещё' buttons to load.")
+            return
+    
+    except Exception as e:
+        print("Error occurred:", e)
+        return
+
+def scrape_reviews(driver, max_reviews=None, sorting='relevant', collect_extra=False):
     assert sorting in ('relevant', 'new', 'increase', 'decrease')
 
     sortings = {'relevant': 'Самые релевантные', 'new': 'Сначала новые', 
@@ -53,88 +118,87 @@ def scrape_reviews(page, max_reviews=100, sorting='relevant', collect_extra=Fals
     reviews = []
     try:
         # Wait for the business details to load
-        page.wait_for_timeout(4000)
+        # time.sleep(1)
         
-        # Locate and click the reviews section
-        # logger.info("Searching for reviews section")
-        review_section = page.get_by_role('tab', name="Отзывы")
-        review_section.click()
-        page.wait_for_timeout(3000)
-
-        # Choose sorting by date
+        # # Locate and click the reviews section
+        # # logger.info("Searching for reviews section")
+        click_element(driver, By.XPATH, "//div[contains(text(), 'Отзывы')]")
+        time.sleep(1)
+        
+        # Choose sorting type
         if sorting != 'relevant':
-            page.locator('text=Самые релевантные').click()
-            page.wait_for_timeout(1000)
-
-            page.locator('text=' + sortings[sorting]).click(force=True)
-            page.wait_for_timeout(2000)
+            click_element(driver, By.XPATH, "//div[contains(text(), 'Самые релевантные')]")
+            time.sleep(0.5)
+            click_element(driver, By.XPATH,
+                          f"//div[contains(text(), '{sortings[sorting]}')]")
+            time.sleep(3)
 
         # Scroll to load more reviews
         # logger.info("Loading reviews...")
-        for _ in range(max_reviews//10 + 1):
-            page.mouse.wheel(0, 5000)
-            # page.wait_for_timeout(2000)
-
-            try:
-                expand_reviews = page.locator('button:has-text("Ещё")')
-                expand_offset = 0
-                i = 0
-                while expand_reviews.count() > expand_offset:
-                    element = expand_reviews.all()[expand_offset]
-                    try:
-                        element.click(timeout=3000)
-                    except Exception:
-                        # print('error')
-                        expand_offset += 1
-                    
-                    page.wait_for_timeout(500)
-                    # page.mouse.wheel(0, 1000)
-                    expand_reviews = page.locator('button:has-text("Ещё")')
-                    i += 1
-                    if i - expand_offset > max_reviews:
+        reviews_section = driver.find_element(By.XPATH,
+            "//*[@id='QA0Szd']/div/div/div[1]/div[2]/div/div[1]/div/div")
+        if max_reviews is None:
+            prev_element = driver.find_elements(By.CSS_SELECTOR,
+                                                "div[class*='jJc9Ad']")[-1]
+            
+            # # Получение общего числа отзывов.
+            # # Возможно понадобится для проверки на пасинг всех отзывов со страницы
+            # total_reviews = driver.find_element(
+            #     By.XPATH, "//div[contains(text(), 'Отзывов:')]").text
+            # total_reviews = int(total_reviews.split(': ', 1)[1].replace(' ', '')
+            #                     .replace('&nbsp;', '').strip()) // 10
+            # print(total_reviews * 10)
+            i = 0
+            while True:
+                scroll_reviews(driver, reviews_section)
+                # time.sleep(3)
+                curr_element = driver.find_elements(By.CSS_SELECTOR,
+                                                    "div[class*='jJc9Ad']")[-1]
+                time.sleep(2)
+                if prev_element == curr_element:
+                    # Waiting for next reviews to load
+                    for _ in range(120):
+                        time.sleep(1)
+                        curr_element = driver.find_elements(
+                            By.CSS_SELECTOR, "div[class*='jJc9Ad']")[-1]
+                        if prev_element != curr_element:
+                            break
+                    else: # If time is expired, consider we reached the bottom
+                        print(i)
+                        print(curr_element.text)
                         break
-                
-            except Exception:
-                pass
-            
-            page.mouse.wheel(0, 1000)
-            page.wait_for_timeout(2000)
-
-        # for _ in range(max_reviews//10):
-        #     page.mouse.wheel(0, 5000)
-        #     page.wait_for_timeout(1500)
-
-        # expand_reviews = page.locator('button:has-text("Ещё")')
-        # expand_offset = 0
-        # # i = 0
-        # while expand_reviews.count() > expand_offset:
-        #     element = expand_reviews.all()[expand_offset]
-        #     try:
-        #         element.click(timeout=3000)
-        #     except Exception:
-        #         # print('error')
-        #         expand_offset += 1
-            
-        #     page.wait_for_timeout(500)
-        #     # page.mouse.wheel(0, 1000)
-        #     expand_reviews = page.locator('button:has-text("Ещё")')
-        #     # print(element)
-        #     # print('ммм' + str(i))
-        #     # i += 1
-
-        # Extract reviews
-        review_elements = page.locator("div[class*='jJc9Ad']")
-        # logger.info(f"Found {review_elements.count()} reviews")
-        for element in review_elements.all():
-            reviewer = element.locator("div[class*='d4r55']").inner_text()
-            rating = element.locator("span[class*='fzvQIb']").inner_text()
-            date = element.locator("span[class*='xRkPPb']").inner_text().rsplit(',', 1)[0]
-            
-            try:
-                if collect_extra:
-                    review_text = element.locator("div[class*='MyEned']").inner_text(timeout=2000)
                 else:
-                    review_text = element.locator("span[class*='wiI7pd']").inner_text(timeout=2000)
+                    i -= 1
+
+                prev_element = curr_element
+                i += 1
+        else:
+            for _ in range(max_reviews // 10 - 1):
+                scroll_reviews(driver, reviews_section)
+        
+        expand_reviews(driver)
+        
+        # Extract reviews
+        review_elements = driver.find_elements(By.CSS_SELECTOR,
+                                               "div[class*='jJc9Ad']")
+        # logger.info(f"Found {review_elements.count()} reviews")
+        for element in review_elements:
+            reviewer = element.find_element(By.CSS_SELECTOR,
+                                            "div[class*='d4r55']").text
+            rating = element.find_element(By.CSS_SELECTOR,
+                                          "span[class*='fzvQIb']").text
+            date = element.find_element(By.CSS_SELECTOR,
+                                             "span[class*='xRkPPb']").text
+            date = date.rsplit(',', 1)[0].strip()
+            
+            if collect_extra:
+                text_selector = "div[class*='MyEned']"
+            else:
+                text_selector = "span[class*='wiI7pd']"
+                
+            try:
+                review_text = element.find_element(
+                    By.CSS_SELECTOR, text_selector).text
             except Exception:
                 continue
 
@@ -203,29 +267,31 @@ def save_reviews_to_csv(reviews, filename="google_reviews.csv"):
     df.to_csv(filename, index=False, encoding='utf-8')
     # logger.info(f"Reviews saved to {filename}")
 
-def google_maps_parse(object, max_reviews=100, file="google_reviews.csv"):
-    playwright, browser, page = initialize_browser(object)
+def google_maps_parse(object, max_reviews=100, sorting='new', collect_extra=True,
+                      file="google_reviews.csv"):
+    driver = initialize_browser(object)
     try:
         # search_google_maps(page, object)
-        reviews = scrape_reviews(page, max_reviews=max_reviews, collect_extra=True)
+        reviews = scrape_reviews(driver, max_reviews=max_reviews,
+                                 sorting=sorting, collect_extra=collect_extra)
         save_reviews_to_csv(reviews, file)
     finally:
-        page.wait_for_timeout(5000)
-        browser.close()
-        playwright.stop()
+        time.sleep(5)
+        driver.quit()
 
 def main():
     # business_name = "МРИЯ РЕЗОРТ энд СПА"
     # business_name = "Дальневосточный федеральный университет, Русский, Приморский край"
-    business_url = r"https://www.google.ru/maps/place/МРИЯ+РЕЗОРТ+энд+СПА/@44.393895,33.9240737,14z/data=!4m22!1m12!3m11!1s0x4094c2295bd268ed:0x320fe2836baf4851!2z0JzQoNCY0K8g0KDQldCX0J7QoNCiINGN0L3QtCDQodCf0JA!5m2!4m1!1i2!8m2!3d44.3969251!4d33.9396257!9m1!1b1!16s%2Fg%2F1q65ck494!3m8!1s0x4094c2295bd268ed:0x320fe2836baf4851!5m2!4m1!1i2!8m2!3d44.3969251!4d33.9396257!16s%2Fg%2F1q65ck494?entry=ttu&g_ep=EgoyMDI1MDMxOS4yIKXMDSoJLDEwMjExNjM5SAFQAw%3D%3D"
+    # business_url = r"https://www.google.ru/maps/place/МРИЯ+РЕЗОРТ+энд+СПА/@44.393895,33.9240737,14z/data=!4m22!1m12!3m11!1s0x4094c2295bd268ed:0x320fe2836baf4851!2z0JzQoNCY0K8g0KDQldCX0J7QoNCiINGN0L3QtCDQodCf0JA!5m2!4m1!1i2!8m2!3d44.3969251!4d33.9396257!9m1!1b1!16s%2Fg%2F1q65ck494!3m8!1s0x4094c2295bd268ed:0x320fe2836baf4851!5m2!4m1!1i2!8m2!3d44.3969251!4d33.9396257!16s%2Fg%2F1q65ck494?entry=ttu&g_ep=EgoyMDI1MDMxOS4yIKXMDSoJLDEwMjExNjM5SAFQAw%3D%3D"
+    business_url = r"https://www.google.com/maps/place/?q=place_id:ChIJ7WjSWynClEARUUiva4PiDzI"
 
     # Initialize browser
-    playwright, browser, page = initialize_browser(business_url)
+    driver = initialize_browser(business_url)
     
     try:
         # Search and scrape reviews
         # search_google_maps(page, business_name)
-        reviews = scrape_reviews(page, max_reviews=50, collect_extra=True)
+        reviews = scrape_reviews(driver, max_reviews=None, sorting='new', collect_extra=False)
         
         # Save results
         save_reviews_to_csv(reviews)
@@ -235,10 +301,8 @@ def main():
         raise e
     
     finally:
-        # Add a longer wait before closing
-        page.wait_for_timeout(5000)
-        browser.close()
-        playwright.stop()
+        time.sleep(5)
+        driver.quit()
 
 
 if __name__ == "__main__":
