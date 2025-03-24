@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "ym.py",
+            "name": "ym.py-debug",
             "type": "debugpy",
             "request": "launch",
             "program": "get_info/yandex_maps/yandex_maps.py",

@@ -3,6 +3,15 @@ import undetected_chromedriver
 from yandex_reviews_parser.parsers import Parser
 from selenium.webdriver.common.by import By
 
+import logging
+logging.basicConfig(
+    level=logging.INFO,
+    filename="py_log.log",
+    filemode="w",
+    format="%(asctime)s %(levelname)s %(message)s",
+    encoding='utf-8'
+)
+
 # TODO: Добавить credits автору оригинального репозитория
 class YandexParser:
 
@@ -42,9 +51,9 @@ class YandexParser:
             time.sleep(1)  # Небольшая задержка для отработки клика
         except Exception as e:
             # TODO: Почему-то периодически вылезает "неудалось кликнуть"
-            print(f"Не удалось кликнуть на элемент: {value}, ошибка: {e}")
+            logging.critical(f"Не удалось кликнуть на элемент: {value}", exc_info=True)
 
-    def parse(self, type_parse: str = 'default') -> dict:
+    def parse(self, type_parse: str = 'default', sort_type = 'Сначала отрицательные') -> dict:
         """
         Функция получения данных в виде
         @param type_parse: Тип данных, принимает значения:
@@ -53,17 +62,21 @@ class YandexParser:
             reviews - получает данные по отчетам
         @return: Данные по запрашиваемому типу
         """
+        logging.info("ПРОЦЕСС НАЧАТ")
         result: dict = {}
         driver, page = self.__open_page()
         
         time.sleep(4)  # Задержка для полной загрузки страницы
 
         try:
+            logging.info(f"СОРТИРОВКА ПО '{sort_type}'")
             # Клик на первый div
             self.__click_element(driver, By.CLASS_NAME, 'rating-ranking-view')
 
             # Клик на второй div
             self.__click_element(driver, By.CLASS_NAME, 'rating-ranking-view__popup-line', 'Сначала отрицательные')
+            
+            logging.info("СОРТИРОВКА УСПЕШНА")
             
             
             # checker = driver.find_element(By.CLASS_NAME, value)
@@ -82,4 +95,5 @@ class YandexParser:
         finally:
             driver.close()
             driver.quit()
+            logging.info("ПРОЦЕСС ЗАВЕРШЁН")
             return result
