@@ -140,6 +140,9 @@ def scrape_reviews(driver, max_reviews=None, sorting='relevant', collect_extra=F
         if max_reviews is None:
             prev_element = driver.find_elements(By.CSS_SELECTOR,
                                                 "div[class*='jJc9Ad']")[-1]
+            
+            # # Получение общего числа отзывов.
+            # # Возможно понадобится для проверки на пасинг всех отзывов со страницы
             # total_reviews = driver.find_element(
             #     By.XPATH, "//div[contains(text(), 'Отзывов:')]").text
             # total_reviews = int(total_reviews.split(': ', 1)[1].replace(' ', '')
@@ -153,13 +156,14 @@ def scrape_reviews(driver, max_reviews=None, sorting='relevant', collect_extra=F
                                                     "div[class*='jJc9Ad']")[-1]
                 time.sleep(2)
                 if prev_element == curr_element:
+                    # Waiting for next reviews to load
                     for _ in range(120):
                         time.sleep(1)
                         curr_element = driver.find_elements(
                             By.CSS_SELECTOR, "div[class*='jJc9Ad']")[-1]
                         if prev_element != curr_element:
                             break
-                    else:
+                    else: # If time is expired, consider we reached the bottom
                         print(i)
                         print(curr_element.text)
                         break
