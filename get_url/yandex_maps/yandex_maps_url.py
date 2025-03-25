@@ -46,7 +46,7 @@ class Parser:
 
             time.sleep(1)
         except:
-            logging.critical(f"Не удалось ввести поисковый запрос: {self.q}", exc_info=Truegit )
+            logging.critical(f"Не удалось ввести поисковый запрос: {self.q}", exc_info=True)
 
     def __click_card(self, driver: undetected_chromedriver.Chrome):
         list_cards = driver.find_elements(By.XPATH, self.card_xpath)
