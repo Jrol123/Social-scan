@@ -43,6 +43,8 @@ class Parser:
             input_element = driver.find_element(By.XPATH, self.input_xpath)
             input_element.send_keys(self.q)
             input_element.submit()
+            driver.find_element(By.XPATH, ".//div[@class='pzfvzf']").click()
+            # TODO: Костыль для гугла, т. к. не работает метод submit()
 
             time.sleep(1)
         except:
@@ -51,6 +53,7 @@ class Parser:
     def __click_card(self, driver: undetected_chromedriver.Chrome):
         list_cards = driver.find_elements(By.XPATH, self.card_xpath)
         card = list_cards[0]
+        # TODO: Обработать для Google случай, когда сразу выбрасывают на страницу объекта 
         card.click()
         
         time.sleep(1)
@@ -98,9 +101,10 @@ class Finder:
         yandex_finder = Parser(self.yandex, meta_name)
         google_finder = Parser(self.google, meta_name)
         self.finder_collection = {
-                                  "Yandex": yandex_finder, 
+                                #   "Yandex": yandex_finder, 
                                   "Google": google_finder,
                                   }
+        # TODO: Попробовать с google.com/maps/search
 
     def find(self) -> dict[str, str]:
         """
