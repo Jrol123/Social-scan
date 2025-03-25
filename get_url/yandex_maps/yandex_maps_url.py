@@ -3,65 +3,113 @@ import undetected_chromedriver
 from selenium.webdriver.common.by import By
 
 import logging
+
 logging.basicConfig(
     level=logging.INFO,
     filename="finder.log",
     filemode="w",
     format="%(asctime)s %(levelname)s %(message)s",
-    encoding='utf-8'
+    encoding="utf-8",
 )
 
+
 class Parser:
-    def __init__(self, q):
+    def __init__(self, service_info: dict[str, str], q: str):
         """
-        @param id_yandex: поисковое значение
+        Args:
+            service_info (dict[str, str]): Информация о сервисе
+            q (str): поисковый запрос
         """
-        self.q
+        self.url = service_info.get("url")
+        self.input_xpath = service_info.get("input_xpath")
+        self.card_xpath = service_info.get("card_xpath")
+        self.q = q
 
     def __open_page(self):
-        url: str = 'https://yandex.ru/maps/org/{}/reviews/'.format(str(self.id_yandex))
         opts = undetected_chromedriver.ChromeOptions()
-        opts.add_argument('--no-sandbox')
-        opts.add_argument('--disable-dev-shm-usage')
-        opts.add_argument('headless')
-        opts.add_argument('--disable-gpu')
+        opts.add_argument("--no-sandbox")
+        opts.add_argument("--disable-dev-shm-usage")
+        opts.add_argument("headless")
+        opts.add_argument("--disable-gpu")
         driver = undetected_chromedriver.Chrome(options=opts)
-        parser = Parser(driver)
-        driver.get(url)
-        return driver, parser
+        driver.get(self.url)
+        return driver
 
-    def __click_element(self, driver, by, value, find_value = None):
-        """ Функция для клика на элемент с ожиданием. """
+    def __input_element(self, driver: undetected_chromedriver.Chrome):
+        """
+        Ввод информации в поисковую строку
+        """
         try:
-            # Ожидание 10 секунд, пока элемент не станет кликабельным
-            elements = driver.find_elements(by, value)
-            element = elements[0]
-            
-            # TODO: Костыль, т. к. не имею понятия, почему не работает xpath по нескольким критериям
-            if len(elements) > 1:
-                for el in elements:
-                    if el.text == find_value:
-                        element = el
-                        break
-            
-            element.click()
-            time.sleep(1)  # Небольшая задержка для отработки клика
+            input_element = driver.find_element(By.XPATH, self.input_xpath)
+            input_element.send_keys(self.q)
+            input_element.submit()
+
+            time.sleep(1)
+        except:
+            logging.critical(f"Не удалось ввести поисковый запрос: {self.q}", exc_info=Truegit )
+
+    def __click_card(self, driver: undetected_chromedriver.Chrome):
+        list_cards = driver.find_elements(By.XPATH, self.card_xpath)
+        card = list_cards[0]
+        card.click()
+        
+        time.sleep(1)
+
+    def find(self) -> dict:
+        logging.info("ПРОЦЕСС НАЧАТ")
+        result: str = None
+        driver = self.__open_page()
+
+        time.sleep(4)  # Задержка для полной загрузки страницы
+
+        try:
+            self.__input_element(driver)
+
+            self.__click_card(driver)
+            result = "/".join(driver.current_url.split("/")[-2:-2 + 1])
+            # TODO: Вынести -2 в self
+
         except Exception as e:
-            # TODO: Почему-то периодически вылезает "неудалось кликнуть"
-            logging.critical(f"Не удалось кликнуть на элемент: {value}", exc_info=True)
+            print(e)
+            return result
+        finally:
+            driver.close()
+            driver.quit()
+            logging.info("ПРОЦЕСС ЗАВЕРШЁН")
+            return result
+
+
 class Finder:
-    yandex_find = 'https://yandex.ru/maps/'
-    google_find = 'https://www.google.com/maps/'
-    def __init__(self, meta_name:str):
+    yandex = {
+        "url": "https://yandex.ru/maps/",
+        "input_xpath": ".//input[@class='input__control _bold']",
+        "card_xpath": ".//li[@class='search-snippet-view']",
+    }
+    google = {"url": "https://www.google.com/maps/", "xpath": None, "card_xpath": None}
+
+    def __init__(self, meta_name: str):
         """
         Args:
             meta_name (str): Название объекта, по которому будет происходить поиск
         """
         self.meta_name = meta_name
-        
+        yandex_finder = Parser(self.yandex, meta_name)
+        # google_finder = Parser(self.google, meta_name)
+        self.finder_collection = {"Yandex": yandex_finder, 
+                                #   "Google": google_finder,
+                                  }
+
+    def find(self) -> dict[str, str]:
+        """
+        Производит поиск по всем сервисам
+        """
+        result = {}
+        for name, finder in self.finder_collection.items():
+            result[name] = finder.find()
+        return result
+
     def save_info(self):
-        """Сохраняет информацию в бд
+        """
+        Сохраняет информацию в бд
         """
         pass
-    
-    
