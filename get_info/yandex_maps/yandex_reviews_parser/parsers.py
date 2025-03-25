@@ -70,7 +70,7 @@ class Parser:
             icon_href = elem.find_element(By.XPATH, ".//div[@class='user-icon-view__icon']").get_attribute('style')
             icon_href = icon_href.split('"')[1]
         except NoSuchElementException:
-            logging.warning(f"{index}. Не найден блок с иконкой пользователя")
+            logging.debug(f"{index}. Не найден блок с иконкой пользователя")  # При отсутствии не находится
             icon_href = None
 
         try:
@@ -98,7 +98,7 @@ class Parser:
             else:
                 answer = None
         except NoSuchElementException:
-            logging.warning(f"{index}. Не найден блок с ответом")
+            logging.debug(f"{index}. Не найден блок с ответом объекта")  # При отсутствии не находится
             answer = None
         item = Review(
             name=name,
