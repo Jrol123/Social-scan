@@ -17,13 +17,13 @@ from yandex_reviews_parser.storage import Review, Info
 
 # logging.Logger.notice = notice
 
-# logging.basicConfig(
-#     level=logging.INFO,
-#     filename="py_log.log",
-#     filemode="w",
-#     format="%(asctime)s %(levelname)s %(message)s",
-#     encoding='utf-8'
-# )
+logging.basicConfig(
+    level=logging.INFO,
+    filename="parsing.log",
+    filemode="w",
+    format="%(asctime)s %(levelname)s %(message)s",
+    encoding='utf-8'
+)
 
 class Parser:
     def __init__(self, driver):
