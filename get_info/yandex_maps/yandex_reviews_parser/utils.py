@@ -6,7 +6,7 @@ from selenium.webdriver.common.by import By
 import logging
 logging.basicConfig(
     level=logging.INFO,
-    filename="py_log.log",
+    filename="parsing.log",
     filemode="w",
     format="%(asctime)s %(levelname)s %(message)s",
     encoding='utf-8'
