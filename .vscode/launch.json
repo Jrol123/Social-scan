@@ -5,7 +5,14 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "ym.py-debug",
+            "name": "finder-yandex",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "get_url/test-yandex.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "parser-yandex",
             "type": "debugpy",
             "request": "launch",
             "program": "get_info/yandex_maps/yandex_maps.py",

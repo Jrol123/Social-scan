@@ -56,7 +56,7 @@ class Parser:
         time.sleep(1)
 
     def find(self) -> dict:
-        logging.info("ПРОЦЕСС НАЧАТ")
+        logging.info(f"ПРОЦЕСС ДЛЯ {self.q} НАЧАТ")
         result: str = None
         driver = self.__open_page()
 
@@ -64,18 +64,20 @@ class Parser:
 
         try:
             self.__input_element(driver)
+            logging.info(f"ПОИСК ЗАВЕРШЁН")
 
             self.__click_card(driver)
+            logging.info(f"КАРТОЧКА НАЙДЕНА")
             result = "/".join(driver.current_url.split("/")[-2:-2 + 1])
             # TODO: Вынести -2 в self
 
-        except Exception as e:
-            print(e)
+        except:
+            logging.critical("ПРОИЗОШЛА ОШИБКА", exc_info=True)
             return result
         finally:
             driver.close()
             driver.quit()
-            logging.info("ПРОЦЕСС ЗАВЕРШЁН")
+            logging.info(f"ПРОЦЕСС ДЛЯ {self.q} ЗАВЕРШЁН")
             return result
 
 
@@ -85,7 +87,7 @@ class Finder:
         "input_xpath": ".//input[@class='input__control _bold']",
         "card_xpath": ".//li[@class='search-snippet-view']",
     }
-    google = {"url": "https://www.google.com/maps/", "xpath": None, "card_xpath": None}
+    google = {"url": "https://www.google.com/maps/", "input_xpath": ".//input[@class='fontBodyMedium searchboxinput xiQnY ']", "card_xpath": ".//div[@class='Nv2PK THOPZb CpccDe']"}
 
     def __init__(self, meta_name: str):
         """
@@ -94,9 +96,10 @@ class Finder:
         """
         self.meta_name = meta_name
         yandex_finder = Parser(self.yandex, meta_name)
-        # google_finder = Parser(self.google, meta_name)
-        self.finder_collection = {"Yandex": yandex_finder, 
-                                #   "Google": google_finder,
+        google_finder = Parser(self.google, meta_name)
+        self.finder_collection = {
+                                  "Yandex": yandex_finder, 
+                                  "Google": google_finder,
                                   }
 
     def find(self) -> dict[str, str]:
