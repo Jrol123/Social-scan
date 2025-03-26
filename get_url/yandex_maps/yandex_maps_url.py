@@ -25,6 +25,7 @@ class Parser:
         self.input_xpath = service_info.get("input_xpath")
         self.confirm_xpath = service_info.get("confirm_xpath")
         self.card_xpath = service_info.get("card_xpath")
+        self.url_pos = service_info.get("url_pos")
         self.q = q
 
     def __open_page(self):
@@ -81,7 +82,7 @@ class Parser:
 
             self.__click_card(driver)
             logging.info(f"ПОИСК КАРТОЧКИ ЗАВЕРШЁН")
-            result = "/".join(driver.current_url.split("/")[-2 : -2 + 1])
+            result = "/".join(driver.current_url.split("/")[self.url_pos[0] : self.url_pos[1] + 1 if self.url_pos[1] != -1 else -1])
             # TODO: Вынести -2 в self
 
         except:
@@ -101,6 +102,7 @@ class Finder:
         "input_xpath": ".//input[@class='input__control _bold']",
         "confirm_xpath": ".//button[@class='button _view_search _size_medium']",
         "card_xpath": ".//li[@class='search-snippet-view']",
+        "url_pos": (-2, -2)
     }
     google = {
         "service_name": "Google",
@@ -108,6 +110,7 @@ class Finder:
         "input_xpath": ".//input[@class='fontBodyMedium searchboxinput xiQnY ']",
         "confirm_xpath": ".//div[@class='pzfvzf']",
         "card_xpath": ".//div[@class='Nv2PK THOPZb CpccDe ']",
+        "url_pos": (-3, -1)
     }
 
     def __init__(self, meta_name: str):
