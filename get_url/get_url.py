@@ -68,6 +68,8 @@ class MapParser(Parser):
         """
         try:
             list_cards = driver.find_elements(By.XPATH, self.card_xpath)
+            if self.service_name == "Google":
+                list_cards = list_cards[2:]
             card = list_cards[0]
             # TODO: Обработать для Google случай, когда сразу выбрасывают на страницу объекта
             card.click()
@@ -117,11 +119,13 @@ class Finder:
     google = {
         "service_name": "Google",
         "url": "https://www.google.com/maps/",
-        "input_xpath": ".//input[@class='fontBodyMedium searchboxinput xiQnY ']",
-        "confirm_xpath": ".//div[@class='pzfvzf']",
-        "card_xpath": ".//div[@class='Nv2PK THOPZb CpccDe ']",
-        "url_pos": (-3, -1),
+        "input_xpath": ".//input",
+        "confirm_xpath": ".//button[@id='searchbox-searchbutton']",
+        "card_xpath": ".//a",
+        "url_pos": (-3, -1)
     }
+    
+    #! TODO: у Google постоянно меняются xpath. Возможно, стоит брать по типу (сейчас нужно брать третий <a> и первый инпут)
 
     def __init__(self, meta_name: str):
         """
