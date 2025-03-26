@@ -1,8 +1,16 @@
+"""
+Файл, лол
+"""
 import time
 import undetected_chromedriver
 from selenium.webdriver.common.by import By
 
 import logging
+
+FULL_MODE = "full"
+YANDEX = "Yandex"
+GOOGLE = "Google"
+"""Константы режимов"""
 
 logging.basicConfig(
     level=logging.INFO,
@@ -11,6 +19,7 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(message)s",
     encoding="utf-8",
 )
+
 
 # TODO: Сделать супер-класс
 class Parser:
@@ -46,7 +55,7 @@ class Parser:
             input_element = driver.find_element(By.XPATH, self.input_xpath)
             input_element.send_keys(self.q)
             # input_element.submit()
-            confirm_element = driver.find_element(By.XPATH, self.confirm_xpath) 
+            confirm_element = driver.find_element(By.XPATH, self.confirm_xpath)
             confirm_element.click()
             # У Google не работает submit(), а у Yandex - click()
             #! Yandex перестал работать и с click, и с submit
@@ -54,9 +63,7 @@ class Parser:
 
             time.sleep(1)
         except:
-            logging.critical(
-                f"Не удалось ввести поисковый запрос", exc_info=True
-            )
+            logging.critical(f"Не удалось ввести поисковый запрос", exc_info=True)
 
     def __click_card(self, driver: undetected_chromedriver.Chrome):
         try:
@@ -84,7 +91,13 @@ class Parser:
 
             self.__click_card(driver)
             logging.info(f"ПОИСК КАРТОЧКИ ЗАВЕРШЁН")
-            result = "/".join(driver.current_url.split("/")[self.url_pos[0] : self.url_pos[1] + 1 if self.url_pos[1] != -1 else None])
+            result = "/".join(
+                driver.current_url.split("/")[
+                    self.url_pos[0] : (
+                        self.url_pos[1] + 1 if self.url_pos[1] != -1 else None
+                    )
+                ]
+            )
 
         except:
             logging.critical("ПРОИЗОШЛА ОШИБКА", exc_info=True)
@@ -97,38 +110,51 @@ class Parser:
 
 
 class Finder:
-    yandex = {
-        "service_name": "Yandex",
-        "url": "https://yandex.ru/maps/",
-        "input_xpath": ".//input[@class='input__control _bold']",
-        "confirm_xpath": ".//button[@class='button _view_search _size_medium']",
-        "card_xpath": ".//li[@class='search-snippet-view']",
-        "url_pos": (-2, -2)
+    modes = {
+        YANDEX: {
+            "service_name": "Yandex",
+            "url": "https://yandex.ru/maps/",
+            "input_xpath": ".//input[@class='input__control _bold']",
+            "confirm_xpath": ".//button[@class='button _view_search _size_medium']",
+            "card_xpath": ".//li[@class='search-snippet-view']",
+            "url_pos": (-2, -2),
+        },
+        GOOGLE: {
+            "service_name": "Google",
+            "url": "https://www.google.com/maps/",
+            "input_xpath": ".//input",
+            "confirm_xpath": ".//button[@id='searchbox-searchbutton']",
+            "card_xpath": ".//a",
+            "url_pos": (-3, -1),
+        },
     }
-    google = {
-        "service_name": "Google",
-        "url": "https://www.google.com/maps/",
-        "input_xpath": ".//input",
-        "confirm_xpath": ".//button[@id='searchbox-searchbutton']",
-        "card_xpath": ".//a",
-        "url_pos": (-3, -1)
-    }
-    
+    # TODO: Попробовать с google.com/maps/search и с его аналогом у Yandex
+    # TODO: Вынести в отдельную переменную (константу? класс?)
+
     #! TODO: у Google постоянно меняются xpath. Возможно, стоит брать по типу (сейчас нужно брать третий <a> и первый инпут)
 
-    def __init__(self, meta_name: str):
+    def __init__(self, meta_name: str, mode: str | list[str] = FULL_MODE):
         """
         Args:
             meta_name (str): Название объекта, по которому будет происходить поиск
+            mode (str|list[str])
         """
         self.meta_name = meta_name
-        yandex_finder = Parser(self.yandex, meta_name)
-        google_finder = Parser(self.google, meta_name)
-        self.finder_collection = {
-            "Yandex": yandex_finder,
-            "Google": google_finder,
-        }
-        # TODO: Попробовать с google.com/maps/search
+
+        if isinstance(mode, str):
+            if mode == FULL_MODE:
+                self.finder_collection = {}
+            self.finder_collection = {mode : Parser(self.__match_mode(mode), meta_name)}
+        elif isinstance(mode, list):
+            self.finder_collection = {sub_mode: Parser(self.__match_mode(sub_mode), meta_name) for sub_mode in mode}
+        else:
+            raise ValueError("Wrong mode")
+
+    def __match_mode(self, mode: str):
+        try:
+            self.modes.get(mode)
+        except:
+            raise ValueError("Wrong type of site")
 
     def find(self) -> dict[str, str]:
         """

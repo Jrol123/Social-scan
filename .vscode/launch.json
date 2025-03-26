@@ -8,7 +8,7 @@
             "name": "finder-yandex",
             "type": "debugpy",
             "request": "launch",
-            "program": "get_url/test-yandex.py",
+            "program": "get_url/test.py",
             "console": "integratedTerminal"
         },
         {
