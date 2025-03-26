@@ -12,7 +12,7 @@ logging.basicConfig(
     encoding="utf-8",
 )
 
-
+# TODO: Сделать супер-класс
 class Parser:
     def __init__(self, service_info: dict[str, str], q: str):
         """
