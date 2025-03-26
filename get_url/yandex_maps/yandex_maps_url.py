@@ -20,8 +20,10 @@ class Parser:
             service_info (dict[str, str]): Информация о сервисе
             q (str): поисковый запрос
         """
+        self.service_name = service_info.get("service_name")
         self.url = service_info.get("url")
         self.input_xpath = service_info.get("input_xpath")
+        self.confirm_xpath = service_info.get("confirm_xpath")
         self.card_xpath = service_info.get("card_xpath")
         self.q = q
 
@@ -43,23 +45,29 @@ class Parser:
             input_element = driver.find_element(By.XPATH, self.input_xpath)
             input_element.send_keys(self.q)
             input_element.submit()
-            driver.find_element(By.XPATH, ".//div[@class='pzfvzf']").click()
-            # TODO: Костыль для гугла, т. к. не работает метод submit()
+            confirm_element = driver.find_element(By.XPATH, self.confirm_xpath) 
+            confirm_element.click()
+            # У Google не работает submit(), а у Yandex - click()
 
             time.sleep(1)
         except:
-            logging.critical(f"Не удалось ввести поисковый запрос: {self.q}", exc_info=True)
+            logging.critical(
+                f"Не удалось ввести поисковый запрос", exc_info=True
+            )
 
     def __click_card(self, driver: undetected_chromedriver.Chrome):
-        list_cards = driver.find_elements(By.XPATH, self.card_xpath)
-        card = list_cards[0]
-        # TODO: Обработать для Google случай, когда сразу выбрасывают на страницу объекта 
-        card.click()
-        
-        time.sleep(1)
+        try:
+            list_cards = driver.find_elements(By.XPATH, self.card_xpath)
+            card = list_cards[0]
+            # TODO: Обработать для Google случай, когда сразу выбрасывают на страницу объекта
+            card.click()
+        except:
+            logging.critical(f"Не удалось нажать на карточку", exc_info=True)
+        finally:
+            time.sleep(1)
 
     def find(self) -> dict:
-        logging.info(f"ПРОЦЕСС ДЛЯ {self.q} НАЧАТ")
+        logging.info(f"ПРОЦЕСС ДЛЯ {self.service_name} НАЧАТ")
         result: str = None
         driver = self.__open_page()
 
@@ -67,11 +75,11 @@ class Parser:
 
         try:
             self.__input_element(driver)
-            logging.info(f"ПОИСК ЗАВЕРШЁН")
+            logging.info(f"ПОИСК ПРОВЕДЁН")
 
             self.__click_card(driver)
-            logging.info(f"КАРТОЧКА НАЙДЕНА")
-            result = "/".join(driver.current_url.split("/")[-2:-2 + 1])
+            logging.info(f"ПОИСК КАРТОЧКИ ЗАВЕРШЁН")
+            result = "/".join(driver.current_url.split("/")[-2 : -2 + 1])
             # TODO: Вынести -2 в self
 
         except:
@@ -80,17 +88,25 @@ class Parser:
         finally:
             driver.close()
             driver.quit()
-            logging.info(f"ПРОЦЕСС ДЛЯ {self.q} ЗАВЕРШЁН")
+            logging.info(f"ПРОЦЕСС ДЛЯ {self.service_name} ЗАВЕРШЁН")
             return result
 
 
 class Finder:
     yandex = {
+        "service_name": "Yandex",
         "url": "https://yandex.ru/maps/",
         "input_xpath": ".//input[@class='input__control _bold']",
+        "confirm_xpath": ".//button[@class='button _view_search _size_medium']",
         "card_xpath": ".//li[@class='search-snippet-view']",
     }
-    google = {"url": "https://www.google.com/maps/", "input_xpath": ".//input[@class='fontBodyMedium searchboxinput xiQnY ']", "card_xpath": ".//div[@class='Nv2PK THOPZb CpccDe']"}
+    google = {
+        "service_name": "Google",
+        "url": "https://www.google.com/maps/",
+        "input_xpath": ".//input[@class='fontBodyMedium searchboxinput xiQnY ']",
+        "confirm_xpath": ".//div[@class='pzfvzf']",
+        "card_xpath": ".//div[@class='Nv2PK THOPZb CpccDe ']",
+    }
 
     def __init__(self, meta_name: str):
         """
@@ -101,9 +117,9 @@ class Finder:
         yandex_finder = Parser(self.yandex, meta_name)
         google_finder = Parser(self.google, meta_name)
         self.finder_collection = {
-                                #   "Yandex": yandex_finder, 
-                                  "Google": google_finder,
-                                  }
+            "Yandex": yandex_finder,
+            "Google": google_finder,
+        }
         # TODO: Попробовать с google.com/maps/search
 
     def find(self) -> dict[str, str]:
