@@ -85,7 +85,6 @@ class Parser:
             self.__click_card(driver)
             logging.info(f"ПОИСК КАРТОЧКИ ЗАВЕРШЁН")
             result = "/".join(driver.current_url.split("/")[self.url_pos[0] : self.url_pos[1] + 1 if self.url_pos[1] != -1 else None])
-            # TODO: Вынести -2 в self
 
         except:
             logging.critical("ПРОИЗОШЛА ОШИБКА", exc_info=True)
