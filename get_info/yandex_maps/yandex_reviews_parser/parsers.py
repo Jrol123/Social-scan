@@ -181,7 +181,7 @@ class Parser:
         try:
             xpath_name = ".//h1[@class='orgpage-header-view__header']"
             name = self.driver.find_element(By.XPATH, xpath_name).text
-            logging.info("Заголовок объекта найден")
+            logging.info(f"Заголовок объекта {name} найден")
             return True
         except NoSuchElementException:
             logging.critical("Заголовок объекта не найден", exc_info=True)
