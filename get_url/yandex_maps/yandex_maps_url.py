@@ -44,10 +44,12 @@ class Parser:
         try:
             input_element = driver.find_element(By.XPATH, self.input_xpath)
             input_element.send_keys(self.q)
-            input_element.submit()
+            # input_element.submit()
             confirm_element = driver.find_element(By.XPATH, self.confirm_xpath) 
             confirm_element.click()
             # У Google не работает submit(), а у Yandex - click()
+            #! Yandex перестал работать и с click, и с submit
+            # Я НЕ ПОНИМАЮ, ПОЧЕМУ ОНО ПЕРИОДИЧЕСКИ НЕ РАБОТАЕТ!!!
 
             time.sleep(1)
         except:
