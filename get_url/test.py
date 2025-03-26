@@ -1,4 +1,4 @@
-from get_url.yandex_maps_url import Finder
+from get_url.get_url import Finder
 
 finder = Finder("двфу")
 res = finder.find()
