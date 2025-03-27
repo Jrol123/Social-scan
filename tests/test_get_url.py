@@ -23,7 +23,7 @@ def test_Finder_Google(get_url_fefu):
 def test_Finder_Yandex(get_url_fefu):
     q, expected = get_url_fefu.values()
     result = Finder.find(q, YANDEX)
-    assert expected.get(YANDEX) == result.get(YANDEX)
+    assert result.get(YANDEX) == expected.get(YANDEX)
     # ID всегда один и тот-же
     
     
