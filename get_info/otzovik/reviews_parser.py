@@ -1,7 +1,6 @@
 import pandas as pd
 import time
 
-from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -37,12 +36,46 @@ def click_element(driver, by=By.CSS_SELECTOR, value=None, find_value=None):
         driver.execute_script("arguments[0].click();", element)
 
 def collect_review_links(driver):
-    reviews = driver.find_elements(By.CSS_SELECTOR, "a.review-btn.review-read-link")
-    return [link.get_attribute('href') for link in reviews]
+    click_element(driver, value="span.tab.neg > a")
+    time.sleep(2)
+    click_element(driver, value="#reviews-sort-tools-btn")
+    time.sleep(0.5)
+    
+    # driver.find_element(By.XPATH,
+    #                     "//input[@type='radio' and @value='date_desc']")
+    sort_buttons = driver.find_elements(By.CSS_SELECTOR, "label")
+    for btn in sort_buttons:
+        if 'Сначала новые' in btn.text:
+            btn.find_element(By.CSS_SELECTOR, "span.radio").click()
+    
+    click_element(driver, value="button", find_value='Применить')
+    time.sleep(3)
+    
+    reviews = driver.find_elements(By.CSS_SELECTOR,
+                                   "a.review-btn.review-read-link")
+    links = [link.get_attribute('href') for link in reviews]
+    
+    next_page = driver.find_elements(By.CSS_SELECTOR, "div.pager > div > a.next")
+    if not driver.find_elements(By.CSS_SELECTOR, "div.pager") or not next_page:
+        return links
+    
+    while next_page:
+        reviews = driver.find_elements(By.CSS_SELECTOR,
+                                       "a.review-btn.review-read-link")
+        links.extend([link.get_attribute('href') for link in reviews])
+        
+        click_element(driver, value="div.pager > div > a.next")
+        time.sleep(2)
+        next_page = driver.find_elements(By.CSS_SELECTOR,
+                                         "div.pager > div > a.next")
+        
+    return links
 
 
 def get_review_data(driver, url):
     driver.get(url)
+    time.sleep(1)
+    
     user = driver.find_element(By.CSS_SELECTOR,
                                "div.login-col > a > span[itemprop='name']").text
     date = (driver.find_element(By.CSS_SELECTOR,
@@ -54,12 +87,12 @@ def get_review_data(driver, url):
     review_text += "\n"
     review_text += driver.find_element(By.CSS_SELECTOR,
                                        "div.review-body.description").text
-    return [user, rating, date, review_text]
+    return {'user': user, 'rating': rating, 'date': date, 'review': review_text}
 
 
 def scrap_reviews(url):
     driver = initialize_browser(url)
-    review_links = collect_review_links(driver)
+    review_links = list(set(collect_review_links(driver)))
     data = []
     for link in review_links:
         data.append(get_review_data(driver, link))
@@ -89,4 +122,5 @@ def otzovik_parse(url, file="otzovik_reviews.csv"):
 
 if __name__ == '__main__':
     url = 'https://otzovik.com/reviews/sanatoriy_mriya_ukraina_evpatoriya/'
-    otzovik_parse(url)
+    url2 = 'https://otzovik.com/reviews/sanatoriy_slavutich_ukraina_alushta/'
+    otzovik_parse(url2, 'pages_test.csv')
