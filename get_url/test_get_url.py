@@ -1,5 +1,4 @@
 from get_url import Finder
 
-finder = Finder("двфу", "full")
-res = finder.find()
+res = Finder.find("Двфу")
 print(res)
