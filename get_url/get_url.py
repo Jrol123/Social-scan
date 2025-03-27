@@ -144,8 +144,8 @@ class __Finder:
         if isinstance(mode, str):
             if mode == FULL_MODE:
                 self.finder_collection = {name : Parser(sub_mode) for name, sub_mode in MODES.items()}
-                return
-            self.finder_collection = {mode : Parser(self.__match_mode(mode))}
+            else:
+                self.finder_collection = {mode : Parser(self.__match_mode(mode))}
         elif isinstance(mode, list):
             self.finder_collection = {sub_mode: Parser(self.__match_mode(sub_mode)) for sub_mode in mode}
         else:
