@@ -51,8 +51,7 @@ class Parser:
         Args:
             service_info (dict[str, str]): Информация о сервисе
         """
-        self.service_name = service_info.get("service_name")
-        self.url = service_info.get("url")
+        super.__init__(service_info.get("service_name"), service_info.get("url"))
         self.input_xpath = service_info.get("input_xpath")
         self.confirm_xpath = service_info.get("confirm_xpath")
         self.card_xpath = service_info.get("card_xpath")
@@ -86,6 +85,9 @@ class Parser:
             logging.critical(f"Не удалось ввести поисковый запрос", exc_info=True)
 
     def __click_card(self, driver: undetected_chromedriver.Chrome):
+        """
+        Нажатие на карточку
+        """
         try:
             list_cards = driver.find_elements(By.XPATH, self.card_xpath)
             if self.service_name == "Google":
