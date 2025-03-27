@@ -46,11 +46,10 @@ logging.basicConfig(
 
 # TODO: Сделать супер-класс
 class Parser:
-    def __init__(self, service_info: dict[str, str], q: str):
+    def __init__(self, service_info: dict[str, str]):
         """
         Args:
             service_info (dict[str, str]): Информация о сервисе
-            q (str): поисковый запрос
         """
         self.service_name = service_info.get("service_name")
         self.url = service_info.get("url")
@@ -58,7 +57,6 @@ class Parser:
         self.confirm_xpath = service_info.get("confirm_xpath")
         self.card_xpath = service_info.get("card_xpath")
         self.url_pos = service_info.get("url_pos")
-        self.q = q
 
     def __open_page(self):
         opts = undetected_chromedriver.ChromeOptions()
@@ -70,13 +68,13 @@ class Parser:
         driver.get(self.url)
         return driver
 
-    def __input_element(self, driver: undetected_chromedriver.Chrome):
+    def __input_element(self, q: str, driver: undetected_chromedriver.Chrome):
         """
         Ввод информации в поисковую строку
         """
         try:
             input_element = driver.find_element(By.XPATH, self.input_xpath)
-            input_element.send_keys(self.q)
+            input_element.send_keys(q)
             # input_element.submit()
             confirm_element = driver.find_element(By.XPATH, self.confirm_xpath)
             confirm_element.click()
@@ -96,11 +94,22 @@ class Parser:
             card = list_cards[0]
             card.click()
         except:
-            logging.critical(f"Не удалось нажать на карточку", exc_info=True)
+            if self.service_name == "Google":
+                logging.info(f"{self.service_name} автоматически перешёл на карточку объекта")
+            else:
+                logging.critical(f"Не удалось нажать на карточку", exc_info=True)
         finally:
             time.sleep(1)
 
-    def find(self) -> dict:
+    def find(self, q: str) -> str:
+        """Поиск по сервису
+
+        Args:
+            q (str): поисковый запрос
+
+        Returns:
+            str: Результат запроса, который требуется для однозначного определения объекта на сервисе
+        """
         logging.info(f"ПРОЦЕСС ДЛЯ {self.service_name} НАЧАТ")
         result: str = None
         driver = self.__open_page()
@@ -108,7 +117,7 @@ class Parser:
         time.sleep(4)  # Задержка для полной загрузки страницы
 
         try:
-            self.__input_element(driver)
+            self.__input_element(q, driver)
             logging.info(f"ПОИСК ПРОВЕДЁН")
 
             self.__click_card(driver)
@@ -120,7 +129,6 @@ class Parser:
                     )
                 ]
             )
-
         except:
             logging.critical("ПРОИЗОШЛА ОШИБКА", exc_info=True)
             return result
@@ -131,28 +139,22 @@ class Parser:
             return result
 
 
-class Finder:
-    def __init__(self, meta_name: str, mode: str | list[str] = FULL_MODE):
+class __Finder:
+    def __init__(self, mode: str | list[str] = FULL_MODE):
         """
         Args:
-            meta_name (str): Название объекта, по которому будет происходить поиск
-            mode (str|list[str])
+            mode (str|list[str]): Список сервисов, по которым будет производиться поиск
         """
-        self.meta_name = meta_name
-        
-        logging.info("НАЧАЛО ИНИЦИАЛИЗАЦИИ ПОИСКОВИКА")
 
         if isinstance(mode, str):
             if mode == FULL_MODE:
-                self.finder_collection = {name : Parser(sub_mode, meta_name) for name, sub_mode in MODES.items()}
+                self.finder_collection = {name : Parser(sub_mode) for name, sub_mode in MODES.items()}
                 return
-            self.finder_collection = {mode : Parser(self.__match_mode(mode), meta_name)}
+            self.finder_collection = {mode : Parser(self.__match_mode(mode))}
         elif isinstance(mode, list):
-            self.finder_collection = {sub_mode: Parser(self.__match_mode(sub_mode), meta_name) for sub_mode in mode}
+            self.finder_collection = {sub_mode: Parser(self.__match_mode(sub_mode)) for sub_mode in mode}
         else:
             raise ValueError("Wrong mode")
-        
-        logging.info("ИНИЦИАЛИЗАЦИЯ УСПЕШНО ЗАВЕРШЕНА")
 
     def __match_mode(self, mode: str):
         try:
@@ -160,13 +162,37 @@ class Finder:
         except:
             raise ValueError("Wrong type of site")
 
-    def find(self) -> dict[str, str]:
+    def find(self, q: str, mode: str | list[str] = FULL_MODE) -> dict[str, str]:
+        """Производит поиск по всем сервисам
+        
+        Args:
+            q (str): поисковый запрос. Defaults to FULL_MODE.
+            
+        Returns:
+            dict[str, str]: Сервис - результат
+        
         """
-        Производит поиск по всем сервисам
-        """
-        result = {}
-        for name, finder in self.finder_collection.items():
-            result[name] = finder.find()
+        logging.info("ПОИСК НАЧАЛСЯ")
+        result: dict[str, str] = {}
+        if isinstance(mode, str):
+            if mode == FULL_MODE:
+                for name, finder in self.finder_collection.items():
+                    result[name] = finder.find(q)
+            else:
+                try:
+                    result[mode] = self.finder_collection.get(mode).find(q)
+                except:
+                    raise ValueError(f"Wrong mode {mode}")
+        elif isinstance(mode, list):
+            for sub_mode in mode:
+                try:
+                    result[sub_mode] = self.finder_collection.get(sub_mode).find(q)
+                except:
+                    raise ValueError(f"Wrong mode {sub_mode}")
+        else:
+            raise ValueError(f"Wrong mode {mode}")
+        logging.info("ПОИСК ЗАВЕРШЁН")
+        
         return result
 
     def save_info(self):
@@ -174,3 +200,6 @@ class Finder:
         Сохраняет информацию в бд
         """
         pass
+    
+Finder = __Finder(FULL_MODE)
+
