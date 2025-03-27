@@ -51,7 +51,6 @@ class Parser:
         Args:
             service_info (dict[str, str]): Информация о сервисе
         """
-        super.__init__(service_info.get("service_name"), service_info.get("url"))
         self.input_xpath = service_info.get("input_xpath")
         self.confirm_xpath = service_info.get("confirm_xpath")
         self.card_xpath = service_info.get("card_xpath")
