@@ -81,7 +81,7 @@ class Parser:
             # Я НЕ ПОНИМАЮ, ПОЧЕМУ ОНО ПЕРИОДИЧЕСКИ НЕ РАБОТАЕТ!!!
             # Скорее всего, связано с интернетом
 
-            time.sleep(1)
+            time.sleep(4)
         except:
             logging.critical(f"Не удалось ввести поисковый запрос", exc_info=True)
 
@@ -91,18 +91,18 @@ class Parser:
         """
         try:
             list_cards = driver.find_elements(By.XPATH, self.card_xpath)
-            if self.service_name == "Google":
+            if self.service_name == GOOGLE:
                 list_cards = list_cards[2:]
                 # Костыль
             card = list_cards[0]
             card.click()
         except:
-            if self.service_name == "Google":
+            if self.service_name == GOOGLE:
                 logging.info(f"{self.service_name} автоматически перешёл на карточку объекта")
             else:
                 logging.critical(f"Не удалось нажать на карточку", exc_info=True)
         finally:
-            time.sleep(1)
+            time.sleep(4)
 
     def find(self, q: str) -> str:
         """Поиск по сервису
@@ -164,7 +164,8 @@ class __Finder:
         """Производит поиск по всем сервисам
         
         Args:
-            q (str): поисковый запрос. Defaults to FULL_MODE.
+            q (str): поисковый запрос.
+            mode (str|list[str]): Сервисы, с которыми будет происходить работа. Defaults to FULL_MODE.
             
         Returns:
             dict[str, str]: Сервис - результат
