@@ -155,8 +155,8 @@ class __Finder:
 
     def __match_mode(self, mode: str):
         try:
-            MODES.get(mode)
-        except:
+            return MODES[mode]
+        except KeyError:
             raise ValueError("Wrong type of site")
 
     def find(self, q: str, mode: str | list[str] = FULL_MODE) -> dict[str, str]:
