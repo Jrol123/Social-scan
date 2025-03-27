@@ -94,7 +94,10 @@ class Parser:
             card = list_cards[0]
             card.click()
         except:
-            logging.critical(f"Не удалось нажать на карточку", exc_info=True)
+            if self.service_name == "Google":
+                logging.info(f"{self.service_name} автоматически перешёл на карточку объекта")
+            else:
+                logging.critical(f"Не удалось нажать на карточку", exc_info=True)
         finally:
             time.sleep(1)
 
