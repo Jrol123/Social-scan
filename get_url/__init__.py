@@ -3,3 +3,5 @@
 
 id для yandex maps, url для google maps, etc.
 """
+
+from .get_url import Finder
