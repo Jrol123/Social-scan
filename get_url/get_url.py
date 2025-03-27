@@ -51,7 +51,8 @@ class Parser:
         Args:
             service_info (dict[str, str]): Информация о сервисе
         """
-        super.__init__(service_info.get("service_name"), service_info.get("url"))
+        self.service_name = service_info.get("service_name")
+        self.url = service_info.get("url")
         self.input_xpath = service_info.get("input_xpath")
         self.confirm_xpath = service_info.get("confirm_xpath")
         self.card_xpath = service_info.get("card_xpath")
@@ -170,6 +171,7 @@ class __Finder:
         
         """
         logging.info("ПОИСК НАЧАЛСЯ")
+        
         result: dict[str, str] = {}
         if isinstance(mode, str):
             if mode == FULL_MODE:
@@ -188,6 +190,7 @@ class __Finder:
                     raise ValueError(f"Wrong mode {sub_mode}")
         else:
             raise ValueError(f"Wrong mode {mode}")
+        
         logging.info("ПОИСК ЗАВЕРШЁН")
         
         return result
