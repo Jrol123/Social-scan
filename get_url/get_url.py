@@ -186,7 +186,7 @@ class __Finder:
         elif isinstance(mode, list):
             for sub_mode in mode:
                 try:
-                    result[mode] = self.finder_collection.get(mode).find(q)
+                    result[sub_mode] = self.finder_collection.get(sub_mode).find(q)
                 except:
                     raise ValueError(f"Wrong mode {sub_mode}")
         else:
