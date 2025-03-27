@@ -10,7 +10,30 @@ import logging
 FULL_MODE = "full"
 YANDEX = "Yandex"
 GOOGLE = "Google"
+
 """Константы режимов"""
+
+MODES: dict[str, dict[str, str | tuple[int, int]]] = {
+    YANDEX: {
+        "service_name": "Yandex",
+        "url": "https://yandex.ru/maps/",
+        "input_xpath": ".//input[@class='input__control _bold']",
+        "confirm_xpath": ".//button[@class='button _view_search _size_medium']",
+        "card_xpath": ".//li[@class='search-snippet-view']",
+        "url_pos": (-2, -2),
+    },
+    GOOGLE: {
+        "service_name": "Google",
+        "url": "https://www.google.com/maps/",
+        "input_xpath": ".//input",
+        "confirm_xpath": ".//button[@id='searchbox-searchbutton']",
+        "card_xpath": ".//a",
+        "url_pos": (-3, -1),
+        #! TODO: у Google постоянно меняются xpath. Возможно, стоит брать по типу (сейчас нужно брать третий <a> и первый инпут)
+    },
+    # TODO: Попробовать поработать с google.com/maps/search и с его аналогом у Yandex
+}
+"""Режимы"""
 
 logging.basicConfig(
     level=logging.INFO,
@@ -57,9 +80,8 @@ class Parser:
             # input_element.submit()
             confirm_element = driver.find_element(By.XPATH, self.confirm_xpath)
             confirm_element.click()
-            # У Google не работает submit(), а у Yandex - click()
-            #! Yandex перестал работать и с click, и с submit
             # Я НЕ ПОНИМАЮ, ПОЧЕМУ ОНО ПЕРИОДИЧЕСКИ НЕ РАБОТАЕТ!!!
+            # Скорее всего, связано с интернетом
 
             time.sleep(1)
         except:
@@ -70,8 +92,8 @@ class Parser:
             list_cards = driver.find_elements(By.XPATH, self.card_xpath)
             if self.service_name == "Google":
                 list_cards = list_cards[2:]
+                # Костыль
             card = list_cards[0]
-            # TODO: Обработать для Google случай, когда сразу выбрасывают на страницу объекта
             card.click()
         except:
             logging.critical(f"Не удалось нажать на карточку", exc_info=True)
@@ -110,29 +132,6 @@ class Parser:
 
 
 class Finder:
-    modes = {
-        YANDEX: {
-            "service_name": "Yandex",
-            "url": "https://yandex.ru/maps/",
-            "input_xpath": ".//input[@class='input__control _bold']",
-            "confirm_xpath": ".//button[@class='button _view_search _size_medium']",
-            "card_xpath": ".//li[@class='search-snippet-view']",
-            "url_pos": (-2, -2),
-        },
-        GOOGLE: {
-            "service_name": "Google",
-            "url": "https://www.google.com/maps/",
-            "input_xpath": ".//input",
-            "confirm_xpath": ".//button[@id='searchbox-searchbutton']",
-            "card_xpath": ".//a",
-            "url_pos": (-3, -1),
-        },
-    }
-    # TODO: Попробовать с google.com/maps/search и с его аналогом у Yandex
-    # TODO: Вынести в отдельную переменную (константу? класс?)
-
-    #! TODO: у Google постоянно меняются xpath. Возможно, стоит брать по типу (сейчас нужно брать третий <a> и первый инпут)
-
     def __init__(self, meta_name: str, mode: str | list[str] = FULL_MODE):
         """
         Args:
@@ -140,19 +139,24 @@ class Finder:
             mode (str|list[str])
         """
         self.meta_name = meta_name
+        
+        logging.info("НАЧАЛО ИНИЦИАЛИЗАЦИИ ПОИСКОВИКА")
 
         if isinstance(mode, str):
             if mode == FULL_MODE:
-                self.finder_collection = {name : Parser(sub_mode, meta_name) for name, sub_mode in self.modes.items()}
+                self.finder_collection = {name : Parser(sub_mode, meta_name) for name, sub_mode in MODES.items()}
+                return
             self.finder_collection = {mode : Parser(self.__match_mode(mode), meta_name)}
         elif isinstance(mode, list):
             self.finder_collection = {sub_mode: Parser(self.__match_mode(sub_mode), meta_name) for sub_mode in mode}
         else:
             raise ValueError("Wrong mode")
+        
+        logging.info("ИНИЦИАЛИЗАЦИЯ УСПЕШНО ЗАВЕРШЕНА")
 
     def __match_mode(self, mode: str):
         try:
-            self.modes.get(mode)
+            MODES.get(mode)
         except:
             raise ValueError("Wrong type of site")
 
