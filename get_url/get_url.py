@@ -1,8 +1,8 @@
 """
 Файл, лол
 """
-import time
-import undetected_chromedriver
+
+import time, urllib, undetected_chromedriver
 from selenium.webdriver.common.by import By
 
 import logging
@@ -125,11 +125,10 @@ class Parser:
 
             self.__click_card(driver)
             logging.info(f"ПОИСК КАРТОЧКИ ЗАВЕРШЁН")
-            result = "/".join(driver.current_url.split("/")[self.url_pos[0] : self.url_pos[1] + 1 if self.url_pos[1] != -1 else None])
+            result = urllib.parse.unquote("/".join(driver.current_url.split("/")[self.url_pos[0] : self.url_pos[1] + 1 if self.url_pos[1] != -1 else None]))
 
         except:
             logging.critical("ПРОИЗОШЛА ОШИБКА", exc_info=True)
-            return result
         finally:
             driver.close()
             driver.quit()
