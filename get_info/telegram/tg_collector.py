@@ -1,30 +1,31 @@
+import pandas as pd
 from telethon import TelegramClient
-from telethon.sessions import StringSession
 
 
 api = open('tg_api.txt', 'r').read().split('\n')
 
-
-client = TelegramClient(StringSession(api[4]), int(api[0]), api[1],
+client = TelegramClient("monitoring", int(api[0]), api[1],
                         system_version="4.16.30-vxCUSTOM", app_version='1.0.1')
 client.start(*api[2:4])
-# print(client.session.save())
 
-# client = TelegramClient("monitoring", int(api[0]), api[1],
-#                         system_version="4.16.30-vxCUSTOM", app_version='1.0.1')
-# client.start()
-# print("s")
+
+async def get_channel_history(channel_link, limit=100):
+    data = []
+    channel = (await client.get_entity(channel_link)).title
+    if limit <= 1000:
+        async for message in client.iter_messages(channel_link, limit=limit):
+            data.append({'user': message.from_id or channel,
+                         'date': message.date, 'review': message.text})
+    
+    return data
 
 async def main():
-    channel = await client.get_entity("t.me/historyzx")
-    print(channel.title, channel.id, type(channel))
-    
-    f = open('mess.txt', 'w', encoding='utf-8')
-    # Получение последних 100 сообщений из канала
-    async for message in client.iter_messages("t.me/historyzx", limit=100):
-        print(message.text, file=f, end='\n---\n')
-    
-    f.close()
+    messages = await get_channel_history(
+        "t.me/memoryleakage143", 20)
+    df = pd.DataFrame(messages)
+    df['date'] = pd.to_datetime(df['date'], unit='s')
+    df['date'] = df['date'].apply(lambda x: x.timestamp())
+    df.to_csv('telegram_reviews.csv', encoding='utf-8')
 
 
 if __name__ == '__main__':
