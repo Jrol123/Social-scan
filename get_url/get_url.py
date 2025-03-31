@@ -160,7 +160,7 @@ class __Finder:
             __add_service(self, service_names)
         elif isinstance(service_names, list):
             for service_name in service_names:
-                __add_service(self, service_names)
+                __add_service(self, service_name)
         else:
             raise TypeError(f"Неправильный тип для {service_names}: {type(service_names)}")
 
