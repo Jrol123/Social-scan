@@ -5,6 +5,13 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "parser-vk",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "get_info/vk/vk.py",
+            "console": "integratedTerminal"
+        },
+        {
             "name": "finder-yandex",
             "type": "debugpy",
             "request": "launch",
