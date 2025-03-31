@@ -121,10 +121,10 @@ class __Finder:
         Args:
             service_names (str|list[str]): Список сервисов, по которым будет производиться поиск. Defaults to FULL_MODE.
         """
-        
+
         self.services = self.__load_services()
         self.set_active_services(service_names)
-        
+
     def set_active_services(self, service_names: str | list[str] = FULL_MODE):
         """
         Задаёт активные сервисы.
@@ -146,7 +146,7 @@ class __Finder:
             self.active_services = {name : Parser(name, self.services[name]) for name in service_names}
         else:
             raise TypeError(f"Неправильный тип для {service_names}: {type(service_names)}")
-        
+
     def add_services(self, service_names: str | list[str]):
         """
         Добавляет сервис в активные
@@ -155,7 +155,7 @@ class __Finder:
             if name in self.active_services.keys():
                 return
             self.active_services[name] = Parser(name, self.__match_mode(name))
-            
+
         if isinstance(service_names, str):
             __add_service(self, service_names)
         elif isinstance(service_names, list):
@@ -163,8 +163,6 @@ class __Finder:
                 __add_service(self, service_names)
         else:
             raise TypeError(f"Неправильный тип для {service_names}: {type(service_names)}")
-                
-        
 
     def remove_service(self, service_name: str):
         """
@@ -175,13 +173,13 @@ class __Finder:
 
     def find(self, q: str) -> dict[str, str]:
         """Производит поиск по всем активным сервисам
-        
+
         Args:
             q (str): Поисковый запрос.
-            
+
         Returns:
             dict[str, str]: Сервис - результат.
-        
+
         """
         logging.info("ПОИСК НАЧАЛСЯ")
 
@@ -204,7 +202,7 @@ class __Finder:
 
         Args:
             name (str): Название сервиса.
-            
+
         Returns:
             dict[str, str]: Сервис - параметры.
 
