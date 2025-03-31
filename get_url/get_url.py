@@ -136,7 +136,7 @@ class Parser:
             logging.info(f"ПРОЦЕСС ДЛЯ {self.service_name} ЗАВЕРШЁН")
             return result
 
-
+# TODO: Переделать константы под получение информации из базы данных
 class __Finder:
     def __init__(self, mode: str | list[str] = FULL_MODE):
         """
