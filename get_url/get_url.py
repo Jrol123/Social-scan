@@ -24,11 +24,19 @@ logging.basicConfig(
 
 # TODO: Сделать супер-класс
 class Parser:
-    def __init__(self, service_name, service_info: dict[str, str]):
+    def __init__(self, service_name: str, service_info: dict[str, str]):
         """
         Args:
-            service_info (dict[str, str]): Информация о сервисе
+            service_name (str): Имя сервиса.
+            service_info (dict[str, str]): Параметры для парсинга.
+            
+        Raises:
+            ValueError: Недостаток ключей в service_info
         """
+        required_keys = {"url", "input_xpath", "confirm_xpath", "card_xpath", "url_pos"}
+        if missing := required_keys - service_info.keys():
+            raise ValueError(f"Пропущенные ключи в service_info: {missing}")
+        
         self.service_name = service_name
         self.url = service_info.get("url")
         self.input_xpath = service_info.get("input_xpath")
