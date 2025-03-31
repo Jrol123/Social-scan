@@ -115,7 +115,6 @@ class Parser:
             logging.info(f"ПРОЦЕСС ДЛЯ {self.service_name} ЗАВЕРШЁН")
             return result
 
-# TODO: Переделать константы под получение информации из базы данных
 class __Finder:
     def __init__(self, service_names: str | list[str] = FULL_MODE):
         """
@@ -149,7 +148,9 @@ class __Finder:
             raise TypeError(f"Неправильный тип для {service_names}: {type(service_names)}")
         
     def add_services(self, service_names: str | list[str]):
-        """Добавляет сервис в активные"""
+        """
+        Добавляет сервис в активные
+        """
         def __add_service(self, name):
             if name in self.active_services.keys():
                 return
@@ -166,7 +167,9 @@ class __Finder:
         
 
     def remove_service(self, service_name: str):
-        """Удаляет сервис из активных"""
+        """
+        Удаляет сервис из активных
+        """
         if service_name in self.active_services:
             del self.active_services[service_name]
 
