@@ -2,6 +2,7 @@
 Файл, лол
 """
 import time
+import urllib
 import undetected_chromedriver
 from selenium.webdriver.common.by import By
 from sqlite3 import connect
@@ -23,12 +24,12 @@ logging.basicConfig(
 
 # TODO: Сделать супер-класс
 class Parser:
-    def __init__(self, service_info: dict[str, str]):
+    def __init__(self, service_name, service_info: dict[str, str]):
         """
         Args:
             service_info (dict[str, str]): Информация о сервисе
         """
-        self.service_name = service_info.get("service_name")
+        self.service_name = service_name
         self.url = service_info.get("url")
         self.input_xpath = service_info.get("input_xpath")
         self.confirm_xpath = service_info.get("confirm_xpath")
@@ -68,16 +69,17 @@ class Parser:
         """
         try:
             list_cards = driver.find_elements(By.XPATH, self.card_xpath)
-            if self.service_name == GOOGLE:
+            #! TODO: Yandex и Google иногда переходят сразу на страницу объекта. Сделать проверку по URL?
+            if self.service_name == "Google":
                 list_cards = list_cards[2:]
-                # Костыль
+                #! Костыль
             card = list_cards[0]
             card.click()
         except:
-            if self.service_name == GOOGLE:
+            if self.service_name == "Google":
                 logging.info(f"{self.service_name} автоматически перешёл на карточку объекта")
             else:
-                logging.critical(f"Не удалось нажать на карточку", exc_info=True)
+                logging.critical(f"{self.service_name} не удалось нажать на карточку", exc_info=True)
         finally:
             time.sleep(4)
 
@@ -102,7 +104,7 @@ class Parser:
 
             self.__click_card(driver)
             logging.info(f"ПОИСК КАРТОЧКИ ЗАВЕРШЁН")
-            result = "/".join(driver.current_url.split("/")[self.url_pos[0] : self.url_pos[1] + 1 if self.url_pos[1] != -1 else None])
+            result = urllib.parse.unquote("/".join(driver.current_url.split("/")[self.url_pos[0] : self.url_pos[1] + 1 if self.url_pos[1] != -1 else None]))
 
         except:
             logging.critical("ПРОИЗОШЛА ОШИБКА", exc_info=True)
@@ -122,59 +124,67 @@ class __Finder:
         """
         
         self.services = self.__load_services()
-        self.active_services = self.set_active_services(service_names)
+        self.set_active_services(service_names)
         
     def set_active_services(self, service_names: str | list[str] = FULL_MODE):
         """
-        Задание активных сервисов
+        Задаёт активные сервисы.
+        
+        Активные сервисы — сервисы, по которым будет производиться поиск
 
         Args:
             service_names (str | list[str]): Список сервисов, по которым будет производиться поиск. Defaults to FULL_MODE.
 
         Raises:
-            TypeError: Неправильный тип данных
+            TypeError: Неправильный тип данных для service_names.
         """
         if isinstance(service_names, str):
             if service_names == FULL_MODE:
-                self.active_services = self.services.copy()
+                self.active_services = {name: Parser(name, conf) for name, conf in self.services.items()}
             else:
-                self.active_services = {service_names : Parser(self.__match_mode(service_names))}
+                self.active_services = {service_names : Parser(service_names, self.__match_mode(service_names))}
         elif isinstance(service_names, list):
-            self.active_services = {name : Parser(self.services[name]) for name in service_names}
+            self.active_services = {name : Parser(name, self.services[name]) for name in service_names}
         else:
             raise TypeError(f"Неправильный тип для {service_names}: {type(service_names)}")
+        
+    def add_services(self, service_names: str | list[str]):
+        """Добавляет сервис в активные"""
+        def __add_service(self, name):
+            if name in self.active_services.keys():
+                return
+            self.active_services[name] = Parser(name, self.__match_mode(name))
+            
+        if isinstance(service_names, str):
+            __add_service(self, service_names)
+        elif isinstance(service_names, list):
+            for service_name in service_names:
+                __add_service(self, service_names)
+        else:
+            raise TypeError(f"Неправильный тип для {service_names}: {type(service_names)}")
+                
+        
 
-    def find(self, q: str, mode: str | list[str] = FULL_MODE) -> dict[str, str]:
-        """Производит поиск по всем сервисам
+    def remove_service(self, service_name: str):
+        """Удаляет сервис из активных"""
+        if service_name in self.active_services:
+            del self.active_services[service_name]
+
+    def find(self, q: str) -> dict[str, str]:
+        """Производит поиск по всем активным сервисам
         
         Args:
-            q (str): поисковый запрос.
-            mode (str|list[str]): Сервисы, с которыми будет происходить работа. Defaults to FULL_MODE.
+            q (str): Поисковый запрос.
             
         Returns:
-            dict[str, str]: Сервис - результат
+            dict[str, str]: Сервис - результат.
         
         """
         logging.info("ПОИСК НАЧАЛСЯ")
 
         result: dict[str, str] = {}
-        if isinstance(mode, str):
-            if mode == FULL_MODE:
-                for name, finder in self.finder_collection.items():
-                    result[name] = finder.find(q)
-            else:
-                try:
-                    result[mode] = self.finder_collection.get(mode).find(q)
-                except:
-                    raise ValueError(f"Сервис {mode} не найден в БД")
-        elif isinstance(mode, list):
-            for sub_mode in mode:
-                try:
-                    result[sub_mode] = self.finder_collection.get(sub_mode).find(q)
-                except:
-                    raise ValueError(f"Сервис {sub_mode} не найден в БД")
-        else:
-            raise TypeError(f"Неправильный тип для {service_names}: {type(service_names)}")
+        for service_name, service_parser in self.active_services.items():
+            result[service_name] = service_parser.find(q)
 
         logging.info("ПОИСК ЗАВЕРШЁН")
 
@@ -182,19 +192,29 @@ class __Finder:
 
     def save_info(self):
         """
-        Сохраняет информацию в бд
+        Сохраняет информацию в бд.
         """
         pass
 
-    def __match_mode(self, service_names: str):
-        for name in service_names:
-            if name not in self.services:
-                raise ValueError(f"Сервис {name} не найден в БД")
-        self.active_services = {name: self.services[name] for name in service_names}
+    def __match_mode(self, name: str) -> dict[str, dict]:
+        """Получение конфигурации для сервиса.
+
+        Args:
+            name (str): Название сервиса.
+            
+        Returns:
+            dict[str, str]: Сервис - параметры.
+
+        Raises:
+            ValueError: Сервис не найден в БД.
+        """
+        if name not in self.services.keys():
+            raise ValueError(f"Сервис {name} не найден в БД")
+        return self.services[name]
 
     def __load_services(self) -> dict[str, dict]:
         """
-        Загружает сервисы из БД
+        Загружает сервисы из БД.
         """
         with connect("main.db") as conn:
             cursor = conn.cursor()
