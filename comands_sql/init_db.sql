@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS Services(
     Service_name VARCHAR(30) NOT NULL,
     parsing_config JSON, -- JSON с XPath, URL и другими параметрами
     last_parsed_at INTEGER DEFAULT NONE, -- Timestamp последнего парсинга
-    last_timestamp INTEGER  -- Timestamp последнего сообщения  -- Можно будет брать комментарии по времени, игнорируя авторов, которые уже добавлены в бд (для карт)
+    last_timestamp INTEGER DEFAULT NONE  -- Timestamp последнего сообщения  -- Можно будет брать комментарии по времени, игнорируя авторов, которые уже добавлены в бд (для карт)
 );
 
 -- Таблица авторов
@@ -33,11 +33,3 @@ CREATE TABLE IF NOT EXISTS Messages(
     FOREIGN KEY(Author) REFERENCES Authors(id),
     FOREIGN KEY(Service) REFERENCES Services(id)
 );
-
-UPDATE Services 
-SET parsing_config = json('{
-  "base_url": "https://example.com/comments",
-  "comments_xpath": "//div[@class='message']",
-  "pagination": {"selector": "a.next", "type": "xpath"}
-}')
-WHERE id = 1;
