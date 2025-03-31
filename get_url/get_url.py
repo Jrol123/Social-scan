@@ -4,36 +4,13 @@
 import time
 import undetected_chromedriver
 from selenium.webdriver.common.by import By
+from sqlite3 import connect
+import json
 
 import logging
 
 FULL_MODE = "full"
-YANDEX = "Yandex"
-GOOGLE = "Google"
-
-"""Константы режимов"""
-
-MODES: dict[str, dict[str, str | tuple[int, int]]] = {
-    YANDEX: {
-        "service_name": "Yandex",
-        "url": "https://yandex.ru/maps/",
-        "input_xpath": ".//input[@class='input__control _bold']",
-        "confirm_xpath": ".//button[@class='button _view_search _size_medium']",
-        "card_xpath": ".//li[@class='search-snippet-view']",
-        "url_pos": (-2, -2),
-    },
-    GOOGLE: {
-        "service_name": "Google",
-        "url": "https://www.google.com/maps/",
-        "input_xpath": ".//input",
-        "confirm_xpath": ".//button[@id='searchbox-searchbutton']",
-        "card_xpath": ".//a",
-        "url_pos": (-3, -1),
-        #! TODO: у Google постоянно меняются xpath. Возможно, стоит брать по типу (сейчас нужно брать третий <a> и первый инпут)
-    },
-    # TODO: Попробовать поработать с google.com/maps/search и с его аналогом у Yandex
-}
-"""Режимы"""
+"""Работа со всеми режимами"""
 
 logging.basicConfig(
     level=logging.INFO,
@@ -138,27 +115,34 @@ class Parser:
 
 # TODO: Переделать константы под получение информации из базы данных
 class __Finder:
-    def __init__(self, mode: str | list[str] = FULL_MODE):
+    def __init__(self, service_names: str | list[str] = FULL_MODE):
         """
         Args:
-            mode (str|list[str]): Список сервисов, по которым будет производиться поиск
+            service_names (str|list[str]): Список сервисов, по которым будет производиться поиск. Defaults to FULL_MODE.
         """
+        
+        self.services = self.__load_services()
+        self.active_services = self.set_active_services(service_names)
+        
+    def set_active_services(self, service_names: str | list[str] = FULL_MODE):
+        """
+        Задание активных сервисов
 
-        if isinstance(mode, str):
-            if mode == FULL_MODE:
-                self.finder_collection = {name : Parser(sub_mode) for name, sub_mode in MODES.items()}
+        Args:
+            service_names (str | list[str]): Список сервисов, по которым будет производиться поиск. Defaults to FULL_MODE.
+
+        Raises:
+            TypeError: Неправильный тип данных
+        """
+        if isinstance(service_names, str):
+            if service_names == FULL_MODE:
+                self.active_services = self.services.copy()
             else:
-                self.finder_collection = {mode : Parser(self.__match_mode(mode))}
-        elif isinstance(mode, list):
-            self.finder_collection = {sub_mode: Parser(self.__match_mode(sub_mode)) for sub_mode in mode}
+                self.active_services = {service_names : Parser(self.__match_mode(service_names))}
+        elif isinstance(service_names, list):
+            self.active_services = {name : Parser(self.services[name]) for name in service_names}
         else:
-            raise ValueError("Wrong mode")
-
-    def __match_mode(self, mode: str):
-        try:
-            return MODES[mode]
-        except KeyError:
-            raise ValueError("Wrong type of site")
+            raise TypeError(f"Неправильный тип для {service_names}: {type(service_names)}")
 
     def find(self, q: str, mode: str | list[str] = FULL_MODE) -> dict[str, str]:
         """Производит поиск по всем сервисам
@@ -172,7 +156,7 @@ class __Finder:
         
         """
         logging.info("ПОИСК НАЧАЛСЯ")
-        
+
         result: dict[str, str] = {}
         if isinstance(mode, str):
             if mode == FULL_MODE:
@@ -182,18 +166,18 @@ class __Finder:
                 try:
                     result[mode] = self.finder_collection.get(mode).find(q)
                 except:
-                    raise ValueError(f"Wrong mode {mode}")
+                    raise ValueError(f"Сервис {mode} не найден в БД")
         elif isinstance(mode, list):
             for sub_mode in mode:
                 try:
                     result[sub_mode] = self.finder_collection.get(sub_mode).find(q)
                 except:
-                    raise ValueError(f"Wrong mode {sub_mode}")
+                    raise ValueError(f"Сервис {sub_mode} не найден в БД")
         else:
-            raise ValueError(f"Wrong mode {mode}")
-        
+            raise TypeError(f"Неправильный тип для {service_names}: {type(service_names)}")
+
         logging.info("ПОИСК ЗАВЕРШЁН")
-        
+
         return result
 
     def save_info(self):
@@ -201,6 +185,21 @@ class __Finder:
         Сохраняет информацию в бд
         """
         pass
-    
-Finder = __Finder(FULL_MODE)
 
+    def __match_mode(self, service_names: str):
+        for name in service_names:
+            if name not in self.services:
+                raise ValueError(f"Сервис {name} не найден в БД")
+        self.active_services = {name: self.services[name] for name in service_names}
+
+    def __load_services(self) -> dict[str, dict]:
+        """
+        Загружает сервисы из БД
+        """
+        with connect("main.db") as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT service_name, parsing_config FROM Services")
+            return {row[0]: json.loads(row[1]) for row in cursor.fetchall()}
+
+
+Finder = __Finder()
