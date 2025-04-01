@@ -16,7 +16,7 @@ class VK_parser:
     def __init__(self, vk_token: str | tuple[str, str]):
         if isinstance(vk_token, str):
             self.vk = vk_api.VkApi(token=vk_token)
-        elif isinstance(vk_token, tuple[str, str]):
+        elif isinstance(vk_token, tuple):
             self.vk = vk_api.VkApi(*vk_token)
         else:
             raise TypeError
@@ -25,15 +25,62 @@ class VK_parser:
         self,
         q: str,
         total_count: int = 1000,
-        start_from: str = '0',
+        start_from: str = "0",
         start_time: int | None = 0,
         end_time: int = int(time.time()),
         fields: str = "id, first_name, last_name",
-    ) -> dict[str:dict]:
+    ) -> dict[str, list[dict[str, str | int]]]:
+        if total_count == -1:
+            total_count = self.vk.method(
+                "newsfeed.search",
+                values={
+                    "q": q,
+                    "count": 1,
+                    "start_time": start_time,
+                    "end_time": end_time,
+                },
+            )["total_count"]
+        print(f"total_count: {total_count}")
+        result = {"items": [], "profiles": [], "groups": []}
+        while total_count != 0:
+            total_count, cur_result = self.__search(
+                q, total_count, start_from, start_time, end_time, fields
+            )
+            result = self.__combine_result(result, cur_result)
+            print(f"rem_count: {total_count}\tlen: {len(cur_result['items'])}")
+            try:
+                last_date = cur_result["items"][-1]["date"]
+                end_time = last_date
+            except:
+                print("no data!")
+        print(total_count)
+        return result
+    
+        """
+        4960805
+        4959856
+        4958918
+        4957961
+        4956984
+        4956004
+        4955058
+        4954132
+        4953332
+        """
+
+    def __search(
+        self,
+        q: str,
+        total_count: int = 1000,
+        start_from: str = "0",
+        start_time: int | None = 0,
+        end_time: int = int(time.time()),
+        fields: str = "id, first_name, last_name",
+    ) -> tuple[int, dict[str, list[dict[str, str | int]]]]:
         get_param = min(MAX_COUNT, total_count)
         if get_param == 0:
             print("АЛЯРМ! next_from соглал!")
-            return
+            return total_count, {"items": [], "profiles": [], "groups": []}
 
         params = {
             "q": q,
@@ -44,55 +91,64 @@ class VK_parser:
             "extended": True,
             "fields": fields,
         }
-        total_count -= get_param
-        result: dict[str:dict] = self.vk.method("newsfeed.search", values=params)
+        result = self.vk.method("newsfeed.search", values=params)
+        total_count -= len(result["items"])
         #! Почему-то получаются те же результаты
         if total_count != 0 and "next_from" in result.keys():
-            next_result = self.search_feed(q, total_count, result["next_from"], start_time, end_time)
+            rem_count, next_result = self.__search(
+                q, total_count, result["next_from"], start_time, end_time
+            )
             self.__clean_result(next_result)
             self.__clean_result(result)
-            finish_res = {}
-            for name in result.keys():
-                finish_res[name] = self.__combinator(result[name], next_result[name])
-            return finish_res
+
+            finish_res = self.__combine_result(result, next_result)
+
+            return rem_count, finish_res
         self.__clean_result(result)
-        return result
-        
-    def __combinator(self, list1: list[dict], list2: list[dict]) -> list[dict]:
-        seen = set()
-        combined = []
-        for d in list1 + list2:
-            # Сортируем элементы словаря для однозначности
-            dict_tuple = tuple(sorted(d.items()))
-            if dict_tuple not in seen:
-                seen.add(dict_tuple)
-                combined.append(d)
+        return total_count, result
 
-        return combined
+    def __combine_result(
+        self, res1: dict[str, list[dict]], res2: dict[str, list[dict]]
+    ) -> dict[str, list[dict]]:
+        def __combinator(list1: list[dict], list2: list[dict]) -> list[dict]:
+            seen = set()
+            combined = []
+            for d in list1 + list2:
+                # Сортируем элементы словаря для однозначности
+                dict_tuple = tuple(sorted(d.items()))
+                if dict_tuple not in seen:
+                    seen.add(dict_tuple)
+                    combined.append(d)
+            return combined
 
-    def __clean_result(self, result: dict[str:dict]) -> None:
-        def __key_clean(d: dict, save_keys: list[str]) -> None:
+        finish_res = {}
+        for name in ["profiles", "groups"]:
+            finish_res[name] = __combinator(res1[name], res2[name])
+        finish_res["items"] = res1["items"] + res2["items"]
+        return finish_res
+
+    def __clean_result(self, result: dict[str, list[dict[str, str]]]) -> None:
+        def __key_clean(d: dict[str, str | list], save_keys: list[str]) -> None:
             # Получаем список ключей словаря
-                keys = list(d.keys())
-                # Удаляем все ключи, кроме нужных
-                for key in keys:
-                    if key not in save_keys:
-                        del d[key]
-        def __clean(toClean_dict: dict, save_keys: list[str]) -> None:
+            keys = list(d.keys())
+            # Удаляем все ключи, кроме нужных
+            for key in keys:
+                if key not in save_keys:
+                    del d[key]
+
+        def __clean(toClean_dict: list[dict[str, str]], save_keys: list[str]) -> None:
             for d in toClean_dict:
                 __key_clean(d, save_keys)
-                
 
         rest_keys_result = ["items", "profiles", "groups"]
         rest_keys_items = ["id", "date", "edited", "owner_id", "text"]
         rest_keys_profiles = ["id", "first_name", "last_name"]
         rest_keys_groups = ["id", "name"]
-        
 
         items: list[dict] = result["items"]
         profiles: list[dict] = result["profiles"]
         groups: list[dict] = result["groups"]
-        
+
         __key_clean(result, rest_keys_result)
         __clean(items, rest_keys_items)
         __clean(profiles, rest_keys_profiles)
@@ -103,7 +159,7 @@ class VK_parser:
 # print(search_feed("кино", 1, 0)['items'][0]['id'], search_feed("кино", 1, 1)['items'][0]['id'])
 
 vk = VK_parser(secrets["VK_TOKEN"])
-zp = vk.search_feed("кино")
-print(len(zp["items"]))
+zp = vk.search_feed(total_count=10**4, q="кино")
+print(len(zp["items"])) # 4960210
 # for i in zp["items"]:
 #     print(i["id"])
