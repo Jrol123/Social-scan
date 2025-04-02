@@ -34,9 +34,9 @@ class VKParser:
                     "start_time": start_time,
                     "end_time": end_time,
                 },
-                raw=True
+                raw=True,
             )
-            total_count = res['response']["total_count"]
+            total_count = res["response"]["total_count"]
         print(f"total_count: {total_count}")
         result = {"items": [], "profiles": [], "groups": []}
         while total_count != 0:
@@ -147,6 +147,6 @@ class VKParser:
 
 secrets = dotenv_values(".env")
 """Секреты"""
-vk = VK_parser(secrets["VK_TOKEN"])
+vk = VKParser(secrets["VK_TOKEN"])
 zp = vk.search_feed(total_count=-1, q="мрия")
 print(len(zp["items"]))
