@@ -1,10 +1,10 @@
 import vk_api
 import time
-from dotenv import dotenv_values
 
 MAX_COUNT = 200
 
 
+# TODO: Сделать master_class
 class VKParser:
 
     def __init__(self, vk_token: str | tuple[str, str]):
@@ -143,10 +143,3 @@ class VKParser:
         __clean(items, rest_keys_items)
         __clean(profiles, rest_keys_profiles)
         __clean(groups, rest_keys_groups)
-
-
-secrets = dotenv_values(".env")
-"""Секреты"""
-vk = VKParser(secrets["VK_TOKEN"])
-zp = vk.search_feed(total_count=-1, q="мрия")
-print(len(zp["items"]))
