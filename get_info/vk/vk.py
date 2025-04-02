@@ -14,8 +14,7 @@ class VKParser:
             self.vk = vk_api.VkApi(*vk_token)
             # Вход по login - password. Лучше всего использовать номер телефона как логин
         else:
-            raise TypeError
-
+            raise TypeError('vk_token must be a str or a tuple of (login, password)')
     def search_feed(
         self,
         q: str,
@@ -117,7 +116,7 @@ class VKParser:
         finish_res["items"] = res1["items"] + res2["items"]
         return finish_res
 
-    def __clean_result(self, result: dict[str, list[dict[str, str]]]) -> None:
+    def __clean_result(self, result: dict[str, list[dict[str, str | int]]]) -> None:
         def __key_clean(d: dict[str, str | list], save_keys: list[str]) -> None:
             # Получаем список ключей словаря
             keys = list(d.keys())
