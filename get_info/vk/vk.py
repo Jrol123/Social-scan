@@ -5,7 +5,7 @@ from dotenv import dotenv_values
 MAX_COUNT = 200
 
 
-class VK_parser:
+class VKParser:
 
     def __init__(self, vk_token: str | tuple[str, str]):
         if isinstance(vk_token, str):
