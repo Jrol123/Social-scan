@@ -4,12 +4,6 @@ from dotenv import dotenv_values
 
 MAX_COUNT = 200
 
-secrets = dotenv_values(".env")
-"""Секреты"""
-
-# vk = vk_api.VkApi(token=secrets["VK_TOKEN"])
-# """Модуль ВК"""
-
 
 class VK_parser:
 
@@ -55,18 +49,6 @@ class VK_parser:
                 print("no data!")
         print(total_count)
         return result
-    
-        """
-        4960805
-        4959856
-        4958918
-        4957961
-        4956984
-        4956004
-        4955058
-        4954132
-        4953332
-        """
 
     def __search(
         self,
@@ -158,6 +140,8 @@ class VK_parser:
 # print(len(search_feed("кино", 1)['items']))
 # print(search_feed("кино", 1, 0)['items'][0]['id'], search_feed("кино", 1, 1)['items'][0]['id'])
 
+secrets = dotenv_values(".env")
+"""Секреты"""
 vk = VK_parser(secrets["VK_TOKEN"])
 zp = vk.search_feed(total_count=10**4, q="кино")
 print(len(zp["items"])) # 4960210
