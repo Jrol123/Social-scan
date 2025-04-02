@@ -12,7 +12,14 @@
             "console": "integratedTerminal"
         },
         {
-            "name": "finder-yandex",
+            "name": "parser-vk",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "get_info/vk/test_vk.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "finder",
             "type": "debugpy",
             "request": "launch",
             "program": "get_url/test_get_url.py",
@@ -22,7 +29,7 @@
             "name": "parser-yandex",
             "type": "debugpy",
             "request": "launch",
-            "program": "get_info/yandex_maps/yandex_maps.py",
+            "program": "get_info/yandex_maps/test_yandex_maps.py",
             "console": "integratedTerminal"
         }
     ]
