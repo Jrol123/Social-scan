@@ -86,7 +86,7 @@ class VK_parser:
         total_count -= len(result["items"])
         if total_count != 0 and "next_from" in result.keys():
             rem_count, next_result = self.__search(
-                q, total_count, result["next_from"], start_time, end_time
+                q, total_count, result["next_from"], start_time, end_time, fields
             )
             self.__clean_result(next_result)
             self.__clean_result(result)
