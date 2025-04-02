@@ -37,17 +37,21 @@ class VK_parser:
         print(f"total_count: {total_count}")
         result = {"items": [], "profiles": [], "groups": []}
         while total_count != 0:
-            #! Как определять, когда записей действительно нет, а когда это просто ошибка?
+            #! Как определять, когда записей действительно нет, а когда это просто ошибка/временное ограничение?
             total_count, cur_result = self.__search(
                 q, total_count, start_from, start_time, end_time, fields
             )
             result = self.__combine_result(result, cur_result)
             print(f"rem_count: {total_count}\tlen: {len(cur_result['items'])}")
-            try:
+            if len(cur_result['items']) == 0:
+                print("no data!\nretrying...")
+                time.sleep(60) # TODO: Поэкспериментировать с задержкой
+            else:
+                if len(cur_result['items']) == 1:
+                    print(cur_result)
                 last_date = cur_result["items"][-1]["date"]
                 end_time = last_date
-            except:
-                print("no data!")
+                
         print(total_count)
         return result
 
@@ -140,5 +144,5 @@ class VK_parser:
 secrets = dotenv_values(".env")
 """Секреты"""
 vk = VK_parser(secrets["VK_TOKEN"])
-zp = vk.search_feed(total_count=-1, q="кино")
+zp = vk.search_feed(total_count=-1, q="мрия")
 print(len(zp["items"]))
