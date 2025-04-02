@@ -1,5 +1,5 @@
 from dotenv import dotenv_values
-from vk import VKParser
+from get_info.vk import VKParser
 
 secrets = dotenv_values(".env")
 """Секреты"""
