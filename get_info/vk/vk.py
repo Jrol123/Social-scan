@@ -9,9 +9,10 @@ class VK_parser:
 
     def __init__(self, vk_token: str | tuple[str, str]):
         if isinstance(vk_token, str):
-            self.vk = vk_api.VkApi(token=vk_token)
+            self.vk: vk_api.VkApi = vk_api.VkApi(token=vk_token)
         elif isinstance(vk_token, tuple):
             self.vk = vk_api.VkApi(*vk_token)
+            # Вход по login - password. Лучше всего использовать номер телефона как логин
         else:
             raise TypeError
 
@@ -25,7 +26,7 @@ class VK_parser:
         fields: str = "id, first_name, last_name",
     ) -> dict[str, list[dict[str, str | int]]]:
         if total_count == -1:
-            total_count = self.vk.method(
+            res = self.vk.method(
                 "newsfeed.search",
                 values={
                     "q": q,
@@ -33,7 +34,9 @@ class VK_parser:
                     "start_time": start_time,
                     "end_time": end_time,
                 },
-            )["total_count"]
+                raw=True
+            )
+            total_count = res['response']["total_count"]
         print(f"total_count: {total_count}")
         result = {"items": [], "profiles": [], "groups": []}
         while total_count != 0:
@@ -43,15 +46,15 @@ class VK_parser:
             )
             result = self.__combine_result(result, cur_result)
             print(f"rem_count: {total_count}\tlen: {len(cur_result['items'])}")
-            if len(cur_result['items']) == 0:
+            if len(cur_result["items"]) == 0:
                 print("no data!\nretrying...")
-                time.sleep(60) # TODO: Поэкспериментировать с задержкой
+                time.sleep(60)  # TODO: Поэкспериментировать с задержкой
             else:
-                if len(cur_result['items']) == 1:
+                if len(cur_result["items"]) == 1:
                     print(cur_result)
                 last_date = cur_result["items"][-1]["date"]
                 end_time = last_date
-                
+
         print(total_count)
         return result
 
@@ -140,6 +143,7 @@ class VK_parser:
         __clean(items, rest_keys_items)
         __clean(profiles, rest_keys_profiles)
         __clean(groups, rest_keys_groups)
+
 
 secrets = dotenv_values(".env")
 """Секреты"""
