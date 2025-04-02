@@ -37,6 +37,7 @@ class VK_parser:
         print(f"total_count: {total_count}")
         result = {"items": [], "profiles": [], "groups": []}
         while total_count != 0:
+            #! Как определять, когда записей действительно нет, а когда это просто ошибка?
             total_count, cur_result = self.__search(
                 q, total_count, start_from, start_time, end_time, fields
             )
@@ -73,9 +74,9 @@ class VK_parser:
             "extended": True,
             "fields": fields,
         }
+        #! Иногда просто перестаёт высылать результаты. Антибот?
         result = self.vk.method("newsfeed.search", values=params)
         total_count -= len(result["items"])
-        #! Почему-то получаются те же результаты
         if total_count != 0 and "next_from" in result.keys():
             rem_count, next_result = self.__search(
                 q, total_count, result["next_from"], start_time, end_time
@@ -136,14 +137,8 @@ class VK_parser:
         __clean(profiles, rest_keys_profiles)
         __clean(groups, rest_keys_groups)
 
-
-# print(len(search_feed("кино", 1)['items']))
-# print(search_feed("кино", 1, 0)['items'][0]['id'], search_feed("кино", 1, 1)['items'][0]['id'])
-
 secrets = dotenv_values(".env")
 """Секреты"""
 vk = VK_parser(secrets["VK_TOKEN"])
-zp = vk.search_feed(total_count=10**4, q="кино")
-print(len(zp["items"])) # 4960210
-# for i in zp["items"]:
-#     print(i["id"])
+zp = vk.search_feed(total_count=-1, q="кино")
+print(len(zp["items"]))
