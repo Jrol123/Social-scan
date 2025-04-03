@@ -1,6 +1,6 @@
 import time
 import undetected_chromedriver
-from yandex_reviews_parser.parsers import Parser
+from .parsers import Parser
 from selenium.webdriver.common.by import By
 
 import logging

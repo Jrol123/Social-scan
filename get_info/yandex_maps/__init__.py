@@ -1,0 +1,1 @@
+from .yandex_reviews_parser.utils import YandexParser
