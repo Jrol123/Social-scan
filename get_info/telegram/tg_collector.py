@@ -94,7 +94,7 @@ async def telegram_parse(channels_list="channel_list.txt", search=None, limit=10
     
 
 async def main():
-    await telegram_parse(limit=10)
+    await telegram_parse(limit=10, search='МРИЯ', filename='mriya_messages.csv')
 
 
 if __name__ == '__main__':
