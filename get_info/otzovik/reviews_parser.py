@@ -10,8 +10,15 @@ from selenium.webdriver.support.wait import WebDriverWait
 def initialize_browser(url=None):
     driver = webdriver.Chrome()
     driver.get("https://otzovik.com/" if url is None else url)
-    time.sleep(20)
+    time.sleep(2)
+    while check_captcha(driver):
+        print('Please, enter captcha to continue parsing Otzovik')
+        time.sleep(5)
+    
     return driver
+
+def check_captcha(driver):
+    return driver.find_elements(By.CSS_SELECTOR, "input[name='captcha_url']")
 
 def click_element(driver, by=By.CSS_SELECTOR, value=None, find_value=None):
     elements = driver.find_elements(by, value)
@@ -123,4 +130,4 @@ def otzovik_parse(url, file="otzovik_reviews.csv"):
 if __name__ == '__main__':
     url = 'https://otzovik.com/reviews/sanatoriy_mriya_ukraina_evpatoriya/'
     url2 = 'https://otzovik.com/reviews/sanatoriy_slavutich_ukraina_alushta/'
-    otzovik_parse(url2, 'pages_test.csv')
+    otzovik_parse(url)
