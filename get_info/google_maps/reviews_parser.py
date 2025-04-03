@@ -25,20 +25,6 @@ def initialize_browser(url=None):
     # time.sleep(2)
     return driver
 
-# def search_google_maps(page, business_name):
-#     page.goto("https://www.google.com/maps")
-#     search_box = page.locator("input[id='searchboxinput']")
-#     search_box.fill(business_name)
-#     search_box.press("Enter")
-#     page.wait_for_timeout(4000)
-    
-    # search_results = page.locator("a[class*='hfpxzc']")
-    # print(search_results.count())
-    # if search_results.count() > 0:
-    #     res = search_results.first
-    #     res.click()
-    #     page.wait_for_timeout(3000)
-
 def clean_text(text):
     # Remove emojis
     text = emoji.replace_emoji(text, replace='')
@@ -70,7 +56,7 @@ def click_element(driver, by=By.CSS_SELECTOR, value=None, find_value=None):
     except Exception:
         driver.execute_script("arguments[0].click();", element)
 
-def scroll_reviews(driver, reviews_section):
+def scroll_reviews(driver):
     last_element = driver.find_elements(
         By.CSS_SELECTOR, 'div.AyRUI[aria-hidden="true"]')[-1]
     driver.execute_script("arguments[0].scrollIntoView();",
@@ -150,7 +136,7 @@ def scrape_reviews(driver, max_reviews=None, sorting='relevant', collect_extra=F
             # print(total_reviews * 10)
             i = 0
             while True:
-                scroll_reviews(driver, reviews_section)
+                scroll_reviews(driver)
                 # time.sleep(3)
                 curr_element = driver.find_elements(By.CSS_SELECTOR,
                                                     "div[class*='jJc9Ad']")[-1]
@@ -174,7 +160,7 @@ def scrape_reviews(driver, max_reviews=None, sorting='relevant', collect_extra=F
                 i += 1
         else:
             for _ in range(max_reviews // 10 - 1):
-                scroll_reviews(driver, reviews_section)
+                scroll_reviews(driver)
         
         expand_reviews(driver)
         
@@ -255,7 +241,9 @@ def handle_reviews_data(df):
     df['rating'] = df['rating'].apply(lambda x: int(x.split(' ')[0]))
     df['date'] = df['date'].str.lower().apply(text_to_date)
     df['review'] = df['review'].str.replace('\n', ' ').str.replace('\t', ' ')
-    return df
+    
+    df = df[df['rating'] <= 3]
+    return df.sort_values('date', ascending=False).reset_index(drop=True)
 
 def save_reviews_to_csv(reviews, filename="google_reviews.csv"):
     df = pd.DataFrame(reviews)
@@ -267,9 +255,9 @@ def save_reviews_to_csv(reviews, filename="google_reviews.csv"):
     df.to_csv(filename, index=False, encoding='utf-8')
     # logger.info(f"Reviews saved to {filename}")
 
-def google_maps_parse(object, max_reviews=100, sorting='new', collect_extra=True,
+def google_maps_parse(url, max_reviews=100, sorting='new', collect_extra=True,
                       file="google_reviews.csv"):
-    driver = initialize_browser(object)
+    driver = initialize_browser(url)
     try:
         # search_google_maps(page, object)
         reviews = scrape_reviews(driver, max_reviews=max_reviews,
@@ -291,7 +279,8 @@ def main():
     try:
         # Search and scrape reviews
         # search_google_maps(page, business_name)
-        reviews = scrape_reviews(driver, max_reviews=None, sorting='new', collect_extra=False)
+        reviews = scrape_reviews(driver, max_reviews=200, sorting='increase',
+                                 collect_extra=True)
         
         # Save results
         save_reviews_to_csv(reviews)
