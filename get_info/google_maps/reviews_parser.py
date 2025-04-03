@@ -58,10 +58,11 @@ def click_element(driver, by=By.CSS_SELECTOR, value=None, find_value=None):
 
 def scroll_reviews(driver):
     last_element = driver.find_elements(
-        By.CSS_SELECTOR, 'div.AyRUI[aria-hidden="true"]')[-1]
+        By.CSS_SELECTOR,
+        "div[role='main'] > div > div > div[aria-hidden='true']:last-child")[-1]
     driver.execute_script("arguments[0].scrollIntoView();",
                           last_element)
-    time.sleep(2)
+    time.sleep(2)  # #QA0Szd > div > div > div.w6VYqd > div:nth-child(2) > div > div.e07Vkf.kA9KIf > div > div > div.m6QErb.DxyBCb.kA9KIf.dS8AEf.XiKgde > div:nth-child(12) > div:nth-child(6)
     
 def expand_reviews(driver):
     try:
@@ -121,11 +122,9 @@ def scrape_reviews(driver, max_reviews=None, sorting='relevant', collect_extra=F
 
         # Scroll to load more reviews
         # logger.info("Loading reviews...")
-        reviews_section = driver.find_element(By.XPATH,
-            "//*[@id='QA0Szd']/div/div/div[1]/div[2]/div/div[1]/div/div")
         if max_reviews is None:
             prev_element = driver.find_elements(By.CSS_SELECTOR,
-                                                "div[class*='jJc9Ad']")[-1]
+                                                "div[data-review-id] > div")[-1]
             
             # # Получение общего числа отзывов.
             # # Возможно понадобится для проверки на пасинг всех отзывов со страницы
@@ -138,15 +137,15 @@ def scrape_reviews(driver, max_reviews=None, sorting='relevant', collect_extra=F
             while True:
                 scroll_reviews(driver)
                 # time.sleep(3)
-                curr_element = driver.find_elements(By.CSS_SELECTOR,
-                                                    "div[class*='jJc9Ad']")[-1]
+                curr_element = driver.find_elements(By.CSS_SELECTOR,  # "div[class*='jJc9Ad']"
+                                                    "div[data-review-id] > div")[-1]
                 time.sleep(2)
                 if prev_element == curr_element:
                     # Waiting for next reviews to load
                     for _ in range(120):
                         time.sleep(1)
                         curr_element = driver.find_elements(
-                            By.CSS_SELECTOR, "div[class*='jJc9Ad']")[-1]
+                            By.CSS_SELECTOR, "div[data-review-id] > div")[-1]
                         if prev_element != curr_element:
                             break
                     else: # If time is expired, consider we reached the bottom
@@ -166,21 +165,25 @@ def scrape_reviews(driver, max_reviews=None, sorting='relevant', collect_extra=F
         
         # Extract reviews
         review_elements = driver.find_elements(By.CSS_SELECTOR,
-                                               "div[class*='jJc9Ad']")
+                                               "div[data-review-id] > div")
         # logger.info(f"Found {review_elements.count()} reviews")
-        for element in review_elements:
-            reviewer = element.find_element(By.CSS_SELECTOR,
-                                            "div[class*='d4r55']").text
-            rating = element.find_element(By.CSS_SELECTOR,
-                                          "span[class*='fzvQIb']").text
-            date = element.find_element(By.CSS_SELECTOR,
-                                             "span[class*='xRkPPb']").text
+        for element in review_elements[1::2]:
+            reviewer = element.find_element(
+                By.CSS_SELECTOR, "div:nth-child(2) > div"
+                " > button[data-review-id]:first-child > div:first-child").text
+            rating = element.find_element(
+                By.CSS_SELECTOR,
+                "div:nth-child(4) > div:first-child > span:first-child").text
+            date = element.find_element(
+                By.CSS_SELECTOR,
+                "div:nth-child(4) > div:first-child > span:nth-child(2)").text
             date = date.rsplit(',', 1)[0].strip()
             
             if collect_extra:
-                text_selector = "div[class*='MyEned']"
+                text_selector = "div > div > div[tabindex='-1'][id]"
             else:
-                text_selector = "span[class*='wiI7pd']"
+                text_selector = "div > div > div[tabindex='-1'][id]"\
+                                " > span:first-child"
                 
             try:
                 review_text = element.find_element(
@@ -296,4 +299,4 @@ def main():
 if __name__ == "__main__":
     # main()
     url = r"https://www.google.com/maps/place/?q=place_id:ChIJ7WjSWynClEARUUiva4PiDzI"
-    google_maps_parse(url, max_reviews=200)
+    google_maps_parse(url, max_reviews=200, collect_extra=True)
