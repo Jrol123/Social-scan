@@ -255,11 +255,10 @@ def save_reviews_to_csv(reviews, filename="google_reviews.csv"):
     df.to_csv(filename, index=False, encoding='utf-8')
     # logger.info(f"Reviews saved to {filename}")
 
-def google_maps_parse(url, max_reviews=100, sorting='new', collect_extra=True,
+def google_maps_parse(url, max_reviews=100, sorting='increase', collect_extra=True,
                       file="google_reviews.csv"):
     driver = initialize_browser(url)
     try:
-        # search_google_maps(page, object)
         reviews = scrape_reviews(driver, max_reviews=max_reviews,
                                  sorting=sorting, collect_extra=collect_extra)
         save_reviews_to_csv(reviews, file)
@@ -295,4 +294,6 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # main()
+    url = r"https://www.google.com/maps/place/?q=place_id:ChIJ7WjSWynClEARUUiva4PiDzI"
+    google_maps_parse(url, max_reviews=200)
