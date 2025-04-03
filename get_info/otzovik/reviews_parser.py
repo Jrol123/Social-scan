@@ -131,3 +131,4 @@ if __name__ == '__main__':
     url = 'https://otzovik.com/reviews/sanatoriy_mriya_ukraina_evpatoriya/'
     url2 = 'https://otzovik.com/reviews/sanatoriy_slavutich_ukraina_alushta/'
     otzovik_parse(url)
+    # otzovik_parse(url2, 'pages_test.csv')
