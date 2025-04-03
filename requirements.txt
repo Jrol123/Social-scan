@@ -2,3 +2,4 @@ vk-api==11.9.9
 selenium==4.29.0
 undetected-chromedriver==3.5.5
 pandas==2.2.3
+telethon==1.39.0
