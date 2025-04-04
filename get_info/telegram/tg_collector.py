@@ -1,15 +1,23 @@
+import os
 import time
 from datetime import datetime
+from dotenv import load_dotenv
 
 import pandas as pd
 from telethon import TelegramClient
 
 
-api = open('tg_api.txt', 'r').read().split('\n')
+load_dotenv()
 
-client = TelegramClient("monitoring", int(api[0]), api[1],
+api_id = os.environ.get("ID")
+api_hash = os.environ.get("HASH")
+phone_number = os.environ.get("PHONE")
+password = os.environ.get("PASSWORD")
+# api = open('tg_api.txt', 'r').read().split('\n')
+
+client = TelegramClient("monitoring", int(api_id), api_hash,
                         system_version="4.16.30-vxCUSTOM", app_version='1.0.1')
-client.start(*api[2:4])
+client.start(phone_number, password)
 
 
 async def form_line(message, client, channel_id, channel_name,):
@@ -29,7 +37,11 @@ async def form_line(message, client, channel_id, channel_name,):
 
 async def get_channel_history(channel_link, limit=100, search=None):
     data = []
-    channel = await client.get_entity(channel_link)
+    try:
+        channel = await client.get_entity(channel_link)
+    except ValueError:
+        return []
+    
     channel_id = channel.id
     channel_name = channel.title
     if limit is None:
@@ -73,9 +85,14 @@ async def parse_all_channels(channels_list="channel_list.txt", limit=100, search
         data.extend(await get_channel_history(channel, limit, search))
         time.sleep(0.5)
     
+    print(data)
     return data
 
 def save_reviews_to_csv(reviews, min_date=None, filename="telegram_reviews.csv"):
+    if not reviews:
+        print('There is no data collected from telegram.')
+        return
+    
     df = pd.DataFrame(reviews)
     df['date'] = pd.to_datetime(df['date'], unit='s')
     if isinstance(min_date, str):
@@ -94,7 +111,8 @@ async def telegram_parse(channels_list="channel_list.txt", search=None, limit=10
     
 
 async def main():
-    await telegram_parse(limit=10, search='МРИЯ', filename='mriya_messages.csv')
+    await telegram_parse(limit=10, search='МРИЯ плохо',
+                         filename='mriya_messages.csv')
 
 
 if __name__ == '__main__':
