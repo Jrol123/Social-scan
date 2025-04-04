@@ -14,7 +14,8 @@ class VKParser:
             self.vk = vk_api.VkApi(*vk_token)
             # Вход по login - password. Лучше всего использовать номер телефона как логин
         else:
-            raise TypeError('vk_token must be a str or a tuple of (login, password)')
+            raise TypeError("vk_token must be a str or a tuple of (login, password)")
+
     def search_feed(
         self,
         q: str,
@@ -23,7 +24,8 @@ class VKParser:
         start_time: int | None = 0,
         end_time: int = int(time.time()),
         fields: str = "id, first_name, last_name",
-    ) -> dict[str, list[dict[str, str | int]]]:
+        return_count: bool = False
+    ) -> dict[str, list[dict[str, str | int]]] | int:
         if total_count == -1:
             res = self.vk.method(
                 "newsfeed.search",
@@ -36,6 +38,8 @@ class VKParser:
                 raw=True,
             )
             total_count = res["response"]["total_count"]
+            if return_count:
+                return total_count
         print(f"total_count: {total_count}")
         result = {"items": [], "profiles": [], "groups": []}
         while total_count != 0:
@@ -50,7 +54,8 @@ class VKParser:
                 time.sleep(60)  # TODO: Поэкспериментировать с задержкой
             else:
                 if len(cur_result["items"]) == 1:
-                    print(cur_result)
+                    pass
+                    # print(cur_result)
                 last_date = cur_result["items"][-1]["date"]
                 end_time = last_date
 
