@@ -24,12 +24,12 @@ CREATE TABLE IF NOT EXISTS Authors(
 CREATE TABLE IF NOT EXISTS Messages(
     id INTEGER PRIMARY KEY,
     id_inService INTEGER DEFAULT NONE,  -- id в сервисе, если сервис использует свою идентификацию сообщений
-    Service INTEGER NOT NULL,
-    Author INTEGER NOT NULL,
+    Service_id INTEGER NOT NULL,
+    Author_id INTEGER NOT NULL,
     Timestamp INTEGER,
     Message TEXT,
-    Updated_at INTEGER,  -- время последнего обновления комментария
+    -- Updated_at INTEGER,  -- время последнего обновления комментария  -- Не будем переопределять комментарии
     -- UNIQUE(Service, Author), -- Один комментарий от автора на сервис  -- Не подходит для мессенджеров
-    FOREIGN KEY(Author) REFERENCES Authors(id),
-    FOREIGN KEY(Service) REFERENCES Services(id)
+    FOREIGN KEY(Author_id) REFERENCES Authors(id),
+    FOREIGN KEY(Service_id) REFERENCES Services(id)
 );
