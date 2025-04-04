@@ -3,6 +3,7 @@
 """
 import time
 import urllib
+import urllib.parse
 import undetected_chromedriver
 from selenium.webdriver.common.by import By
 from sqlite3 import connect
@@ -33,16 +34,16 @@ class Parser:
         Raises:
             ValueError: Недостаток ключей в service_info
         """
-        required_keys = {"url", "input_xpath", "confirm_xpath", "card_xpath", "url_pos"}
-        if missing := required_keys - service_info.keys():
-            raise ValueError(f"Пропущенные ключи в service_info: {missing}")
-        
         self.service_name = service_name
-        self.url = service_info.get("url")
-        self.input_xpath = service_info.get("input_xpath")
-        self.confirm_xpath = service_info.get("confirm_xpath")
-        self.card_xpath = service_info.get("card_xpath")
-        self.url_pos = service_info.get("url_pos")
+        try:        
+            self.url: str = service_info["url"]
+            self.input_xpath = service_info["input_xpath"]
+            self.confirm_xpath = service_info["confirm_xpath"]
+            self.card_xpath = service_info["card_xpath"]
+            self.url_pos = service_info["url_pos"]
+        except:
+            logging.critical(f"Не найден параметр", exc_info=True)
+        
 
     def __open_page(self):
         opts = undetected_chromedriver.ChromeOptions()
