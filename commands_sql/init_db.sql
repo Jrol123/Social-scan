@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS Services(
 CREATE TABLE IF NOT EXISTS Authors(
     id INTEGER PRIMARY KEY,
     Service_id INTEGER NOT NULL, -- Привязка к сервису
-    Full_name TEXT,
+    Full_name TEXT NOT NULL,
     -- UNIQUE(Service_id, Full_name), -- Уникальный автор в рамках сервиса  -- Не подходит для мессенджеров
     FOREIGN KEY (Service_id) REFERENCES Services(id)
 );
@@ -23,13 +23,15 @@ CREATE TABLE IF NOT EXISTS Authors(
 -- Таблица комментариев
 CREATE TABLE IF NOT EXISTS Messages(
     id INTEGER PRIMARY KEY,
-    id_inService INTEGER DEFAULT NONE,  -- id в сервисе, если сервис использует свою идентификацию сообщений
+    id_inService INTEGER NOT NULL DEFAULT NONE,  -- id в сервисе, если сервис использует свою идентификацию сообщений
     Service_id INTEGER NOT NULL,
     Author_id INTEGER NOT NULL,
-    Timestamp INTEGER,
+    Timestamp INTEGER NOT NULL,
     Message TEXT,
     -- Updated_at INTEGER,  -- время последнего обновления комментария  -- Не будем переопределять комментарии
     -- UNIQUE(Service, Author), -- Один комментарий от автора на сервис  -- Не подходит для мессенджеров
     FOREIGN KEY(Author_id) REFERENCES Authors(id),
     FOREIGN KEY(Service_id) REFERENCES Services(id)
 );
+
+CREATE TABLE IF NOT EXISTS
