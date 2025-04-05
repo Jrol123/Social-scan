@@ -12,10 +12,10 @@
             "console": "integratedTerminal"
         },
         {
-            "name": "parser-vk",
+            "name": "parser-2gis",
             "type": "debugpy",
             "request": "launch",
-            "program": "get_info/vk/test_vk.py",
+            "program": "get_info/tgis/test_tgis.py",
             "console": "integratedTerminal"
         },
         {
