@@ -18,6 +18,9 @@ from selenium.webdriver.support.wait import WebDriverWait
 # logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 # logger = logging.getLogger(__name__)
 
+time_units = {'вчера': timedelta(days=1), 'день': timedelta(days=1),
+                  'дн': timedelta(days=1), 'недел': timedelta(weeks=1)}
+
 
 def initialize_browser(url=None):
     driver = webdriver.Chrome()
@@ -62,8 +65,8 @@ def scroll_reviews(driver):
         "div[role='main'] > div > div > div[aria-hidden='true']:last-child")[-1]
     driver.execute_script("arguments[0].scrollIntoView();",
                           last_element)
-    time.sleep(2)  # #QA0Szd > div > div > div.w6VYqd > div:nth-child(2) > div > div.e07Vkf.kA9KIf > div > div > div.m6QErb.DxyBCb.kA9KIf.dS8AEf.XiKgde > div:nth-child(12) > div:nth-child(6)
-    
+    time.sleep(2)
+
 def expand_reviews(driver):
     try:
         # Trying to load buttons for review texts expenditure
@@ -97,12 +100,27 @@ def expand_reviews(driver):
         print("Error occurred:", e)
         return
 
-def scrape_reviews(driver, max_reviews=None, sorting='relevant', collect_extra=False):
+def scrape_reviews(driver, max_reviews=None, sorting='relevant',
+                   collect_extra=False, min_date: datetime = None):
     assert sorting in ('relevant', 'new', 'increase', 'decrease')
+    global time_units
+    
+    def check_date(curr_element, min_date):
+        curr_date = curr_element.find_element(
+            By.CSS_SELECTOR,
+            "div:nth-child(4) > div:first-child > span:nth-child(2)"
+        ).text
+        curr_date = curr_date.rsplit(',', 1)[0].strip()
+        curr_date = text_to_date(curr_date, now)
+        return curr_date < min_date
 
-    sortings = {'relevant': 'Самые релевантные', 'new': 'Сначала новые', 
-                'increase': 'По возрастанию рейтинга', 'decrease': 'По убыванию рейтинга'}
+    sortings = {'relevant': 'Самые релевантные',
+                'new': 'Сначала новые',
+                'increase': 'По возрастанию рейтинга',
+                'decrease': 'По убыванию рейтинга'}
     reviews = []
+    now = datetime.now()
+        
     try:
         # Wait for the business details to load
         # time.sleep(1)
@@ -137,8 +155,12 @@ def scrape_reviews(driver, max_reviews=None, sorting='relevant', collect_extra=F
             while True:
                 scroll_reviews(driver)
                 # time.sleep(3)
-                curr_element = driver.find_elements(By.CSS_SELECTOR,  # "div[class*='jJc9Ad']"
+                curr_element = driver.find_elements(By.CSS_SELECTOR,
                                                     "div[data-review-id] > div")[-1]
+                if min_date is not None:
+                    if check_date(curr_element, min_date):
+                        break
+                
                 time.sleep(2)
                 if prev_element == curr_element:
                     # Waiting for next reviews to load
@@ -152,14 +174,17 @@ def scrape_reviews(driver, max_reviews=None, sorting='relevant', collect_extra=F
                         print(i)
                         print(curr_element.text)
                         break
-                else:
-                    i -= 1
 
                 prev_element = curr_element
                 i += 1
         else:
             for _ in range(max_reviews // 10 - 1):
                 scroll_reviews(driver)
+                if min_date is not None:
+                    curr_element = driver.find_elements(
+                        By.CSS_SELECTOR, "div[data-review-id] > div")[-1]
+                    if check_date(curr_element, min_date):
+                        break
         
         expand_reviews(driver)
         
@@ -203,55 +228,58 @@ def scrape_reviews(driver, max_reviews=None, sorting='relevant', collect_extra=F
         # logger.error(f"Error during scraping: {e}")
     
     return reviews
-
-def handle_reviews_data(df):
-    time_units = {'день': timedelta(days=1), 'дн': timedelta(days=1), 'недел': timedelta(weeks=1)}
-    now = datetime.now()
-
-    def text_to_date(text):
-        nonlocal time_units, now
-
-        date = text.rsplit(' ', 1)[0]
-        
-        if date[0].isdigit():
-            try:
-                num, unit = date.split(' ')
-                num = int(num)
-            except ValueError:
-                i = 2 if date[1].isdigit() else 1
-                num, unit = date[:i], date[i + 1:]
-                num = int(num)
-        else:
-            unit = date
-            num = 1
-        
-        if unit.startswith('год') or unit == 'лет':
-            date = now.replace(year=now.year - num)
-        elif unit.startswith('месяц'):
-
-            date = now.replace(year = now.year if now.month > num else now.year - 1, 
-                            month = now.month - num if now.month > num else  now.month - num + 12)
-        else:
-            for key in time_units:
-                if unit.startswith(key):
-                    unit = key
-                    break
-
-            date = now - num*time_units[unit]
-
-        return date.timestamp()
-
-    df['rating'] = df['rating'].apply(lambda x: int(x.split(' ')[0]))
-    df['date'] = df['date'].str.lower().apply(text_to_date)
-    df['review'] = df['review'].str.replace('\n', ' ').str.replace('\t', ' ')
     
+def text_to_date(text, now):
+    global time_units
+    
+    date = text.rsplit(' ', 1)[0]
+    if date[0].isdigit():
+        try:
+            num, unit = date.split(' ')
+            num = int(num)
+        except ValueError:
+            i = 2 if date[1].isdigit() else 1
+            num, unit = date[:i], date[i + 1:]
+            num = int(num)
+    else:
+        unit = date
+        num = 1
+        
+    if unit.startswith('год') or unit == 'лет':
+        date = now.replace(year=now.year - num)
+    elif unit.startswith('месяц'):
+        
+        date = now.replace(year=now.year if now.month > num else now.year - 1,
+                           month=now.month - num if now.month > num else now.month - num + 12)
+    else:
+        for key in time_units:
+            if unit.startswith(key):
+                unit = key
+                break
+            
+        date = now - num * time_units[unit]
+        
+    return date
+
+def handle_reviews_data(df, min_date=None):
+    global time_units
+    
+    now = datetime.now()
+    df['rating'] = df['rating'].apply(lambda x: int(x.split(' ')[0]))
+    df['date'] = df['date'].str.lower().apply(lambda x: text_to_date(x, now))
+    if min_date is not None:
+        df = df[df['date'] > min_date]
+        print(df['date'].min())
+    
+    df['date'] = df['date'].apply(lambda x: x.timestamp())
+    df.loc[:, 'review'] = df['review'].str.replace('\n', ' ').str.replace('\t', ' ')
     df = df[df['rating'] <= 3]
     return df.sort_values('date', ascending=False).reset_index(drop=True)
 
-def save_reviews_to_csv(reviews, filename="google_reviews.csv"):
+def save_reviews_to_csv(reviews, min_date=None, filename="google_reviews.csv"):
     df = pd.DataFrame(reviews)
     try:
-        df = handle_reviews_data(df)
+        df = handle_reviews_data(df, min_date)
     except Exception as e:
         raise e
 
@@ -259,12 +287,13 @@ def save_reviews_to_csv(reviews, filename="google_reviews.csv"):
     # logger.info(f"Reviews saved to {filename}")
 
 def google_maps_parse(url, max_reviews=100, sorting='increase', collect_extra=True,
-                      file="google_reviews.csv"):
+                      min_date=None, file="google_reviews.csv"):
     driver = initialize_browser(url)
     try:
         reviews = scrape_reviews(driver, max_reviews=max_reviews,
-                                 sorting=sorting, collect_extra=collect_extra)
-        save_reviews_to_csv(reviews, file)
+                                 sorting=sorting, collect_extra=collect_extra,
+                                 min_date=min_date)
+        save_reviews_to_csv(reviews, min_date, file)
     finally:
         time.sleep(5)
         driver.quit()
@@ -299,4 +328,5 @@ def main():
 if __name__ == "__main__":
     # main()
     url = r"https://www.google.com/maps/place/?q=place_id:ChIJ7WjSWynClEARUUiva4PiDzI"
-    google_maps_parse(url, max_reviews=200, collect_extra=True)
+    google_maps_parse(url,sorting='new', collect_extra=True,
+                      min_date=datetime(year=2024, month=4, day=6))
