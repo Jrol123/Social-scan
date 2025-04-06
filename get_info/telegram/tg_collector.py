@@ -126,9 +126,25 @@ async def telegram_parse(channels_list="channel_list.txt", search=None, limit=10
     
 
 async def main():
-    await telegram_parse(limit=1000, search='МРИЯ', filename='mriya_messages.csv')
+    await telegram_parse(limit=1000, search='МРИЯ ("Отель у моря") (Крым | Ялта) -купить', filename='mriya_messages.csv')
 
 
 if __name__ == '__main__':
     with client:
         client.loop.run_until_complete(main())
+    """
+    МРИЯ / 110
+    МРИЯ ("Отель у моря") (Крым | Ялта) -купить /
+    Мрия (отель | курорт | санаторий | гостиница) (Крым | Ялта) -купить /
+    Отель Мрия /
+    Отель МРИЯ (Крым | Ялта) /
+    Отель МРИЯ (Крым | Ялта) -купить /
+    Мрия курорт /
+    Санаторий МРИЯ /
+    МРИЯ гостиница /
+    МРИЯ РЕЗОРТ энд СПА /
+    Mriya Resort /
+    Mriya Resort (Крым | Ялта) -купить /
+    Mriya Resort&Spa /
+    Mriya Resort&Spa (Крым | Ялта) /
+    """
