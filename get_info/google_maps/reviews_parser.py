@@ -269,17 +269,31 @@ def handle_reviews_data(df, min_date=None):
     df['date'] = df['date'].str.lower().apply(lambda x: text_to_date(x, now))
     if min_date is not None:
         df = df[df['date'] > min_date]
+        if df.empty:
+            print(f"There are no reviews later {min_date}")
+            return None
+            
         print(df['date'].min())
     
     df['date'] = df['date'].apply(lambda x: x.timestamp())
     df.loc[:, 'review'] = df['review'].str.replace('\n', ' ').str.replace('\t', ' ')
     df = df[df['rating'] <= 3]
-    return df.sort_values('date', ascending=False).reset_index(drop=True)
+    if not df.empty:
+        return df.sort_values('date', ascending=False).reset_index(drop=True)
+    else:
+        print(f"There are no reviews with rating <= 3")
+        return None
 
 def save_reviews_to_csv(reviews, min_date=None, filename="google_reviews.csv"):
+    if not reviews:
+        print('There is no data collected from google maps.')
+        return
+    
     df = pd.DataFrame(reviews)
     try:
         df = handle_reviews_data(df, min_date)
+        if df.empty:
+            return
     except Exception as e:
         raise e
 

@@ -1,5 +1,6 @@
 import pandas as pd
 import time
+from datetime import datetime
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -79,15 +80,22 @@ def collect_review_links(driver):
     return links
 
 
-def get_review_data(driver, url):
+def get_review_data(driver, url, min_date=None):
     driver.get(url)
     time.sleep(1)
+    while check_captcha(driver):
+        print('Please, enter captcha to continue parsing Otzovik')
+        time.sleep(5)
     
-    user = driver.find_element(By.CSS_SELECTOR,
-                               "div.login-col > a > span[itemprop='name']").text
     date = (driver.find_element(By.CSS_SELECTOR,
                                 "span.review-postdate.dtreviewed > abbr")
             .get_attribute('title'))
+    date = datetime.fromisoformat(date)
+    if min_date is not None and date < min_date:
+        return None
+    
+    user = driver.find_element(By.CSS_SELECTOR,
+                               "div.login-col > a > span[itemprop='name']").text
     rating = (driver.find_element(By.CSS_SELECTOR, "abbr.rating")
               .get_attribute('title'))
     review_text = driver.find_element(By.CSS_SELECTOR, "div.review-minus").text
@@ -97,24 +105,32 @@ def get_review_data(driver, url):
     return {'user': user, 'rating': rating, 'date': date, 'review': review_text}
 
 
-def scrap_reviews(url):
+def scrap_reviews(url, min_date=None):
     driver = initialize_browser(url)
     review_links = list(set(collect_review_links(driver)))
     data = []
     for link in review_links:
-        data.append(get_review_data(driver, link))
+        review = get_review_data(driver, link, min_date)
+        if review is None:
+            continue
+            
+        data.append(review)
 
     return data
 
 def handle_reviews_data(df):
     df['rating'] = df['rating'].astype(int)
     
-    df['date'] = pd.to_datetime(df['date'], yearfirst=True)
+    # df['date'] = pd.to_datetime(df['date'], yearfirst=True)
     df['date'] = df['date'].apply(lambda x: x.timestamp())
     df = df.sort_values('date', ascending=False)
     return df
 
 def save_reviews_to_csv(reviews, filename="otzovik_reviews.csv"):
+    if not reviews:
+        print('There is no data collected from otzovik.')
+        return
+    
     df = pd.DataFrame(reviews)
     try:
         df = handle_reviews_data(df)
@@ -123,12 +139,12 @@ def save_reviews_to_csv(reviews, filename="otzovik_reviews.csv"):
 
     df.to_csv(filename, index=False, encoding='utf-8')
 
-def otzovik_parse(url, file="otzovik_reviews.csv"):
-    data = scrap_reviews(url)
+def otzovik_parse(url, min_date=None, file="otzovik_reviews.csv"):
+    data = scrap_reviews(url, min_date=min_date)
     save_reviews_to_csv(data, file)
 
 if __name__ == '__main__':
-    url = 'https://otzovik.com/reviews/sanatoriy_mriya_ukraina_evpatoriya/'
+    url = 'https://otzovik.com/reviews/sanatoriy_mriya_resort_spa_russia_yalta/'
     url2 = 'https://otzovik.com/reviews/sanatoriy_slavutich_ukraina_alushta/'
-    otzovik_parse(url)
+    otzovik_parse(url, datetime(year=2023, month=4, day=6))
     # otzovik_parse(url2, 'pages_test.csv')
