@@ -18,6 +18,10 @@ logging.basicConfig(
 
 
 class TGisParser:
+    XPATH_TO_SELECTIONS = (
+        lambda x, y: f".//*[@id='root']/div/div/div[1]/div[1]/div[3]/div/div/div[2]/div/div/div[2]/div[2]/div/div[1]/div/div/div/div/div[2]/div[2]/div[{y}]"
+    )
+
     def __init__(self, loc: str, id_tgis: int) -> None:
         self.loc = loc
         self.id_tgis = id_tgis
@@ -32,8 +36,10 @@ class TGisParser:
         try:
             logging.info(f"СОРТИРОВКА ПО '{sort_type}'")
             # Клик на первый div
-            self.__click_element(driver, By.XPATH, f".//label[@title='{sort_type}']")
-            #! TODO: данный xpath не работает
+            subdivs = driver.find_elements(By.XPATH, self.XPATH_TO_SELECTIONS(4) + "/*")
+            self.__click_element(subdivs[-1], By.XPATH, ".//li/*", sort_type)
+            #  y = 3 для получения статистики о месте
+            # Отзывы начинаются с 6-ки
 
             # # Клик на второй div
             # self.__click_element(driver, By.CLASS_NAME, 'rating-ranking-view__popup-line', 'Сначала отрицательные')
@@ -56,7 +62,7 @@ class TGisParser:
         opts = undetected_chromedriver.ChromeOptions()
         opts.add_argument("--no-sandbox")
         opts.add_argument("--disable-dev-shm-usage")
-        opts.add_argument("headless")
+        # opts.add_argument("headless") # ! Не работает с этим аргументом
         opts.add_argument("--disable-gpu")
         driver = undetected_chromedriver.Chrome(options=opts)
         parser = Parser(driver)
