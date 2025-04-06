@@ -47,6 +47,7 @@ class Parser:
             bttn.click()
             time.sleep(1)
             #! TODO: Иногда не работает.
+            # Переделать под убирание кнопки "полезно"
             self.__scroll_to_bottom(checker[-2], path)
         if elem == new_elem:
             return
