@@ -63,6 +63,14 @@ def click_element(driver, by=By.CSS_SELECTOR, value=None, find_value=None):
     except Exception:
         driver.execute_script("arguments[0].click();", element)
 
+def get_total_reviews(driver):
+    # Получение общего числа отзывов
+    total_reviews = driver.find_element(
+        By.XPATH, "//div[contains(text(), 'Отзывов:')]").text
+    total_reviews = int(total_reviews.split(': ', 1)[1].replace(' ', '')
+                        .replace('&nbsp;', '').strip())
+    return total_reviews
+
 def scroll_reviews(driver):
     last_element = driver.find_elements(
         By.CSS_SELECTOR,
@@ -155,14 +163,6 @@ def scrape_reviews(driver, max_reviews=None, sorting='relevant',
         if max_reviews is None:
             prev_element = driver.find_elements(By.CSS_SELECTOR,
                                                 "div[data-review-id] > div")[-1]
-            
-            # # Получение общего числа отзывов.
-            # # Возможно понадобится для проверки на пасинг всех отзывов со страницы
-            # total_reviews = driver.find_element(
-            #     By.XPATH, "//div[contains(text(), 'Отзывов:')]").text
-            # total_reviews = int(total_reviews.split(': ', 1)[1].replace(' ', '')
-            #                     .replace('&nbsp;', '').strip()) // 10
-            # print(total_reviews * 10)
             i = 0
             while True:
                 scroll_reviews(driver)
@@ -236,7 +236,6 @@ def scrape_reviews(driver, max_reviews=None, sorting='relevant',
             
             answer = element.find_elements(By.CSS_SELECTOR,
                                            "div:nth-child(4) > div")[-1]
-            print(answer.text)
             subtitle = answer.find_elements(
                By.CSS_SELECTOR, "div:first-child > span:first-child")
             if answer and subtitle and "Ответ владельца" in subtitle[-1].text:
