@@ -26,7 +26,7 @@ class Parser:
             logging.info("ПОЛУЧЕНИЕ СПИСКА ОТЗЫВОВ ЗАВЕРШЕНА")
             logging.debug(f"Всего элементов: {len(elements)}")
             for index, elem in enumerate(elements):
-                sub_elem = elem.find_elements(By.XPATH, ".//div")[:3]
+                user_div, photo_div, text_and_response_div = elem.find_elements(By.XPATH, "./*")[:]
                 pass
                 # reviews.append(self.__get_data_item(index, elem))
         logging.info("ОБРАБОТКА ОТЗЫВОВ ЗАВЕРШЕНА")
@@ -42,7 +42,7 @@ class Parser:
         checker = self.driver.find_elements(By.XPATH, path)
         new_elem = checker[-1]
         prb_bttn = new_elem.find_elements(By.XPATH, ".//button")
-        if len(prb_bttn) != 0:
+        if len(prb_bttn) != 0 and prb_bttn[0].text == "Загрузить ещё":
             bttn = prb_bttn[0]
             bttn.click()
             time.sleep(1)

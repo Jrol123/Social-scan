@@ -36,7 +36,7 @@ class TGisParser:
         try:
             logging.info(f"СОРТИРОВКА ПО '{sort_type}'")
             # Клик на первый div
-            subdivs = driver.find_elements(By.XPATH, self.XPATH_TO_SELECTIONS(4) + "/*")
+            subdivs = driver.find_elements(By.XPATH, self.XPATH_TO_SELECTIONS(4) + "/*")  #! Если нет "люди говорят", то будет ломаться. Надо сделать обработку
             self.__click_element(subdivs[-1], By.XPATH, ".//li/*", sort_type)
             #  y = 3 для получения статистики о месте
             # Отзывы начинаются с 6-ки
