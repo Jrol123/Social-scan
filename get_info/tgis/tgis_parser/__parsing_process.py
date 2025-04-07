@@ -45,9 +45,9 @@ class Parser:
                 )
         logging.info("ОБРАБОТКА ОТЗЫВОВ ЗАВЕРШЕНА")
 
-    def __get_user(self, div) -> list[str, int, float]:
+    def __get_user(self, div) -> tuple[str, int, int]:
         
-        def __clean_date(date_str) -> float:
+        def __clean_date(date_str) -> int:
             months = {
                         'января': 1, 'февраля': 2, 'марта': 3, 'апреля': 4,
                         'мая': 5, 'июня': 6, 'июля': 7, 'августа': 8,
@@ -69,7 +69,8 @@ class Parser:
             month = months.get(month_str.lower())
             if not month:
                 raise ValueError(f"Неизвестный месяц: {month_str}")
-            
+            #! TODO: Проверить, не нужно ли заморачиваться с временными зонами.
+            # Пока-что предполагаю, что время берётся локальное
             try:
                 dt = datetime(year, month, day)
             except ValueError as e:
@@ -77,13 +78,18 @@ class Parser:
             
             return int(dt.timestamp())
         
-        user_date, rating = div.find_elements(By.XPATH, "./div/div/*")[1:]
-        user = user_date.find_element(By.XPATH, "./span/span[1]/span").text
-        date = __clean_date(user_date.find_element(By.XPATH, "./div").text.split(",")[0])
-        
+        user_date_div, rating_div = div.find_elements(By.XPATH, "./div/div/*")[1:]
+        user: str = user_date_div.find_element(By.XPATH, "./span/span[1]/span").text
+        date: int = __clean_date(user_date_div.find_element(By.XPATH, "./div").text.split(",")[0])
+        rating: int = len(rating_div.find_elements(By.XPATH, "./div/div/span"))
+        return user, date, rating
 
-    def __get_text(self, div) -> list[str, str | None]:
-        pass
+    def __get_text(self, div) -> tuple[str, str | None]:
+        elements = div.find_elements(By.XPATH, "./div")
+        if len(elements) == 2:
+            return elements[0].text, None
+        text = elements[0].text
+        
 
     def __scroll_to_bottom(self, elem, path) -> None:
         """
@@ -101,8 +107,6 @@ class Parser:
             bttn = prb_bttn[0]
             bttn.click()
             time.sleep(1)
-            #! TODO: Иногда не работает.
-            # Переделать под убирание кнопки "полезно"
             self.__scroll_to_bottom(checker[-2], path)
         if elem == new_elem:
             return
