@@ -55,7 +55,7 @@ class Parser:
         {
             name: str
             icon_href: Union[str, None]
-            date: float
+            date: int
             text: str
             stars: float
         }
@@ -66,12 +66,12 @@ class Parser:
             logging.warning(f"{index}. Не найден блок с именем пользователя", exc_info=True)
             name = None
 
-        try:
-            icon_href = elem.find_element(By.XPATH, ".//div[@class='user-icon-view__icon']").get_attribute('style')
-            icon_href = icon_href.split('"')[1]
-        except NoSuchElementException:
-            logging.debug(f"{index}. Не найден блок с иконкой пользователя")  # При отсутствии не находится
-            icon_href = None
+        # try:
+        #     icon_href = elem.find_element(By.XPATH, ".//div[@class='user-icon-view__icon']").get_attribute('style')
+        #     icon_href = icon_href.split('"')[1]
+        # except NoSuchElementException:
+        #     logging.debug(f"{index}. Не найден блок с иконкой пользователя")  # При отсутствии не находится
+        #     icon_href = None
 
         try:
             date = elem.find_element(By.XPATH, ".//meta[@itemprop='datePublished']").get_attribute('content')
@@ -102,7 +102,7 @@ class Parser:
             answer = None
         item = Review(
             name=name,
-            icon_href=icon_href,
+            # icon_href=icon_href,
             date=ParserHelper.form_date(date),
             text=text,
             stars=stars,
