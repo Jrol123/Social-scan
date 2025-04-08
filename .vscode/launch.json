@@ -5,10 +5,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "parser-vk",
+            "name": "test-global",
             "type": "debugpy",
             "request": "launch",
-            "program": "get_info/vk/test_vk.py",
+            "program": "test.py",
             "console": "integratedTerminal"
         },
         {
