@@ -157,7 +157,7 @@ class Parser:
 
         item = Info(
             name=name,
-            count_rating=count_rating,
+            rating=count_rating,
             stars=stars
         )
         return asdict(item)
@@ -195,7 +195,7 @@ class Parser:
              company_info:{
                     name: str
                     count_rating: int
-                    stars: float
+                    rating: float
             },
             company_reviews:[
                 {
@@ -203,7 +203,7 @@ class Parser:
                   icon_href: str
                   date: timestamp
                   text: str
-                  stars: float
+                  rating: float
                 }
             ]
         }

@@ -8,12 +8,12 @@ class Review:
     # icon_href: Union[str, None]
     date: float
     text: str
-    stars: float
+    rating: float
     answer: str
 
 
 @dataclass
 class Info:
     name: str
-    count_rating: int
+    rating: int
     stars: float
