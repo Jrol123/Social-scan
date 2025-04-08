@@ -38,7 +38,7 @@ class Parser:
                     {
                         "name": user,
                         "date": date,
-                        "stars": rating,
+                        "rating": rating,
                         "text": text,
                         "answer": response,
                     }
