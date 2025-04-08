@@ -34,10 +34,10 @@ async def form_line(message, client, channel_id, channel_name):
     return {'user_id': user_id or channel_id,
             'username': username or channel_name,
             'user': user if user is not None and user != ' ' else channel_name,
-            'date': message.date,
+            'date': message.date.replace(tzinfo=None),
             'review': message.text}
 
-async def get_channel_history(channel_link, limit=100, search=None):
+async def get_channel_history(channel_link, limit=100, search=None, min_date=None):
     data = []
     try:
         channel = await client.get_entity(channel_link)
@@ -46,7 +46,7 @@ async def get_channel_history(channel_link, limit=100, search=None):
     
     channel_id = channel.id
     channel_name = channel.title
-    print(channel_link)
+    print(channel_link, end=' ')
     if limit is None:
         channel_history = [message async for message in client.iter_messages(
                            channel_link, limit=100, search=search)]
@@ -60,7 +60,11 @@ async def get_channel_history(channel_link, limit=100, search=None):
             channel_history = [message async for message in client.iter_messages(
                                channel_link, limit=100,
                                offset_date=last_date, search=search)]
-                
+            if min_date:
+                channel_history = list(filter(
+                    lambda m: m.date.replace(tzinfo=None) > min_date,
+                    channel_history))
+            
     elif limit <= 100:
         async for message in client.iter_messages(channel_link, limit=limit,
                                                   search=search):
@@ -88,17 +92,21 @@ async def get_channel_history(channel_link, limit=100, search=None):
                 if message.text:
                     data.append(await form_line(message, client,
                                                 channel_id, channel_name))
+                
+            if min_date and data and data[-1]['date'] < min_date:
+                break
     
+    print(len(data))
     return data
 
-async def parse_all_channels(channels_list="channel_list.txt", limit=100, search=None):
+async def parse_all_channels(channels_list="channel_list.txt", limit=100, search=None, min_date=None):
     if isinstance(channels_list, str):
         channels_list = open(channels_list).readlines()
         channels_list = list(map(str.strip, channels_list))
     
     data = []
     for channel in channels_list:
-        data.extend(await get_channel_history(channel, limit, search))
+        data.extend(await get_channel_history(channel, limit, search, min_date))
         time.sleep(0.5)
     
     return data
@@ -115,36 +123,32 @@ def save_reviews_to_csv(reviews, min_date=None, filename="telegram_reviews.csv")
     elif isinstance(min_date, datetime):
         df = df[df['date'] > min_date]
     
+    if df is None or df.empty:
+        print('There is no data collected from telegram.')
+        return
+    
     df['date'] = df['date'].apply(lambda x: x.timestamp())
     df = df.sort_values('date', ascending=False).reset_index(drop=True)
     df.to_csv(filename, index=False, encoding='utf-8')
 
 async def telegram_parse(channels_list="channel_list.txt", search=None, limit=100,
                          min_date=None, filename="telegram_reviews.csv"):
-    messages = await parse_all_channels(channels_list, limit, search)
+    messages = await parse_all_channels(channels_list, limit, search, min_date)
     save_reviews_to_csv(messages, min_date, filename)
     
 
 async def main():
-    await telegram_parse(limit=1000, search='МРИЯ ("Отель у моря") (Крым | Ялта) -купить', filename='mriya_messages.csv')
+    await telegram_parse(limit=500,
+                         search='МРИЯ гостиница',
+                         min_date=datetime(year=2025, month=2, day=7),
+                         filename='mriya_messages.csv')
 
 
 if __name__ == '__main__':
     with client:
         client.loop.run_until_complete(main())
     """
-    МРИЯ / 110
-    МРИЯ ("Отель у моря") (Крым | Ялта) -купить /
-    Мрия (отель | курорт | санаторий | гостиница) (Крым | Ялта) -купить /
-    Отель Мрия /
-    Отель МРИЯ (Крым | Ялта) /
-    Отель МРИЯ (Крым | Ялта) -купить /
-    Мрия курорт /
-    Санаторий МРИЯ /
-    МРИЯ гостиница /
-    МРИЯ РЕЗОРТ энд СПА /
-    Mriya Resort /
-    Mriya Resort (Крым | Ялта) -купить /
-    Mriya Resort&Spa /
-    Mriya Resort&Spa (Крым | Ялта) /
+    МРИЯ / 6
+    Отель Мрия / 1
+    Мрия курорт / 4
     """
