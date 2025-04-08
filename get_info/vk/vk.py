@@ -1,11 +1,12 @@
 import vk_api
 import time
+from ..abstract import Parser
 
 MAX_COUNT = 200
 
 
 # TODO: Сделать master_class
-class VKParser:
+class VKParser(Parser):
 
     def __init__(self, vk_token: str | tuple[str, str]):
         if isinstance(vk_token, str):
@@ -16,7 +17,7 @@ class VKParser:
         else:
             raise TypeError("vk_token must be a str or a tuple of (login, password)")
 
-    def search_feed(
+    def parse(
         self,
         q: str,
         total_count: int = 1000,
