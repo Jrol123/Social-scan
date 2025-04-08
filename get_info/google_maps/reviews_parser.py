@@ -29,6 +29,10 @@ def initialize_browser(url=None):
     return driver
 
 def clean_text(text):
+    if not text:
+        return text
+    
+    print(text)
     # Remove emojis
     text = emoji.replace_emoji(text, replace='')
     
@@ -58,6 +62,14 @@ def click_element(driver, by=By.CSS_SELECTOR, value=None, find_value=None):
         element.click()
     except Exception:
         driver.execute_script("arguments[0].click();", element)
+
+def get_total_reviews(driver):
+    # Получение общего числа отзывов
+    total_reviews = driver.find_element(
+        By.XPATH, "//div[contains(text(), 'Отзывов:')]").text
+    total_reviews = int(total_reviews.split(': ', 1)[1].replace(' ', '')
+                        .replace('&nbsp;', '').strip())
+    return total_reviews
 
 def scroll_reviews(driver):
     last_element = driver.find_elements(
@@ -130,6 +142,14 @@ def scrape_reviews(driver, max_reviews=None, sorting='relevant',
         click_element(driver, By.XPATH, "//div[contains(text(), 'Отзывы')]")
         time.sleep(1)
         
+        # Choose google reviews
+        if driver.find_elements(By.XPATH, "//div[contains(text(), 'Все отзывы')]"):
+            click_element(driver, By.XPATH, "//div[contains(text(), 'Все отзывы')]")
+            time.sleep(0.5)
+            click_element(driver, By.XPATH,
+                          f"//div[contains(text(), 'Google')]")
+            time.sleep(3)
+        
         # Choose sorting type
         if sorting != 'relevant':
             click_element(driver, By.XPATH, "//div[contains(text(), 'Самые релевантные')]")
@@ -143,14 +163,6 @@ def scrape_reviews(driver, max_reviews=None, sorting='relevant',
         if max_reviews is None:
             prev_element = driver.find_elements(By.CSS_SELECTOR,
                                                 "div[data-review-id] > div")[-1]
-            
-            # # Получение общего числа отзывов.
-            # # Возможно понадобится для проверки на пасинг всех отзывов со страницы
-            # total_reviews = driver.find_element(
-            #     By.XPATH, "//div[contains(text(), 'Отзывов:')]").text
-            # total_reviews = int(total_reviews.split(': ', 1)[1].replace(' ', '')
-            #                     .replace('&nbsp;', '').strip()) // 10
-            # print(total_reviews * 10)
             i = 0
             while True:
                 scroll_reviews(driver)
@@ -164,7 +176,7 @@ def scrape_reviews(driver, max_reviews=None, sorting='relevant',
                 time.sleep(2)
                 if prev_element == curr_element:
                     # Waiting for next reviews to load
-                    for _ in range(120):
+                    for _ in range(60):
                         time.sleep(1)
                         curr_element = driver.find_elements(
                             By.CSS_SELECTOR, "div[data-review-id] > div")[-1]
@@ -195,10 +207,16 @@ def scrape_reviews(driver, max_reviews=None, sorting='relevant',
         for element in review_elements[1::2]:
             reviewer = element.find_element(
                 By.CSS_SELECTOR, "div:nth-child(2) > div"
-                " > button[data-review-id]:first-child > div:first-child").text
+                                 " > button[data-review-id]:first-child > div:first-child").text
+            
             rating = element.find_element(
                 By.CSS_SELECTOR,
-                "div:nth-child(4) > div:first-child > span:first-child").text
+                "div:nth-child(4) > div:first-child > span:first-child")
+            if rating.get_attribute('role'):
+                rating = int(rating.get_attribute('aria-label')[0])
+            else:
+                rating = int(rating.text[0])
+            
             date = element.find_element(
                 By.CSS_SELECTOR,
                 "div:nth-child(4) > div:first-child > span:nth-child(2)").text
@@ -207,20 +225,31 @@ def scrape_reviews(driver, max_reviews=None, sorting='relevant',
             if collect_extra:
                 text_selector = "div > div > div[tabindex='-1'][id]"
             else:
-                text_selector = "div > div > div[tabindex='-1'][id]"\
+                text_selector = "div > div > div[tabindex='-1'][id]" \
                                 " > span:first-child"
-                
+            
             try:
                 review_text = element.find_element(
                     By.CSS_SELECTOR, text_selector).text
             except Exception:
                 continue
-
+            
+            answer = element.find_elements(By.CSS_SELECTOR,
+                                           "div:nth-child(4) > div")[-1]
+            subtitle = answer.find_elements(
+               By.CSS_SELECTOR, "div:first-child > span:first-child")
+            if answer and subtitle and "Ответ владельца" in subtitle[-1].text:
+                answer = answer.find_element(By.CSS_SELECTOR,
+                                             "div:nth-child(2)").text
+            else:
+                answer = None
+                
             reviews.append({
                 "user": clean_text(reviewer),
                 "rating": rating,
                 "date": date,
-                "review": clean_text(review_text)
+                "review": clean_text(review_text),
+                "answer": clean_text(answer)
             })
        
     except Exception as e:
@@ -265,7 +294,6 @@ def handle_reviews_data(df, min_date=None):
     global time_units
     
     now = datetime.now()
-    df['rating'] = df['rating'].apply(lambda x: int(x.split(' ')[0]))
     df['date'] = df['date'].str.lower().apply(lambda x: text_to_date(x, now))
     if min_date is not None:
         df = df[df['date'] > min_date]
@@ -342,5 +370,7 @@ def main():
 if __name__ == "__main__":
     # main()
     url = r"https://www.google.com/maps/place/?q=place_id:ChIJ7WjSWynClEARUUiva4PiDzI"
-    google_maps_parse(url,sorting='new', collect_extra=True,
-                      min_date=datetime(year=2024, month=4, day=6))
+    url2 = r"https://www.google.ru/maps/place/LOTTE+HOTEL+ST.+PETERSBURG/@59.9313986,30.2898216,14z/data=!4m11!3m10!1s0x469631034b662bf1:0x71def80ee9724829!5m2!4m1!1i2!8m2!3d59.931402!4d30.310422!9m1!1b1!16s%2Fg%2F11c6d_l0s2?entry=ttu&g_ep=EgoyMDI1MDQwMi4xIKXMDSoJLDEwMjExNjM5SAFQAw%3D%3D"
+    google_maps_parse(url2, sorting='new', collect_extra=True,
+                      min_date=datetime(year=2024, month=4, day=6),
+                      file='test.csv')

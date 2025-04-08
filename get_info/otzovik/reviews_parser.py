@@ -80,7 +80,7 @@ def collect_review_links(driver):
     return links
 
 
-def get_review_data(driver, url, min_date=None):
+def get_review_data(driver, url, min_date=None, official=None):
     driver.get(url)
     time.sleep(1)
     while check_captcha(driver):
@@ -102,15 +102,38 @@ def get_review_data(driver, url, min_date=None):
     review_text += "\n"
     review_text += driver.find_element(By.CSS_SELECTOR,
                                        "div.review-body.description").text
-    return {'user': user, 'rating': rating, 'date': date, 'review': review_text}
+    
+    comments = driver.find_elements(By.CSS_SELECTOR, "div#comments")
+    answer = None
+    if comments:
+        comments = comments[-1].find_elements(
+            By.CSS_SELECTOR, "div#comments-container > div > div.comment")
+        for comment in comments:
+            profile = comment.find_elements(
+                By.CSS_SELECTOR, "div > div > a.user-login")
+            if profile:
+                profile = profile[-1].get_attribute("href")
+                if profile == official:
+                    answer = comment.find_element(
+                        By.CSS_SELECTOR, "div.comment-body").text
+                    break
+    
+    return {'user': user, 'rating': rating, 'date': date,
+            'review': review_text, 'answer': answer}
 
 
 def scrap_reviews(url, min_date=None):
     driver = initialize_browser(url)
     review_links = list(set(collect_review_links(driver)))
+    
+    official = driver.find_elements(
+        By.CSS_SELECTOR, "div.otz_product_header_left > a.product-official"
+    )
+    official =  official[-1].get_attribute("href") if official else None
+    
     data = []
     for link in review_links:
-        review = get_review_data(driver, link, min_date)
+        review = get_review_data(driver, link, min_date, official)
         if review is None:
             continue
             
@@ -146,5 +169,5 @@ def otzovik_parse(url, min_date=None, file="otzovik_reviews.csv"):
 if __name__ == '__main__':
     url = 'https://otzovik.com/reviews/sanatoriy_mriya_resort_spa_russia_yalta/'
     url2 = 'https://otzovik.com/reviews/sanatoriy_slavutich_ukraina_alushta/'
-    otzovik_parse(url, datetime(year=2023, month=4, day=6))
+    otzovik_parse(url, datetime(year=2024, month=4, day=6))
     # otzovik_parse(url2, 'pages_test.csv')
