@@ -14,7 +14,8 @@ class VKParser:
             self.vk = vk_api.VkApi(*vk_token)
             # Вход по login - password. Лучше всего использовать номер телефона как логин
         else:
-            raise TypeError('vk_token must be a str or a tuple of (login, password)')
+            raise TypeError("vk_token must be a str or a tuple of (login, password)")
+
     def search_feed(
         self,
         q: str,
