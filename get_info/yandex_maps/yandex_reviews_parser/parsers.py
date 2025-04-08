@@ -5,8 +5,8 @@ from dataclasses import asdict
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 
-from yandex_reviews_parser.helpers import ParserHelper
-from yandex_reviews_parser.storage import Review, Info
+from .helpers import ParserHelper
+from .storage import Review, Info
 
 # NOTICE_LEVEL = 25
 # logging.addLevelName(NOTICE_LEVEL, "NOTICE")
