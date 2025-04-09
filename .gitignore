@@ -160,3 +160,6 @@ cython_debug/
 .idea/
 
 *.csv
+*.session
+*.session-journal
+/get_info/telegram/*.html
