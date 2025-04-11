@@ -37,7 +37,7 @@ class Parser(ABC):
             ```
             {
                 "name": 123
-                "additional_id": 123
+                "additional_id": "123"
                 "date": 1678901234
                 "rating": None
                 "text": "Отличный сервис!"
