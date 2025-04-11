@@ -27,24 +27,24 @@ class Parser(ABC):
             **Пример вывода с карт:**
             ```
             {
-                "name": "Иван Иванов"
-                "additional_id": None
-                "date": 1678901234
-                "rating": 5.0
-                "text": "Отличный сервис!"
-                "answer": "Спасибо за отзыв!"
+                "name": "Иван Иванов",
+                "additional_id": None,
+                "date": 1678901234,
+                "rating": 5.0,
+                "text": "Отличный сервис!",
+                "answer": "Спасибо за отзыв!",
             }
             ```
             
             **Пример вывода с Telegram:**
             ```
             {
-                "name": "123"
-                "additional_id": "123"
-                "date": 1678901234
-                "rating": None
-                "text": "Отличный сервис!"
-                "answer": None
+                "name": "123",
+                "additional_id": "123",
+                "date": 1678901234,
+                "rating": None,
+                "text": "Отличный сервис!",
+                "answer": None,
             }
             ```
         
