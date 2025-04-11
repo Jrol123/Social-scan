@@ -36,7 +36,7 @@ class Parser(ABC):
             **Пример вывода с Telegram:**
             ```
             {
-                "name": 123
+                "name": "123"
                 "additional_id": "123"
                 "date": 1678901234
                 "rating": None
