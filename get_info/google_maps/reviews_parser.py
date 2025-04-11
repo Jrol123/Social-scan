@@ -13,13 +13,22 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
+from get_info.abstract import Parser
 
 # Configure logging
 # logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 # logger = logging.getLogger(__name__)
 
 time_units = {'вчера': timedelta(days=1), 'день': timedelta(days=1),
-                  'дн': timedelta(days=1), 'недел': timedelta(weeks=1)}
+              'дн': timedelta(days=1), 'недел': timedelta(weeks=1)}
+
+
+class GoogleMapsParser(Parser):
+    def __init__(self):
+        ...
+    
+    def parse(self, q: str | list[str]) -> dict[str, str | int | float | None]:
+        ...
 
 
 def initialize_browser(url=None):
@@ -32,7 +41,6 @@ def clean_text(text):
     if not text:
         return text
     
-    print(text)
     # Remove emojis
     text = emoji.replace_emoji(text, replace='')
     
@@ -245,10 +253,11 @@ def scrape_reviews(driver, max_reviews=None, sorting='relevant',
                 answer = None
                 
             reviews.append({
-                "user": clean_text(reviewer),
-                "rating": rating,
+                "name": clean_text(reviewer),
+                "additional_id": None,
                 "date": date,
-                "review": clean_text(review_text),
+                "rating": rating,
+                "text": clean_text(review_text),
                 "answer": clean_text(answer)
             })
        
@@ -277,9 +286,9 @@ def text_to_date(text, now):
     if unit.startswith('год') or unit == 'лет':
         date = now.replace(year=now.year - num)
     elif unit.startswith('месяц'):
-        
         date = now.replace(year=now.year if now.month > num else now.year - 1,
-                           month=now.month - num if now.month > num else now.month - num + 12)
+                           month=now.month - num if now.month > num
+                                 else now.month - num + 12)
     else:
         for key in time_units:
             if unit.startswith(key):
@@ -300,11 +309,9 @@ def handle_reviews_data(df, min_date=None):
         if df.empty:
             print(f"There are no reviews later {min_date}")
             return None
-            
-        print(df['date'].min())
     
     df['date'] = df['date'].apply(lambda x: x.timestamp())
-    df.loc[:, 'review'] = df['review'].str.replace('\n', ' ').str.replace('\t', ' ')
+    df.loc[:, 'text'] = df['text'].str.replace('\n', ' ').str.replace('\t', ' ')
     df = df[df['rating'] <= 3]
     if not df.empty:
         return df.sort_values('date', ascending=False).reset_index(drop=True)
@@ -371,6 +378,5 @@ if __name__ == "__main__":
     # main()
     url = r"https://www.google.com/maps/place/?q=place_id:ChIJ7WjSWynClEARUUiva4PiDzI"
     url2 = r"https://www.google.ru/maps/place/LOTTE+HOTEL+ST.+PETERSBURG/@59.9313986,30.2898216,14z/data=!4m11!3m10!1s0x469631034b662bf1:0x71def80ee9724829!5m2!4m1!1i2!8m2!3d59.931402!4d30.310422!9m1!1b1!16s%2Fg%2F11c6d_l0s2?entry=ttu&g_ep=EgoyMDI1MDQwMi4xIKXMDSoJLDEwMjExNjM5SAFQAw%3D%3D"
-    google_maps_parse(url2, sorting='new', collect_extra=True,
-                      min_date=datetime(year=2024, month=4, day=6),
-                      file='test.csv')
+    google_maps_parse(url, sorting='new', collect_extra=True,
+                      min_date=datetime(year=2024, month=10, day=10))

@@ -7,6 +7,16 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
+from get_info.abstract import Parser
+
+
+class OtzovikParser(Parser):
+    def __init__(self):
+        ...
+    
+    def parse(self, q: str | list[str]) -> dict[str, str | int | float | None]:
+        ...
+
 
 def initialize_browser(url=None):
     driver = webdriver.Chrome()
@@ -118,9 +128,8 @@ def get_review_data(driver, url, min_date=None, official=None):
                         By.CSS_SELECTOR, "div.comment-body").text
                     break
     
-    return {'user': user, 'rating': rating, 'date': date,
-            'review': review_text, 'answer': answer}
-
+    return {'name': user, 'additional_id': None, 'date': date, 'rating': rating,
+            'text': review_text, 'answer': answer}
 
 def scrap_reviews(url, min_date=None):
     driver = initialize_browser(url)
@@ -169,5 +178,5 @@ def otzovik_parse(url, min_date=None, file="otzovik_reviews.csv"):
 if __name__ == '__main__':
     url = 'https://otzovik.com/reviews/sanatoriy_mriya_resort_spa_russia_yalta/'
     url2 = 'https://otzovik.com/reviews/sanatoriy_slavutich_ukraina_alushta/'
-    otzovik_parse(url, datetime(year=2024, month=4, day=6))
+    otzovik_parse(url, datetime(year=2025, month=2, day=7))
     # otzovik_parse(url2, 'pages_test.csv')

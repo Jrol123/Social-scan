@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 import pandas as pd
 from telethon import TelegramClient
 
+from get_info.abstract.base import Parser
+
 
 load_dotenv()
 
@@ -20,22 +22,27 @@ client = TelegramClient("monitoring", int(api_id), api_hash,
 client.start(phone_number, password)
 
 
-async def form_line(message, client, channel_id, channel_name):
+class TelegramParser(Parser):
+    def __init__(self):
+        ...
+    
+    def parse(self, q: str | list[str]) -> dict[str, str | int | float | None]:
+        ...
+
+
+async def form_line(message, client, channel_id):
     try:
         user = await client.get_entity(message.from_id)
         user_id = user.id
-        username = user.username
-        user = user.first_name + ' ' + user.last_name
-    except (TypeError, ValueError):
-        username = None
-        user = None
+    except (TypeError, ValueError, AttributeError):
         user_id = None
     
-    return {'user_id': user_id or channel_id,
-            'username': username or channel_name,
-            'user': user if user is not None and user != ' ' else channel_name,
+    return {'name': user_id or channel_id,
+            'additional_id': channel_id if user_id else None,
             'date': message.date.replace(tzinfo=None),
-            'review': message.text}
+            'rating': None,
+            'text': message.text,
+            'answer': None}
 
 async def get_channel_history(channel_link, limit=100, search=None, min_date=None):
     data = []
@@ -45,16 +52,15 @@ async def get_channel_history(channel_link, limit=100, search=None, min_date=Non
         return []
     
     channel_id = channel.id
-    channel_name = channel.title
     print(channel_link, end=' ')
     if limit is None:
         channel_history = [message async for message in client.iter_messages(
                            channel_link, limit=100, search=search)]
         while channel_history:
+            time.sleep(1)
             for message in channel_history:
                 if message.text:
-                    data.append(await form_line(message, client,
-                                                channel_id, channel_name))
+                    data.append(await form_line(message, client, channel_id))
             
             last_date = data[-1]['date']
             channel_history = [message async for message in client.iter_messages(
@@ -69,17 +75,16 @@ async def get_channel_history(channel_link, limit=100, search=None, min_date=Non
         async for message in client.iter_messages(channel_link, limit=limit,
                                                   search=search):
             if message.text:
-                data.append(await form_line(message, client,
-                                            channel_id, channel_name))
+                data.append(await form_line(message, client, channel_id))
     else:
         async for message in client.iter_messages(channel_link, limit=100,
                                                   search=search):
             if message.text:
-                data.append(await form_line(message, client,
-                                            channel_id, channel_name))
+                data.append(await form_line(message, client, channel_id))
         
         offset_data = None
         for i in range(100, limit, 100):
+            time.sleep(1)
             try:
                 offset_data = data[-1]['date']
             except IndexError:
@@ -90,8 +95,7 @@ async def get_channel_history(channel_link, limit=100, search=None, min_date=Non
                else abs(limit - i*100) % 100,
                offset_date=offset_data, search=search):
                 if message.text:
-                    data.append(await form_line(message, client,
-                                                channel_id, channel_name))
+                    data.append(await form_line(message, client, channel_id))
                 
             if min_date and data and data[-1]['date'] < min_date:
                 break
@@ -99,7 +103,8 @@ async def get_channel_history(channel_link, limit=100, search=None, min_date=Non
     print(len(data))
     return data
 
-async def parse_all_channels(channels_list="channel_list.txt", limit=100, search=None, min_date=None):
+async def parse_all_channels(channels_list="channel_list.txt", limit=100,
+                             search=None, min_date=None):
     if isinstance(channels_list, str):
         channels_list = open(channels_list).readlines()
         channels_list = list(map(str.strip, channels_list))
@@ -107,7 +112,7 @@ async def parse_all_channels(channels_list="channel_list.txt", limit=100, search
     data = []
     for channel in channels_list:
         data.extend(await get_channel_history(channel, limit, search, min_date))
-        time.sleep(0.5)
+        time.sleep(1)
     
     return data
 
@@ -138,9 +143,9 @@ async def telegram_parse(channels_list="channel_list.txt", search=None, limit=10
     
 
 async def main():
-    await telegram_parse(limit=500,
-                         search='МРИЯ гостиница',
-                         min_date=datetime(year=2025, month=2, day=7),
+    await telegram_parse(limit=1000,
+                         search='МРИЯ',
+                         min_date=datetime(year=2024, month=10, day=9),
                          filename='mriya_messages.csv')
 
 
