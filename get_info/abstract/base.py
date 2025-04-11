@@ -12,7 +12,7 @@ class Parser(ABC):
             ```
             {
                 "name" (str): Имя пользователя. Для Telegramm и VK хранить id пользователя.
-                "additional_id" (str): Дополнительный фильтр для уточнения сообщения (пример: канал в Telegramm).
+                "additional_id" (str | None): Дополнительный фильтр для уточнения сообщения (пример: канал в Telegramm).
                 "date" (int): Дата в формате timestamp.
                 "rating" (float | None): Рейтинг (1.0-5.0, если есть, иначе None).
                 "text" (str): Текст отзыва.
