@@ -14,8 +14,8 @@ class Parser(ABC):
             dict[str,str|int|float|None]: Словарь с данными. Структура:
             ```
             {
-                "name" (str): Имя пользователя. Для Telegramm и VK хранить id пользователя.
-                "additional_id" (str | None): Дополнительный идентификатор для уточнения сообщения (пример: канал в Telegramm).
+                "name" (str): Имя пользователя. Для Telegram и VK хранить id пользователя.
+                "additional_id" (str | None): Дополнительный идентификатор для уточнения сообщения (пример: канал в Telegram).
                 "date" (int): Дата в формате timestamp.
                 "rating" (float | None): Рейтинг (1.0-5.0, если есть, иначе None).
                 "text" (str): Текст отзыва.
