@@ -22,7 +22,7 @@ class Parser(ABC):
                 "answer" (str | None): Ответ на отзыв (если присутствует).
             }
             ```
-                
+        
         Examples:
             **Вывод с карт:**
             ```
@@ -40,7 +40,7 @@ class Parser(ABC):
             ```
             {
                 "name": "123",
-                "additional_id": "123",
+                "additional_id": "457",
                 "date": 1678901234,
                 "rating": None,
                 "text": "Отличный сервис!",
