@@ -1,153 +1,167 @@
-import pandas as pd
 import time
 from datetime import datetime
 
+import pandas as pd
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
+from get_info.abstract import Parser
 
-def initialize_browser(url=None):
-    driver = webdriver.Chrome()
-    driver.get("https://otzovik.com/" if url is None else url)
-    time.sleep(2)
-    while check_captcha(driver):
-        print('Please, enter captcha to continue parsing Otzovik')
-        time.sleep(5)
+
+class OtzovikParser(Parser):
+    def parse(
+        self,
+        q: str | list[str],
+        limit=None,
+        min_date: datetime = None
+    ) -> list[dict[str, str | int | float | None]]:
+        driver = self.__initialize_browser(q)
+        review_links = list(set(self.__collect_review_links(driver)))
+        
+        official = driver.find_elements(
+            By.CSS_SELECTOR, "div.otz_product_header_left > a.product-official"
+        )
+        official = official[-1].get_attribute("href") if official else None
+        
+        data = []
+        for link in review_links:
+            review = self.__get_review_data(driver, link, min_date, official)
+            if review is None:
+                continue
+            
+            data.append(review)
+            if limit is not None and len(data) > limit:
+                break
+        
+        return data
     
-    return driver
+    def __initialize_browser(self, url):
+        driver = webdriver.Chrome()
+        driver.get(url if url.startswith('http') else "https://otzovik.com/" + url)
+        time.sleep(2)
+        while self.__check_captcha(driver):
+            print('Please, enter captcha to continue parsing Otzovik')
+            time.sleep(5)
+        
+        return driver
 
-def check_captcha(driver):
-    return driver.find_elements(By.CSS_SELECTOR, "input[name='captcha_url']")
+    @staticmethod
+    def __check_captcha(driver):
+        return driver.find_elements(By.CSS_SELECTOR, "input[name='captcha_url']")
 
-def click_element(driver, by=By.CSS_SELECTOR, value=None, find_value=None):
-    elements = driver.find_elements(by, value)
-    if len(elements) == 0:
-        return
-    
-    for i, elem in enumerate(elements):
-        if find_value and find_value in elem.text:
-            continue
+    @staticmethod
+    def __click_element(driver, by=By.CSS_SELECTOR, value=None, find_value=None):
+        elements = driver.find_elements(by, value)
+        if len(elements) == 0:
+            return
+        
+        for i, elem in enumerate(elements):
+            if find_value and find_value in elem.text:
+                continue
+            
+            try:
+                element = WebDriverWait(driver, 10).until(
+                    EC.element_to_be_clickable(elem)
+                )
+                break
+            except Exception as e:
+                print(f"Элемент {i + 1} не кликабельный или возникла ошибка: {e}")
         
         try:
-            element = WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable(elem)
-            )
-            break
-        except Exception as e:
-            print(f"Элемент {i + 1} не кликабельный или возникла ошибка: {e}")
+            element.click()
+        except Exception:
+            driver.execute_script("arguments[0].click();", element)
     
-    try:
-        element.click()
-    except Exception:
-        driver.execute_script("arguments[0].click();", element)
-
-def collect_review_links(driver):
-    click_element(driver, value="span.tab.neg > a")
-    time.sleep(2)
-    click_element(driver, value="#reviews-sort-tools-btn")
-    time.sleep(0.5)
-    
-    # driver.find_element(By.XPATH,
-    #                     "//input[@type='radio' and @value='date_desc']")
-    sort_buttons = driver.find_elements(By.CSS_SELECTOR, "label")
-    for btn in sort_buttons:
-        if 'Сначала новые' in btn.text:
-            btn.find_element(By.CSS_SELECTOR, "span.radio").click()
-    
-    click_element(driver, value="button", find_value='Применить')
-    time.sleep(3)
-    
-    reviews = driver.find_elements(By.CSS_SELECTOR,
-                                   "a.review-btn.review-read-link")
-    links = [link.get_attribute('href') for link in reviews]
-    
-    next_page = driver.find_elements(By.CSS_SELECTOR, "div.pager > div > a.next")
-    if not driver.find_elements(By.CSS_SELECTOR, "div.pager") or not next_page:
-        return links
-    
-    while next_page:
+    def __collect_review_links(self, driver):
+        self.__click_element(driver, value="span.tab.neg > a")
+        time.sleep(2)
+        self.__click_element(driver, value="#reviews-sort-tools-btn")
+        time.sleep(0.5)
+        
+        # driver.find_element(By.XPATH,
+        #                     "//input[@type='radio' and @value='date_desc']")
+        sort_buttons = driver.find_elements(By.CSS_SELECTOR, "label")
+        for btn in sort_buttons:
+            if 'Сначала новые' in btn.text:
+                btn.find_element(By.CSS_SELECTOR, "span.radio").click()
+        
+        self.__click_element(driver, value="button", find_value='Применить')
+        time.sleep(3)
+        
         reviews = driver.find_elements(By.CSS_SELECTOR,
                                        "a.review-btn.review-read-link")
-        links.extend([link.get_attribute('href') for link in reviews])
+        links = [link.get_attribute('href') for link in reviews]
         
-        click_element(driver, value="div.pager > div > a.next")
-        time.sleep(2)
         next_page = driver.find_elements(By.CSS_SELECTOR,
                                          "div.pager > div > a.next")
+        if not driver.find_elements(By.CSS_SELECTOR, "div.pager") or not next_page:
+            return links
         
-    return links
-
-
-def get_review_data(driver, url, min_date=None, official=None):
-    driver.get(url)
-    time.sleep(1)
-    while check_captcha(driver):
-        print('Please, enter captcha to continue parsing Otzovik')
-        time.sleep(5)
-    
-    date = (driver.find_element(By.CSS_SELECTOR,
-                                "span.review-postdate.dtreviewed > abbr")
-            .get_attribute('title'))
-    date = datetime.fromisoformat(date)
-    if min_date is not None and date < min_date:
-        return None
-    
-    user = driver.find_element(By.CSS_SELECTOR,
-                               "div.login-col > a > span[itemprop='name']").text
-    rating = (driver.find_element(By.CSS_SELECTOR, "abbr.rating")
-              .get_attribute('title'))
-    review_text = driver.find_element(By.CSS_SELECTOR, "div.review-minus").text
-    review_text += "\n"
-    review_text += driver.find_element(By.CSS_SELECTOR,
-                                       "div.review-body.description").text
-    
-    comments = driver.find_elements(By.CSS_SELECTOR, "div#comments")
-    answer = None
-    if comments:
-        comments = comments[-1].find_elements(
-            By.CSS_SELECTOR, "div#comments-container > div > div.comment")
-        for comment in comments:
-            profile = comment.find_elements(
-                By.CSS_SELECTOR, "div > div > a.user-login")
-            if profile:
-                profile = profile[-1].get_attribute("href")
-                if profile == official:
-                    answer = comment.find_element(
-                        By.CSS_SELECTOR, "div.comment-body").text
-                    break
-    
-    return {'user': user, 'rating': rating, 'date': date,
-            'review': review_text, 'answer': answer}
-
-
-def scrap_reviews(url, min_date=None):
-    driver = initialize_browser(url)
-    review_links = list(set(collect_review_links(driver)))
-    
-    official = driver.find_elements(
-        By.CSS_SELECTOR, "div.otz_product_header_left > a.product-official"
-    )
-    official =  official[-1].get_attribute("href") if official else None
-    
-    data = []
-    for link in review_links:
-        review = get_review_data(driver, link, min_date, official)
-        if review is None:
-            continue
+        while next_page:
+            reviews = driver.find_elements(By.CSS_SELECTOR,
+                                           "a.review-btn.review-read-link")
+            links.extend([link.get_attribute('href') for link in reviews])
             
-        data.append(review)
-
-    return data
-
-def handle_reviews_data(df):
-    df['rating'] = df['rating'].astype(int)
+            self.__click_element(driver, value="div.pager > div > a.next")
+            time.sleep(2)
+            next_page = driver.find_elements(By.CSS_SELECTOR,
+                                             "div.pager > div > a.next")
+        
+        return links
     
-    # df['date'] = pd.to_datetime(df['date'], yearfirst=True)
-    df['date'] = df['date'].apply(lambda x: x.timestamp())
-    df = df.sort_values('date', ascending=False)
-    return df
+    def __get_review_data(self, driver, url, min_date=None, official=None):
+        driver.get(url)
+        time.sleep(1)
+        while self.__check_captcha(driver):
+            print('Please, enter captcha to continue parsing Otzovik')
+            time.sleep(5)
+        
+        date = (driver.find_element(By.CSS_SELECTOR,
+                                    "span.review-postdate.dtreviewed > abbr")
+                .get_attribute('title'))
+        date = datetime.fromisoformat(date)
+        if min_date is not None and date < min_date:
+            return None
+        
+        date = date.timestamp()
+        
+        user = driver.find_element(By.CSS_SELECTOR,
+                                   "div.login-col > a > span[itemprop='name']").text
+        rating = int(driver.find_element(By.CSS_SELECTOR, "abbr.rating")
+                     .get_attribute('title'))
+        review_text = driver.find_element(By.CSS_SELECTOR, "div.review-minus").text
+        review_text += "\n"
+        review_text += driver.find_element(By.CSS_SELECTOR,
+                                           "div.review-body.description").text
+        
+        answer = None
+        if official is not None:
+            comments = driver.find_elements(By.CSS_SELECTOR, "div#comments")
+            if comments:
+                comments = comments[-1].find_elements(
+                    By.CSS_SELECTOR, "div#comments-container > div > div.comment")
+                for comment in comments:
+                    profile = comment.find_elements(
+                        By.CSS_SELECTOR, "div > div > a.user-login")
+                    if profile:
+                        profile = profile[-1].get_attribute("href")
+                        if profile == official:
+                            answer = comment.find_element(
+                                By.CSS_SELECTOR, "div.comment-body").text
+                            break
+        
+        return {'name': user,
+                'additional_id': None,
+                'date': date,
+                'rating': rating,
+                'text': review_text,
+                'answer': answer}
+    
+    
+def handle_reviews_data(df):
+    return df.sort_values('date', ascending=False)
 
 def save_reviews_to_csv(reviews, filename="otzovik_reviews.csv"):
     if not reviews:
@@ -163,11 +177,12 @@ def save_reviews_to_csv(reviews, filename="otzovik_reviews.csv"):
     df.to_csv(filename, index=False, encoding='utf-8')
 
 def otzovik_parse(url, min_date=None, file="otzovik_reviews.csv"):
-    data = scrap_reviews(url, min_date=min_date)
+    parser = OtzovikParser()
+    data = parser.parse(url, min_date=min_date)
     save_reviews_to_csv(data, file)
 
 if __name__ == '__main__':
     url = 'https://otzovik.com/reviews/sanatoriy_mriya_resort_spa_russia_yalta/'
     url2 = 'https://otzovik.com/reviews/sanatoriy_slavutich_ukraina_alushta/'
-    otzovik_parse(url, datetime(year=2024, month=4, day=6))
+    otzovik_parse(url, datetime(year=2024, month=3, day=12))
     # otzovik_parse(url2, 'pages_test.csv')
