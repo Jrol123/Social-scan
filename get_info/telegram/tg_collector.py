@@ -36,7 +36,11 @@ class TelegramParser(Parser):
             data.extend(await self.get_channel_history(
                 channel, q, limit, min_date, wait_sec))
             time.sleep(wait_sec)
-            
+        
+        if not data:
+            print('There is no data collected from telegram.')
+            return []
+        
         return data
 
     async def get_channel_history(
@@ -102,6 +106,16 @@ class TelegramParser(Parser):
                 if min_date and data and data[-1]['date'] < min_date:
                     break
         
+        dellines = []
+        for i in range(len(data)):
+            if data[i]['date'] < min_date:
+                dellines.append(i)
+            
+            data[i]['date'] = data[i]['date'].timestamp()
+        
+        if dellines:
+            data = [data[i] for i in range(len(data)) if i not in dellines]
+        
         print(len(data))
         return data
     
@@ -120,23 +134,11 @@ class TelegramParser(Parser):
                 'answer': None}
 
 
-def save_reviews_to_csv(reviews, min_date=None, filename="telegram_reviews.csv"):
+def save_reviews_to_csv(reviews, filename="telegram_reviews.csv"):
     if not reviews:
-        print('There is no data collected from telegram.')
         return
     
     df = pd.DataFrame(reviews)
-    df['date'] = pd.to_datetime(df['date'], unit='s')
-    if isinstance(min_date, str):
-        df = df[df['date'] > datetime.strptime(min_date, "%Y-%m-%d")]
-    elif isinstance(min_date, datetime):
-        df = df[df['date'] > min_date]
-    
-    if df is None or df.empty:
-        print('There is no data collected from telegram.')
-        return
-    
-    df['date'] = df['date'].apply(lambda x: x.timestamp())
     df = df.sort_values('date', ascending=False).reset_index(drop=True)
     df.to_csv(filename, index=False, encoding='utf-8')
 
@@ -144,7 +146,7 @@ async def telegram_parse(parser: TelegramParser, channels_list="channel_list.txt
                          search=None, limit=100, min_date=None,
                          filename="telegram_reviews.csv"):
     messages = await parser.parse(search, channels_list, limit, min_date)
-    save_reviews_to_csv(messages, min_date, filename)
+    save_reviews_to_csv(messages, filename)
     
 
 def main():
@@ -161,7 +163,7 @@ def main():
             telegram_parse(parser,
                            limit=1000,
                            search='МРИЯ',
-                           min_date=datetime(year=2024, month=10, day=9),
+                           min_date=datetime(year=2024, month=10, day=12),
                            filename='mriya_messages.csv'))
 
 
