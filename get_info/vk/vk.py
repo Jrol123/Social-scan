@@ -37,7 +37,10 @@ class VKParser(Parser):
         if return_count:
             return min_count
         
-        count_items = min(min_count, count_items)
+        if count_items == -1:
+            count_items = min_count
+        else:
+            count_items = min(min_count, count_items)
 
         # TODO: Переделать print под logging
         print(f"total_count: {count_items}")
