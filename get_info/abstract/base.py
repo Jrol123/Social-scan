@@ -6,7 +6,7 @@ class Parser(ABC):
     def __init__(self, service_id: int):
         self.service_id = service_id
 
-    def __date_convert(
+    def _date_convert(
         self, date_datetime: datetime | int, final_type
     ) -> int | datetime:
         """
