@@ -16,7 +16,7 @@ class Parser(ABC):
             date_datetime (datetime | int): Время.
 
         Returns:
-            int | datetime: Время в другом формате.
+            int|datetime: Время в другом формате.
         """
         if isinstance(date_datetime, final_type):
             return date_datetime
