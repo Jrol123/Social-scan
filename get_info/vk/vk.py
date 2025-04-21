@@ -3,12 +3,14 @@ from datetime import datetime
 from time import sleep
 from ..abstract import Parser
 
+SERVICE_INDEX = 5
 MAX_COUNT = 200
 
 
 class VKParser(Parser):
 
     def __init__(self, vk_token: str | tuple[str, str]):
+        super().__init__(SERVICE_INDEX)
         if isinstance(vk_token, str):
             self.vk: vk_api.VkApi = vk_api.VkApi(token=vk_token)
         elif isinstance(vk_token, tuple):
@@ -126,7 +128,10 @@ class VKParser(Parser):
             finish_res[name] = __combinator(res1[name], res2[name])
         finish_res["items"] = res1["items"] + res2["items"]
         return finish_res
-
+    """
+    owner_id - сообщество, from_id - тот, кто публиковал от сообщества
+    """
+    # TODO: Чистить 
     def __clean_result(self, result: dict[str, list[dict[str, str | int]]]) -> None:
         def __key_clean(d: dict[str, str | list], save_keys: list[str]) -> None:
             # Получаем список ключей словаря
