@@ -29,6 +29,7 @@ class Parser(ABC):
         self,
         q: str | list[str],
         min_date: datetime | int = datetime.min,
+        max_date: datetime | int = datetime.now(),
         count_items: int = -1,
     ) -> list[dict[str, str | int | float | None]]:
         """
@@ -37,6 +38,7 @@ class Parser(ABC):
         Args:
             q (str | list[str]): Информация, необходимая для поиска объекта в сервисе.
             min_date (datetime | int): Время самого раннего сообщения в формате datetime или timestamp. Defaults to ```datetime.min```.
+            max_date (datetime | int): Время самого позднего сообщения в формате datetime или timestamp. Defaults to ```datetime.now()```.
             count_items (int): Максимальное количество возвращаемых элементов. Для получения всех используется значение -1. Defaults to -1
 
         Returns:
