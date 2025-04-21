@@ -54,7 +54,7 @@ class Parser(ABC):
             ```
             [
                 {
-                    "service_id": 0
+                    "service_id": 0,
                     "name": "Иван Иванов",
                     "additional_id": None,
                     "date": 1678901234,
@@ -70,7 +70,7 @@ class Parser(ABC):
             ```
             [
                 {
-                    "service_id": 4
+                    "service_id": 4,
                     "name": "nickname",
                     "additional_id": "457",
                     "date": 1678901234,
