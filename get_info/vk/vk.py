@@ -27,8 +27,8 @@ class VKParser(Parser):
         fields: str = "id, first_name, last_name",
         return_count: bool = False,
     ) -> dict[str, list[dict[str, str | int]]] | int:
-        min_date = self.__date_convert(min_date, int)
-        max_date = self.__date_convert(max_date, int)
+        min_date = self._date_convert(min_date, int)
+        max_date = self._date_convert(max_date, int)
         if count_items == -1:
             res = self.vk.method(
                 "newsfeed.search",
