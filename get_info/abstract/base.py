@@ -28,7 +28,7 @@ class Parser(ABC):
     def parse(
         self,
         q: str | list[str],
-        min_date: datetime | int = datetime.min,
+        min_date: datetime | int = datetime(1970, 1, 16),
         max_date: datetime | int = datetime.now(),
         count_items: int = -1,
     ) -> list[dict[str, str | int | float | None]]:
