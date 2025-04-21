@@ -24,7 +24,7 @@ class Parser(ABC):
     def parse(
         self,
         q: str | list[str],
-        oldest_date: datetime = datetime(0, 0, 0),
+        oldest_date: datetime = datetime.min,
         count_items: int = -1,
     ) -> list[dict[str, str | int | float | None]]:
         """
