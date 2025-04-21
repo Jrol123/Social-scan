@@ -28,7 +28,7 @@ class VKParser(Parser):
         max_date: int = int(datetime.now().timestamp()),
         fields: str = "id, first_name, last_name",
         return_count: bool = False,
-    ) -> dict[str, list[dict[str, str | int]]] | int:
+    ) -> list[dict[str, list[dict[str, str | int]]]] | int:
         min_date = self._date_convert(min_date, int)
         max_date = self._date_convert(max_date, int)
         if count_items == -1:
@@ -68,7 +68,8 @@ class VKParser(Parser):
                 max_date = last_date
 
         print(count_items)
-        return result
+        
+        return result["items"]
 
     def __search(
         self,
@@ -100,7 +101,7 @@ class VKParser(Parser):
             rem_count, next_result = self.__search(
                 q, total_count, result["next_from"], start_time, end_time, fields
             )
-            self.__clean_result(next_result)
+            # self.__clean_result(next_result)
             self.__clean_result(result)
 
             finish_res = self.__combine_result(result, next_result)
@@ -130,8 +131,11 @@ class VKParser(Parser):
         return finish_res
     """
     owner_id - сообщество, from_id - тот, кто публиковал от сообщества
+    
+    from_id - name
+    owner_id - additional_id
     """
-    # TODO: Чистить 
+    # TODO: Чистить
     def __clean_result(self, result: dict[str, list[dict[str, str | int]]]) -> None:
         def __key_clean(d: dict[str, str | list], save_keys: list[str]) -> None:
             # Получаем список ключей словаря
@@ -141,12 +145,12 @@ class VKParser(Parser):
                 if key not in save_keys:
                     del d[key]
 
-        def __clean(toClean_dict: list[dict[str, str]], save_keys: list[str]) -> None:
+        def __clean(toClean_dict: list[dict[str, str | list]], save_keys: list[str]) -> None:
             for d in toClean_dict:
                 __key_clean(d, save_keys)
 
         rest_keys_result = ["items", "profiles", "groups"]
-        rest_keys_items = ["id", "date", "edited", "owner_id", "text"]
+        rest_keys_items = ["date", "edited", "from_id", "owner_id", "text"]
         rest_keys_profiles = ["id", "first_name", "last_name"]
         rest_keys_groups = ["id", "name"]
 
@@ -158,3 +162,33 @@ class VKParser(Parser):
         __clean(items, rest_keys_items)
         __clean(profiles, rest_keys_profiles)
         __clean(groups, rest_keys_groups)
+
+        item_rename_keys = {"owner_id": "additional_id", "from_id": "name"}
+
+        for item in items:
+            item["from_id"] = str(item["from_id"])
+            item["owner_id"] = str(item["owner_id"])
+
+            # Если группа - оставляем owner_id, чтобы если что, то делать фильтр по группам.
+            if item["from_id"] == item["owner_id"] and item["owner_id"][0] != "-":
+                item["owner_id"] = None
+
+            item["service_id"] = self.service_id
+            item["rating"] = None
+            item["answer"] = None
+
+            for key, rename_key in item_rename_keys.items():
+                item[rename_key] = item[key]
+            for key in item_rename_keys.keys():
+                del(item[key])
+
+
+"""
+"service_id" (int): Внутренний индекс сервиса
+"name" (str): Имя пользователя. Для Telegram и VK хранить id пользователя.
+"additional_id" (str | None): Дополнительный идентификатор для уточнения сообщения (пример: канал в Telegram).
+"date" (int): Дата в формате timestamp.
+"rating" (float | None): Рейтинг (1.0-5.0, если есть, иначе None).
+"text" (str): Текст отзыва.
+"answer" (str | None): Ответ на отзыв (если присутствует).
+"""
