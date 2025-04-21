@@ -1,11 +1,11 @@
 import vk_api
-import time
+from datetime import datetime
+from time import sleep
 from ..abstract import Parser
 
 MAX_COUNT = 200
 
 
-# TODO: Сделать master_class
 class VKParser(Parser):
 
     def __init__(self, vk_token: str | tuple[str, str]):
@@ -20,47 +20,53 @@ class VKParser(Parser):
     def parse(
         self,
         q: str,
-        total_count: int = 1000,
+        count_items: int = 1000,
         start_from: str = "0",
-        start_time: int | None = 0,
-        end_time: int = int(time.time()),
+        min_date: int = int(datetime.min.timestamp()),
+        max_date: int = int(datetime.now().timestamp()),
         fields: str = "id, first_name, last_name",
-        return_count: bool = False
+        return_count: bool = False,
     ) -> dict[str, list[dict[str, str | int]]] | int:
-        if total_count == -1:
+        min_date = self.__date_convert(min_date, int)
+        max_date = self.__date_convert(max_date, int)
+
+        if count_items == -1:
             res = self.vk.method(
                 "newsfeed.search",
                 values={
                     "q": q,
                     "count": 1,
-                    "start_time": start_time,
-                    "end_time": end_time,
+                    "start_time": min_date,
+                    "end_time": max_date,
                 },
                 raw=True,
             )
-            total_count = res["response"]["total_count"]
+            count_items = res["response"]["total_count"]
             if return_count:
-                return total_count
-        print(f"total_count: {total_count}")
+                return count_items
+
+        # TODO: Переделать print под logging
+        print(f"total_count: {count_items}")
+
         result = {"items": [], "profiles": [], "groups": []}
-        while total_count != 0:
+        while count_items != 0:
             #! Как определять, когда записей действительно нет, а когда это просто ошибка/временное ограничение?
-            total_count, cur_result = self.__search(
-                q, total_count, start_from, start_time, end_time, fields
+            count_items, cur_result = self.__search(
+                q, count_items, start_from, min_date, max_date, fields
             )
             result = self.__combine_result(result, cur_result)
-            print(f"rem_count: {total_count}\tlen: {len(cur_result['items'])}")
+            print(f"rem_count: {count_items}\tlen: {len(cur_result['items'])}")
             if len(cur_result["items"]) == 0:
                 print("no data!\nretrying...")
-                time.sleep(60)  # TODO: Поэкспериментировать с задержкой
+                sleep(60)  # TODO: Поэкспериментировать с задержкой
             else:
                 if len(cur_result["items"]) == 1:
-                    pass
                     # print(cur_result)
+                    pass
                 last_date = cur_result["items"][-1]["date"]
-                end_time = last_date
+                max_date = last_date
 
-        print(total_count)
+        print(count_items)
         return result
 
     def __search(
@@ -69,7 +75,7 @@ class VKParser(Parser):
         total_count: int = 1000,
         start_from: str = "0",
         start_time: int | None = 0,
-        end_time: int = int(time.time()),
+        end_time: int = int(datetime.now().timestamp()),
         fields: str = "id, first_name, last_name",
     ) -> tuple[int, dict[str, list[dict[str, str | int]]]]:
         get_param = min(MAX_COUNT, total_count)
