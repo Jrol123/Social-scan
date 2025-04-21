@@ -32,7 +32,7 @@ class Parser(ABC):
 
         Args:
             q (str | list[str]): Информация, необходимая для поиска объекта в сервисе.
-            oldest_date (datetime): Время самого позднего сообщения в формате datetime. Defaults to ```datetime.min```.
+            oldest_date (datetime): Время самого раннего сообщения в формате datetime. Defaults to ```datetime.min```.
             count_items (int): Максимальное количество возвращаемых элементов. Для получения всех используется значение -1. Defaults to -1
 
         Returns:
