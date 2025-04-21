@@ -24,27 +24,20 @@ class VKParser(Parser):
         q: str,
         count_items: int = 1000,
         start_from: str = "0",
-        min_date: int = int(datetime(1970, 1, 16).timestamp()),
-        max_date: int = int(datetime.now().timestamp()),
+        min_date: int | datetime = int(datetime(1970, 1, 16).timestamp()),
+        max_date: int | datetime = int(datetime.now().timestamp()),
         fields: str = "id, first_name, last_name",
         return_count: bool = False,
     ) -> list[dict[str, list[dict[str, str | int]]]] | int:
         min_date = self._date_convert(min_date, int)
         max_date = self._date_convert(max_date, int)
-        if count_items == -1:
-            res = self.vk.method(
-                "newsfeed.search",
-                values={
-                    "q": q,
-                    "count": 1,
-                    "start_time": min_date,
-                    "end_time": max_date,
-                },
-                raw=True,
-            )
-            count_items = res["response"]["total_count"]
-            if return_count:
-                return count_items
+        
+        min_count = self.__get_count_items(q, min_date, max_date)
+        
+        if return_count:
+            return min_count
+        
+        count_items = min(min_count, count_items)
 
         # TODO: Переделать print под logging
         print(f"total_count: {count_items}")
@@ -110,6 +103,20 @@ class VKParser(Parser):
         self.__clean_result(result)
         return total_count, result
 
+    def __get_count_items(self, q, min_date, max_date):
+        res = self.vk.method(
+                "newsfeed.search",
+                values={
+                    "q": q,
+                    "count": 1,
+                    "start_time": min_date,
+                    "end_time": max_date,
+                },
+                raw=True,
+            )
+        count_items = res["response"]["total_count"]
+        return count_items
+
     def __combine_result(
         self, res1: dict[str, list[dict]], res2: dict[str, list[dict]]
     ) -> dict[str, list[dict]]:
@@ -150,7 +157,7 @@ class VKParser(Parser):
                 __key_clean(d, save_keys)
 
         rest_keys_result = ["items", "profiles", "groups"]
-        rest_keys_items = ["date", "edited", "from_id", "owner_id", "text"]
+        rest_keys_items = ["date", "from_id", "owner_id", "text"]
         rest_keys_profiles = ["id", "first_name", "last_name"]
         rest_keys_groups = ["id", "name"]
 
