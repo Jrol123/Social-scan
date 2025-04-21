@@ -6,25 +6,29 @@ class Parser(ABC):
     def __init__(self, service_id: int):
         self.service_id = service_id
 
-    def __date_convert(self, date_datetime: datetime) -> int:
+    def __date_convert(
+        self, date_datetime: datetime | int, final_type
+    ) -> int | datetime:
         """
-        Конвертация даты в формат timestamp.
-        
-        Требуется для некоторых парсеров
+        Конвертация даты.
 
         Args:
-            date_datetime (datetime): Время в формате datetime.
+            date_datetime (datetime | int): Время.
 
         Returns:
-            int: Время в формате timestamp.
+            int | datetime: Время в другом формате.
         """
-        return int(date_datetime.timestamp())
+        if isinstance(date_datetime, final_type):
+            return date_datetime
+        if isinstance(date_datetime, datetime):
+            return int(date_datetime.timestamp())
+        return datetime.fromtimestamp(date_datetime)
 
     @abstractmethod
     def parse(
         self,
         q: str | list[str],
-        min_date: datetime = datetime.min,
+        min_date: datetime | int = datetime.min,
         count_items: int = -1,
     ) -> list[dict[str, str | int | float | None]]:
         """
@@ -32,7 +36,7 @@ class Parser(ABC):
 
         Args:
             q (str | list[str]): Информация, необходимая для поиска объекта в сервисе.
-            min_date (datetime): Время самого раннего сообщения в формате datetime. Defaults to ```datetime.min```.
+            min_date (datetime | int): Время самого раннего сообщения в формате datetime или timestamp. Defaults to ```datetime.min```.
             count_items (int): Максимальное количество возвращаемых элементов. Для получения всех используется значение -1. Defaults to -1
 
         Returns:
