@@ -4,6 +4,7 @@ from time import sleep
 from ..abstract import Parser
 
 SERVICE_INDEX = 5
+GET_ALL_ITEMS = -1
 MAX_COUNT = 200
 
 
@@ -36,8 +37,7 @@ class VKParser(Parser):
         
         if return_count:
             return min_count
-        
-        if count_items == -1:
+        if count_items == GET_ALL_ITEMS:
             count_items = min_count
         else:
             count_items = min(min_count, count_items)
