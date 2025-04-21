@@ -22,14 +22,13 @@ class VKParser(Parser):
         q: str,
         count_items: int = 1000,
         start_from: str = "0",
-        min_date: int = int(datetime.min.timestamp()),
+        min_date: int = int(datetime(1970, 1, 16).timestamp()),
         max_date: int = int(datetime.now().timestamp()),
         fields: str = "id, first_name, last_name",
         return_count: bool = False,
     ) -> dict[str, list[dict[str, str | int]]] | int:
         min_date = self.__date_convert(min_date, int)
         max_date = self.__date_convert(max_date, int)
-
         if count_items == -1:
             res = self.vk.method(
                 "newsfeed.search",
