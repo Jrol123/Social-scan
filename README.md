@@ -30,7 +30,7 @@
 
 ### Семантический анализ
 
-[MODEL_NAME]() — REASON
+[Sbert](https://huggingface.co/sismetanin/sbert-ru-sentiment-rusentiment) — лучшие результаты на сообщениях из соц. сетей
 
 ### Кластеризация
 
