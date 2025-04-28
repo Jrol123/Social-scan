@@ -111,7 +111,7 @@ class GoogleMapsParser(Parser):
                             break
             
             self.__expand_reviews(driver)
-            
+
             # Extract reviews
             review_elements = driver.find_elements(By.CSS_SELECTOR,
                                                    "div[data-review-id] > div")
