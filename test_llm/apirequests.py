@@ -68,7 +68,7 @@ async def invoke_chute(query, model="deepseek-ai/DeepSeek-V3-0324", role="user")
                         chunk = json.loads(chunk)
                         if chunk['choices'][0]['delta']['content']:
                             output += chunk['choices'][0]['delta']['content']
-                            print(chunk['choices'][0]['delta']['content'], end='')
+                            # print(chunk['choices'][0]['delta']['content'], end='')
                     except Exception as e:
                         print(f"Error parsing chunk: {e}")
     
