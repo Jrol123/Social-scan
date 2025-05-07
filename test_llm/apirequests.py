@@ -5,6 +5,7 @@ import os
 import aiohttp
 import pandas as pd
 from dotenv import load_dotenv
+from openpyxl.styles.builtins import output
 
 load_dotenv()
 
@@ -24,9 +25,9 @@ async def invoke_chute(query, model="deepseek-ai/DeepSeek-V3-0324", role="user")
                 "role": "system",
                 "content": "Ты - опытный помощник по сокращению объёма текста "
                            "и умеешь точно выделать из него всю суть. "
-                           "Твоя задача - максимально точно передать главную "
-                           "причину недовольства пользователя использованием. "
-                           "Сокращай объём текста минимум до 128 символов. "
+                           "Твоя задача - максимально точно передать основное "
+                           "содержание отзыва пользователя. "
+                           "Сокращай объём текста минимум до 256 символов. "
                            "Соблюдай шаблон входа:\n\n"
                            "текст отзыва пользователя\n\n----\n\n"
                            "текст отзыва пользователя\n\n----\n\n"
@@ -42,7 +43,7 @@ async def invoke_chute(query, model="deepseek-ai/DeepSeek-V3-0324", role="user")
             }
         ],
         "stream": True,
-        "max_tokens": 4096,
+        "max_tokens": 16000,
         "temperature": 0.7
     }
     
@@ -65,7 +66,7 @@ async def invoke_chute(query, model="deepseek-ai/DeepSeek-V3-0324", role="user")
                             continue
                             
                         chunk = json.loads(chunk)
-                        if chunk:
+                        if chunk['choices'][0]['delta']['content']:
                             output += chunk['choices'][0]['delta']['content']
                             print(chunk['choices'][0]['delta']['content'], end='')
                     except Exception as e:
@@ -84,11 +85,19 @@ df = df.dropna(how='all')
 df['len'] = df['text'].str.len()
 df['cumlen'] = df['len'].cumsum()
 df['cumlen'] = df['cumlen'] + [6*i for i in range(len(df))]
-prompt = "\n\n----\n\n".join(df.loc[:len(df[df['cumlen'] < 32000]), 'text'])
+max_texts = len(df[df['cumlen'] < 64000])
+df = df[:max_texts]
+prompt = "\n\n----\n\n".join(df['text'])
 # print(prompt)
 
 output = asyncio.run(invoke_chute(prompt))
-df['summary'] = [s.strip() for s in output.split('----')]
-print(df['summary'])
+df['summary'] = [s.strip() for s in output.split('----')[-max_texts:]]
+for i, line in df[['text', 'summary']].iterrows():
+    print(line['text'], end="\n\n----\n\n")
+    print(line['summary'], end="\n\n----------\n\n")
+
+df = df.drop(['len', 'cumlen'], axis=1)
+df.to_csv("summarized_data.csv", index=False)
+# print(df['summary'])
 # Qwen/Qwen3-235B-A22B
 # chutesai/Llama-4-Maverick-17B-128E-Instruct-FP8
