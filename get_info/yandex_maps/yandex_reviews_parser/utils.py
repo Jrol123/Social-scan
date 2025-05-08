@@ -1,6 +1,7 @@
 import time
 import undetected_chromedriver
 from .parsers import Parser
+from ...abstract import Parser as aParser
 from selenium.webdriver.common.by import By
 
 import logging
@@ -13,16 +14,13 @@ logging.basicConfig(
 )
 
 # TODO: Добавить credits автору оригинального репозитория
-class YandexParser:
+class YandexParser(aParser):
 
-    def __init__(self, id_yandex: int):
-        """
-        @param id_yandex: ID Яндекс компании
-        """
-        self.id_yandex = id_yandex
+    def __init__(self):
+        super().__init__(1)  # TODO: Считывать из .txt
 
-    def __open_page(self):
-        url: str = 'https://yandex.ru/maps/org/{}/reviews/'.format(str(self.id_yandex))
+    def __open_page(self, id_yandex):
+        url: str = f"https://yandex.ru/maps/org/{id_yandex}/reviews/"
         opts = undetected_chromedriver.ChromeOptions()
         opts.add_argument('--no-sandbox')
         opts.add_argument('--disable-dev-shm-usage')
@@ -53,7 +51,7 @@ class YandexParser:
             # TODO: Почему-то периодически вылезает "неудалось кликнуть"
             logging.critical(f"Не удалось кликнуть на элемент: {value}", exc_info=True)
 
-    def parse(self, type_parse: str = 'default', sort_type = 'Сначала отрицательные') -> dict:
+    def parse(self, q: str, type_parse: str = 'default', sort_type = 'Сначала отрицательные') -> dict:
         """
         Функция получения данных в виде
         @param type_parse: Тип данных, принимает значения:
@@ -64,7 +62,12 @@ class YandexParser:
         """
         logging.info("ПРОЦЕСС НАЧАТ")
         result: dict = {}
-        driver, page = self.__open_page()
+        try:
+            q = int(q)
+        except:
+            logging.critical(f"Был введён неправильный вид запроса")
+            return result
+        driver, page = self.__open_page(q)
         
         time.sleep(4)  # Задержка для полной загрузки страницы
 

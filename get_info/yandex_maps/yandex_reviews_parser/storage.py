@@ -8,7 +8,7 @@ class Review:
     # icon_href: Union[str, None]
     date: float
     text: str
-    rating: float
+    stars: float
     answer: str
 
 
