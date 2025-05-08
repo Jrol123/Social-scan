@@ -11,6 +11,8 @@ from get_info.abstract import Parser
 
 
 class OtzovikParser(Parser):
+    def __init__(self):
+        super().__init__(2)
     def parse(
         self,
         q: str | list[str],
