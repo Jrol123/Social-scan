@@ -1,2 +1,2 @@
 from . import vk
-from . import yandex_maps
+from .yandex_maps import YandexParser
