@@ -203,7 +203,7 @@ class Parser:
                   icon_href: str
                   date: timestamp
                   text: str
-                  rating: float
+                  stars: float
                 }
             ]
         }
