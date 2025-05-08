@@ -21,6 +21,10 @@ from get_info.abstract import Parser
 
 
 class GoogleMapsParser(Parser):
+    def __init__(self):
+        super().__init__(0)
+        
+    
     time_units = {'вчера': timedelta(days=1), 'день': timedelta(days=1),
                   'дн': timedelta(days=1), 'недел': timedelta(weeks=1)}
     sortings = {'relevant': 'Самые релевантные',
@@ -111,7 +115,7 @@ class GoogleMapsParser(Parser):
                             break
             
             self.__expand_reviews(driver)
-            
+
             # Extract reviews
             review_elements = driver.find_elements(By.CSS_SELECTOR,
                                                    "div[data-review-id] > div")
