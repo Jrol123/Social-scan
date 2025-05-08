@@ -47,7 +47,7 @@ class Parser:
             return
         self.__scroll_to_bottom(new_elem)
 
-    def __get_data_item(self, index, elem):
+    def __get_data_item(self, index, elem, min_date, max_date):
         """
         Спарсить данные по отзыву
         :param elem: Отзыв из списка
@@ -55,7 +55,7 @@ class Parser:
         {
             name: str
             icon_href: Union[str, None]
-            date: float
+            date: int
             text: str
             stars: float
         }
@@ -66,18 +66,26 @@ class Parser:
             logging.warning(f"{index}. Не найден блок с именем пользователя", exc_info=True)
             name = None
 
-        try:
-            icon_href = elem.find_element(By.XPATH, ".//div[@class='user-icon-view__icon']").get_attribute('style')
-            icon_href = icon_href.split('"')[1]
-        except NoSuchElementException:
-            logging.debug(f"{index}. Не найден блок с иконкой пользователя")  # При отсутствии не находится
-            icon_href = None
+        # try:
+        #     icon_href = elem.find_element(By.XPATH, ".//div[@class='user-icon-view__icon']").get_attribute('style')
+        #     icon_href = icon_href.split('"')[1]
+        # except NoSuchElementException:
+        #     logging.debug(f"{index}. Не найден блок с иконкой пользователя")  # При отсутствии не находится
+        #     icon_href = None
 
         try:
             date = elem.find_element(By.XPATH, ".//meta[@itemprop='datePublished']").get_attribute('content')
         except NoSuchElementException:
             logging.warning(f"{index}. Не найден блок с датой публикации", exc_info=True)
             date = None
+        
+        date=ParserHelper.form_date(date)
+        
+        if not (date <= max_date):
+            return 1
+        
+        if not (min_date <= date):
+            return -1
 
         try:
             text = elem.find_element(By.XPATH, ".//span[@class='business-review-view__body-text']").text
@@ -102,8 +110,8 @@ class Parser:
             answer = None
         item = Review(
             name=name,
-            icon_href=icon_href,
-            date=ParserHelper.form_date(date),
+            # icon_href=icon_href,
+            date=date,
             text=text,
             stars=stars,
             answer=answer
@@ -157,12 +165,12 @@ class Parser:
 
         item = Info(
             name=name,
-            count_rating=count_rating,
+            rating=count_rating,
             stars=stars
         )
         return asdict(item)
 
-    def __get_data_reviews(self) -> list:
+    def __get_data_reviews(self, min_date, max_date, count_items) -> list:
         logging.info("НАЧАТО ПОЛУЧЕНИЕ ОТЗЫВОВ")
         reviews = []
         elements = self.driver.find_elements(By.CLASS_NAME, "business-reviews-card-view__review")
@@ -173,7 +181,14 @@ class Parser:
             logging.info("ПОЛУЧЕНИЕ СПИСКА ОТЗЫВОВ ЗАВЕРШЕНА")
             logging.debug(f"Всего элементов: {len(elements)}")
             for index, elem in enumerate(elements):
-                reviews.append(self.__get_data_item(index, elem))
+                res_parse = self.__get_data_item(index, elem, min_date, max_date)
+                if res_parse == -1:
+                    break
+                if res_parse == 1:
+                    continue
+                reviews.append(res_parse)
+                if count_items != -1 and len(reviews) == count_items:
+                    break
             logging.info("ОБРАБОТКА ОТЗЫВОВ ЗАВЕРШЕНА")
         return reviews
 
@@ -187,7 +202,7 @@ class Parser:
             logging.critical("Заголовок объекта не найден", exc_info=True)
             return False
 
-    def parse_all_data(self) -> dict:
+    def parse_all_data(self, min_date, max_date, count_items) -> dict:
         """
         Начинаем парсить данные.
         :return: Словарь данных
@@ -195,7 +210,7 @@ class Parser:
              company_info:{
                     name: str
                     count_rating: int
-                    stars: float
+                    rating: float
             },
             company_reviews:[
                 {
@@ -212,11 +227,11 @@ class Parser:
             return {'error': 'Страница не найдена'}
         data_campaign = self.__get_data_campaign()
         logging.info("ИНФОРМАЦИЯ О КОМПАНИИ ПОЛУЧЕНА УСПЕШНО")
-        data_reviews = self.__get_data_reviews()
+        data_reviews = self.__get_data_reviews(min_date, max_date, count_items)
         logging.info("ИНФОРМАЦИЯ ОБ ОТЗЫВАХ ПОЛУЧЕНА УСПЕШНО")
         return {'company_info': data_campaign, 'company_reviews': data_reviews}
 
-    def parse_reviews(self) -> dict:
+    def parse_reviews(self, min_date, max_date, count_items) -> dict:
         """
         Начинаем парсить данные только отзывы.
         :return: Массив отзывов
@@ -235,7 +250,7 @@ class Parser:
         """
         if not self.__isinstance_page():
             return {'error': 'Страница не найдена'}
-        return {'company_reviews': self.__get_data_reviews()}
+        return {'company_reviews': self.__get_data_reviews(min_date, max_date, count_items)}
 
     def parse_company_info(self) -> dict:
         """

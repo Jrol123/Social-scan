@@ -1,3 +1,3 @@
+from .yandex_maps import YandexParser
 from .vk import VKParser
-from . import yandex_maps
 from .telegram import TelegramParser
