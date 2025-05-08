@@ -1,1 +1,1 @@
-from 
+from .google_maps import GoogleMapsParser
