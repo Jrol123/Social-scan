@@ -64,7 +64,7 @@ class YandexParser(aParser):
         result: dict = {}
         try:
             q = int(q)
-        except:
+        except ValueError:
             logging.critical(f"Был введён неправильный вид запроса")
             return result
         driver, page = self.__open_page(q)
