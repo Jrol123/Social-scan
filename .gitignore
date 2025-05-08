@@ -163,3 +163,5 @@ cython_debug/
 *.session
 *.session-journal
 /get_info/telegram/*.html
+/tests/sentiment/
+test.py
