@@ -13,6 +13,8 @@ class TelegramParser(Parser):
     def __init__(self, api_id, api_hash, phone, password=None,
                  session_name="monitoring", system_version="4.16.30-vxCUSTOM",
                  app_version="1.0.1"):
+        super().__init__(3)
+        
         self.client = TelegramClient(session_name, api_id, api_hash,
                                      system_version=system_version,
                                      app_version=app_version)
