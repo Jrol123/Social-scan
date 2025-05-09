@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
+from typing import Type
 
 
 class Parser(ABC):
@@ -7,7 +8,7 @@ class Parser(ABC):
         self.service_id = service_id
 
     def _date_convert(
-        self, date_datetime: datetime | int, final_type
+        self, date_datetime: datetime | int, final_type: Type[int] | Type[datetime]
     ) -> int | datetime:
         """
         Конвертация даты.
@@ -19,6 +20,8 @@ class Parser(ABC):
         Returns:
             int|datetime: Время в другом формате.
         """
+        if final_type not in (int, datetime):
+            raise ValueError("Достыпна конвертация только в int и `datetime`")
         if isinstance(date_datetime, final_type):
             return date_datetime
         if isinstance(date_datetime, datetime):
