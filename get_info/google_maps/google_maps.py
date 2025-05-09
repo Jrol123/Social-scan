@@ -41,6 +41,7 @@ class GoogleMapsParser(Parser):
         collect_extra=False,
         wait_load=60
     ) -> list[dict[str, str | int | float | None]]:
+        # TODO: Добавить max_date
         assert sorting in self.sortings
         
         driver = self.__initialize_browser(q)
@@ -340,10 +341,10 @@ def save_reviews_to_csv(reviews, filename="google_reviews.csv"):
     df.to_csv(filename, index=False, encoding='utf-8')
     # logger.info(f"Reviews saved to {filename}")
 
-def google_maps_parse(url, max_reviews=100, sorting='increase', collect_extra=True,
+def google_maps_parse(q, count_items=100, sorting='increase', collect_extra=True,
                       min_date=None, file="google_reviews.csv"):
     parser = GoogleMapsParser()
-    reviews = parser.parse(url, max_reviews, sorting, min_date, collect_extra)
+    reviews = parser.parse(q, count_items, sorting, min_date, collect_extra)
     save_reviews_to_csv(reviews, file)
 
 
