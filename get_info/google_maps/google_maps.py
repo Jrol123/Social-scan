@@ -27,22 +27,25 @@ class GoogleMapsParser(Parser):
     
     time_units = {'вчера': timedelta(days=1), 'день': timedelta(days=1),
                   'дн': timedelta(days=1), 'недел': timedelta(weeks=1)}
-    sortings = {'relevant': 'Самые релевантные',
+    SORT_TYPES = {'relevant': 'Самые релевантные',
                 'new': 'Сначала новые',
                 'increase': 'По возрастанию рейтинга',
                 'decrease': 'По убыванию рейтинга'}
+    """
+    Возможные виды сортировок.
+    """
     
     def parse(
         self,
         q: str | list[str],
-        limit=None,
-        sorting='relevant',
+        count_items=None,
+        sort_type='relevant',
         min_date: datetime = None,
         collect_extra=False,
         wait_load=60
     ) -> list[dict[str, str | int | float | None]]:
         # TODO: Добавить max_date
-        assert sorting in self.sortings
+        assert sort_type in self.SORT_TYPES
         
         driver = self.__initialize_browser(q)
         reviews = []
@@ -67,17 +70,17 @@ class GoogleMapsParser(Parser):
                 time.sleep(3)
             
             # Choose sorting type
-            if sorting != 'relevant':
+            if sort_type != 'relevant':
                 self.__click_element(driver, By.XPATH,
                                      "//div[contains(text(), 'Самые релевантные')]")
                 time.sleep(0.5)
                 self.__click_element(driver, By.XPATH,
-                                     f"//div[contains(text(), '{self.sortings[sorting]}')]")
+                                     f"//div[contains(text(), '{self.SORT_TYPES[sort_type]}')]")
                 time.sleep(3)
             
             # Scroll to load more reviews
             # logger.info("Loading reviews...")
-            if limit is None:
+            if count_items is None:
                 prev_element = driver.find_elements(By.CSS_SELECTOR,
                                                     "div[data-review-id] > div")[-1]
                 i = 0
@@ -107,7 +110,8 @@ class GoogleMapsParser(Parser):
                     prev_element = curr_element
                     i += 1
             else:
-                for _ in range(limit // 10 - 1):
+                #! TODO: Переделать логику под `max_date`
+                for _ in range(count_items // 10 - 1):
                     self.__scroll_reviews(driver)
                     if min_date is not None:
                         curr_element = driver.find_elements(
