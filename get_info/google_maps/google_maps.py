@@ -234,7 +234,7 @@ class GoogleMapsParser(Parser):
     @staticmethod
     def __initialize_browser(url):
         opts = webdriver.ChromeOptions()
-        opts.add_argument('headless')
+        opts.add_argument('--headless')
         driver = webdriver.Chrome(options=opts)
         driver.get(url if url.startswith('https')
                    else "https://www.google.com/maps/place/" + url)
