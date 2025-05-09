@@ -29,8 +29,8 @@ class GoogleMapsParser(Parser):
                   'дн': timedelta(days=1), 'недел': timedelta(weeks=1)}
     SORT_TYPES = {'relevant': 'Самые релевантные',
                 'new': 'Сначала новые',
-                'increase': 'По возрастанию рейтинга',
-                'decrease': 'По убыванию рейтинга'}
+                'ascending': 'По возрастанию рейтинга',
+                'descending': 'По убыванию рейтинга'}
     """
     Возможные виды сортировок.
     """
@@ -345,7 +345,7 @@ def save_reviews_to_csv(reviews, filename="google_reviews.csv"):
     df.to_csv(filename, index=False, encoding='utf-8')
     # logger.info(f"Reviews saved to {filename}")
 
-def google_maps_parse(q, count_items=100, sorting='increase', collect_extra=True,
+def google_maps_parse(q, count_items=100, sorting='ascending', collect_extra=True,
                       min_date=None, file="google_reviews.csv"):
     parser = GoogleMapsParser()
     reviews = parser.parse(q, count_items, sorting, min_date, collect_extra)
