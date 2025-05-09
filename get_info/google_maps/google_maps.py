@@ -41,7 +41,7 @@ class GoogleMapsParser(Parser):
         count_items=None,
         sort_type='relevant',
         min_date: datetime = None,
-        max_date: datetime = datetime.now()
+        max_date: datetime = datetime.now(),
         collect_extra=False,
         wait_load=60
     ) -> list[dict[str, str | int | float | None]]:
