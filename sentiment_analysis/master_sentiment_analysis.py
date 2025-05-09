@@ -7,11 +7,11 @@ from transformers.models.auto.tokenization_auto import AutoTokenizer
 from transformers.models.auto.modeling_auto import AutoModelForSequenceClassification
 
 
-class __PredictionDataset(Dataset):
+class _PredictionDataset(Dataset):
     def __init__(self, texts, tokenizer, max_length):
         self.encodings = tokenizer(
             texts,
-            max_length,
+            max_length=max_length,
             truncation=True,
             padding=True,
             return_tensors="pt",
@@ -28,19 +28,28 @@ class __PredictionDataset(Dataset):
 
 
 class MasterSentimentAnalysis:
-    def __init__(self, modelPath: str, max_length: int, batch_size: int):
+    def __init__(
+        self,
+        modelPath: str,
+        max_length: int,
+        batch_size: int,
+        cache_dir: str | None = None,
+    ):
         self.DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.BATCH_SIZE = batch_size
         self.MAX_LENGTH = max_length
 
-        self.tokenizer = AutoTokenizer.from_pretrained(modelPath)
-        self.model = AutoModelForSequenceClassification.from_pretrained(modelPath).to(
-            self.DEVICE
-        )
+        self.tokenizer = AutoTokenizer.from_pretrained(modelPath, cache_dir=cache_dir)
+        self.model = AutoModelForSequenceClassification.from_pretrained(
+            modelPath, cache_dir=cache_dir
+        ).to(self.DEVICE)
 
     def predict(self, df: pd.DataFrame):
-        dataset = __PredictionDataset(
-            df["text"].tolist(), self.tokenizer, self.MAX_LENGTH
+        df["text"] = df["text"].astype(str)
+        df = df.dropna(subset=["text"])
+        texts = df["text"].apply(lambda x: str(x) if pd.notnull(x) else "").tolist()
+        dataset = _PredictionDataset(
+            texts, self.tokenizer, self.MAX_LENGTH
         )
         dataloader = DataLoader(dataset, batch_size=self.BATCH_SIZE)
 
@@ -55,7 +64,18 @@ class MasterSentimentAnalysis:
                 }
                 outputs = self.model(**inputs)
                 logits = outputs.logits
+                if self.model.config.num_labels == 3:
+                    logits[:, 1] = torch.max(logits[:, :2], dim=1)[0]
+                    logits = logits[:, 1:]
+                elif self.model.config.num_labels == 5:
+                    logits[:, 1] = torch.max(logits[:, 1:], dim=1)[0]
+                    logits = torch.column_stack([logits[:, 1], logits[:, 0]])
                 predictions.extend(torch.argmax(logits, dim=1).cpu().tolist())
+                
+        # TODO: Делать Drop для `rating`
+        # TODO: Вычлинять те, что без рейтинга
+        # TODO: Переводить рейтинг в label
+                
         rdf = df.copy()
         rdf["semLabel"] = predictions
         return rdf
