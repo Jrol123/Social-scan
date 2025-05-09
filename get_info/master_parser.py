@@ -31,7 +31,7 @@ class MasterParser:
 
         for service in self.__serviceList:
             service_name = service.__class__.__name__
-            parseParameters = self.__parseParameters[service_name]
+            parseParameters = self.__parseParameters.get(service_name, {})
 
             result = service.parse(**parseParameters, **parameters)
             final_result.extend(result)
