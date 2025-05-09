@@ -48,4 +48,4 @@ class ParserHelper:
         :return: Дата в формате Timestamp
         """
         datetime_object: datetime = datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%S.%fZ")
-        return datetime_object.timestamp()
+        return int(datetime_object.timestamp())

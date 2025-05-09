@@ -3,7 +3,7 @@ from datetime import datetime
 from time import sleep
 from ..abstract import Parser
 
-SERVICE_INDEX = 5
+SERVICE_INDEX = 3
 GET_ALL_ITEMS = -1
 MAX_COUNT = 200
 
