@@ -1,8 +1,8 @@
 import pandas as pd
-from yandex_reviews_parser.utils import YandexParser
+from yandex_reviews_parser.utils import YandexMapsParser
 
 id_ya = 1303073708  # ID Компании Yandex
-parser = YandexParser()
+parser = YandexMapsParser()
 
 all_data = parser.parse(id_ya, count_items=10)
 print(all_data)
