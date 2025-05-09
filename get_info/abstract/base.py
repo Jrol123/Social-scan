@@ -18,7 +18,7 @@ class Parser(ABC):
             final_type (datetime | int): Формат, который нужно получить.
 
         Returns:
-            int|datetime: Время в другом формате.
+            int|datetime: Время в указанном формате.
         """
         if final_type not in (int, datetime):
             raise ValueError("Достыпна конвертация только в int и `datetime`")
