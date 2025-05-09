@@ -41,15 +41,14 @@ class GoogleMapsParser(Parser):
         count_items=None,
         sort_type='relevant',
         min_date: datetime = None,
+        max_date: datetime = datetime.now()
         collect_extra=False,
         wait_load=60
     ) -> list[dict[str, str | int | float | None]]:
-        # TODO: Добавить max_date
         assert sort_type in self.SORT_TYPES
         
         driver = self.__initialize_browser(q)
         reviews = []
-        now = datetime.now()
         try:
             # Wait for the business details to load
             # time.sleep(1)
@@ -90,7 +89,7 @@ class GoogleMapsParser(Parser):
                     curr_element = driver.find_elements(
                         By.CSS_SELECTOR,"div[data-review-id] > div")[-1]
                     if min_date is not None:
-                        if self.__check_date(curr_element, min_date, now):
+                        if self.__check_date(curr_element, min_date, max_date):
                             break
                     
                     time.sleep(2)
@@ -110,13 +109,12 @@ class GoogleMapsParser(Parser):
                     prev_element = curr_element
                     i += 1
             else:
-                #! TODO: Переделать логику под `max_date`
                 for _ in range(count_items // 10 - 1):
                     self.__scroll_reviews(driver)
                     if min_date is not None:
                         curr_element = driver.find_elements(
                             By.CSS_SELECTOR, "div[data-review-id] > div")[-1]
-                        if self.__check_date(curr_element, min_date, now):
+                        if self.__check_date(curr_element, min_date, max_date):
                             break
             
             self.__expand_reviews(driver)
@@ -167,7 +165,7 @@ class GoogleMapsParser(Parser):
                     answer = None
                 
                 # Prepare data for output
-                date = self.text_to_date(date.lower(), now)
+                date = self.text_to_date(date.lower(), max_date)
                 if min_date is not None and date < min_date or rating > 3:
                     continue
                 
@@ -346,9 +344,9 @@ def save_reviews_to_csv(reviews, filename="google_reviews.csv"):
     # logger.info(f"Reviews saved to {filename}")
 
 def google_maps_parse(q, count_items=100, sorting='ascending', collect_extra=True,
-                      min_date=None, file="google_reviews.csv"):
+                      min_date=None, max_date=datetime.now(), file="google_reviews.csv"):
     parser = GoogleMapsParser()
-    reviews = parser.parse(q, count_items, sorting, min_date, collect_extra)
+    reviews = parser.parse(q, count_items, sorting, min_date, max_date, collect_extra)
     save_reviews_to_csv(reviews, file)
 
 
