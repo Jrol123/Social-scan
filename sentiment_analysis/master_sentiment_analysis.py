@@ -72,8 +72,7 @@ class MasterSentimentAnalysis:
                     logits = torch.column_stack([logits[:, 1], logits[:, 0]])
                 predictions.extend(torch.argmax(logits, dim=1).cpu().tolist())
                 
-        # TODO: Делать Drop для `rating`
-        # TODO: Вычлинять те, что без рейтинга
+        # TODO: Вычлинять те строки, что без рейтинга
         # TODO: Переводить рейтинг в label
                 
         rdf = df.copy()
