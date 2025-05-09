@@ -5,6 +5,13 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "SenAn",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "sentiment_analysis/master_sentiment_analysis.py",
+            "console": "integratedTerminal"
+        },
+        {
             "name": "test-global",
             "type": "debugpy",
             "request": "launch",
