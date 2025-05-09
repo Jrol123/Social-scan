@@ -41,7 +41,7 @@ class Parser(ABC):
             q (str | list[str]): Информация, необходимая для поиска объекта в сервисе.
             min_date (datetime | int): Время самого раннего сообщения в формате datetime или timestamp. Defaults to ```datetime.min```.
             max_date (datetime | int): Время самого позднего сообщения в формате datetime или timestamp. Defaults to ```datetime.now()```.
-            sort_type (str): Вид сортировки. Defaults to `increase`
+            sort_type (str): Вид сортировки. Defaults to `increase`.
             count_items (int): Максимальное количество возвращаемых элементов. Для получения всех используется значение -1. Defaults to -1
 
         Returns:
