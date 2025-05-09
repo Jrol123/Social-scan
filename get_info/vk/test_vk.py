@@ -4,7 +4,7 @@ from vk import VKParser
 secrets = dotenv_values()
 """Секреты"""
 vk = VKParser(secrets["VK_TOKEN"])
-zp = vk.search_feed(total_count=-1, q='Mriya Resort (Крым | Ялта) -купить')
+zp = vk.parse(count_items=-1, q='Mriya Resort (Крым | Ялта) -купить')
 print(len(zp["items"]))
 """
 МРИЯ / 342

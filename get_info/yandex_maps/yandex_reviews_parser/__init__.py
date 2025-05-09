@@ -1,1 +1,1 @@
-from .utils import YandexParser
+from .utils import YandexMapsParser

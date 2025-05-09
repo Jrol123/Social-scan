@@ -1,0 +1,7 @@
+GoogleMaps - 0
+YandexMaps - 1
+Otzovik - 2
+Vk - 3
+Tg - 4
+
+# TODO: Сделать авто-считывание id из файла (#66)

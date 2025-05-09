@@ -5,7 +5,7 @@ from typing import Union
 @dataclass
 class Review:
     name: str
-    icon_href: Union[str, None]
+    # icon_href: Union[str, None]
     date: float
     text: str
     stars: float
@@ -15,5 +15,5 @@ class Review:
 @dataclass
 class Info:
     name: str
-    count_rating: int
+    rating: int
     stars: float
