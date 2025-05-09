@@ -27,26 +27,28 @@ class GoogleMapsParser(Parser):
     
     time_units = {'вчера': timedelta(days=1), 'день': timedelta(days=1),
                   'дн': timedelta(days=1), 'недел': timedelta(weeks=1)}
-    sortings = {'relevant': 'Самые релевантные',
+    SORT_TYPES = {'relevant': 'Самые релевантные',
                 'new': 'Сначала новые',
-                'increase': 'По возрастанию рейтинга',
-                'decrease': 'По убыванию рейтинга'}
+                'ascending': 'По возрастанию рейтинга',
+                'descending': 'По убыванию рейтинга'}
+    """
+    Возможные виды сортировок.
+    """
     
     def parse(
         self,
         q: str | list[str],
-        limit=None,
-        sorting='relevant',
+        count_items=None,
+        sort_type='relevant',
         min_date: datetime = None,
+        max_date: datetime = datetime.now(),
         collect_extra=False,
         wait_load=60
     ) -> list[dict[str, str | int | float | None]]:
-        # TODO: Добавить max_date
-        assert sorting in self.sortings
+        assert sort_type in self.SORT_TYPES
         
         driver = self.__initialize_browser(q)
         reviews = []
-        now = datetime.now()
         try:
             # Wait for the business details to load
             # time.sleep(1)
@@ -67,17 +69,17 @@ class GoogleMapsParser(Parser):
                 time.sleep(3)
             
             # Choose sorting type
-            if sorting != 'relevant':
+            if sort_type != 'relevant':
                 self.__click_element(driver, By.XPATH,
                                      "//div[contains(text(), 'Самые релевантные')]")
                 time.sleep(0.5)
                 self.__click_element(driver, By.XPATH,
-                                     f"//div[contains(text(), '{self.sortings[sorting]}')]")
+                                     f"//div[contains(text(), '{self.SORT_TYPES[sort_type]}')]")
                 time.sleep(3)
             
             # Scroll to load more reviews
             # logger.info("Loading reviews...")
-            if limit is None:
+            if count_items is None:
                 prev_element = driver.find_elements(By.CSS_SELECTOR,
                                                     "div[data-review-id] > div")[-1]
                 i = 0
@@ -87,7 +89,7 @@ class GoogleMapsParser(Parser):
                     curr_element = driver.find_elements(
                         By.CSS_SELECTOR,"div[data-review-id] > div")[-1]
                     if min_date is not None:
-                        if self.__check_date(curr_element, min_date, now):
+                        if self.__check_date(curr_element, min_date, max_date):
                             break
                     
                     time.sleep(2)
@@ -107,12 +109,12 @@ class GoogleMapsParser(Parser):
                     prev_element = curr_element
                     i += 1
             else:
-                for _ in range(limit // 10 - 1):
+                for _ in range(count_items // 10 - 1):
                     self.__scroll_reviews(driver)
                     if min_date is not None:
                         curr_element = driver.find_elements(
                             By.CSS_SELECTOR, "div[data-review-id] > div")[-1]
-                        if self.__check_date(curr_element, min_date, now):
+                        if self.__check_date(curr_element, min_date, max_date):
                             break
             
             self.__expand_reviews(driver)
@@ -163,7 +165,7 @@ class GoogleMapsParser(Parser):
                     answer = None
                 
                 # Prepare data for output
-                date = self.text_to_date(date.lower(), now)
+                date = self.text_to_date(date.lower(), max_date)
                 if min_date is not None and date < min_date or rating > 3:
                     continue
                 
@@ -231,7 +233,9 @@ class GoogleMapsParser(Parser):
     
     @staticmethod
     def __initialize_browser(url):
-        driver = webdriver.Chrome()
+        opts = webdriver.ChromeOptions()
+        opts.add_argument('headless')
+        driver = webdriver.Chrome(options=opts)
         driver.get(url if url.startswith('https')
                    else "https://www.google.com/maps/place/" + url)
         # time.sleep(2)
@@ -341,10 +345,10 @@ def save_reviews_to_csv(reviews, filename="google_reviews.csv"):
     df.to_csv(filename, index=False, encoding='utf-8')
     # logger.info(f"Reviews saved to {filename}")
 
-def google_maps_parse(q, count_items=100, sorting='increase', collect_extra=True,
-                      min_date=None, file="google_reviews.csv"):
+def google_maps_parse(q, count_items=100, sorting='ascending', collect_extra=True,
+                      min_date=None, max_date=datetime.now(), file="google_reviews.csv"):
     parser = GoogleMapsParser()
-    reviews = parser.parse(q, count_items, sorting, min_date, collect_extra)
+    reviews = parser.parse(q, count_items, sorting, min_date, max_date, collect_extra)
     save_reviews_to_csv(reviews, file)
 
 
@@ -353,4 +357,4 @@ if __name__ == "__main__":
     url = r"https://www.google.com/maps/place/?q=place_id:ChIJ7WjSWynClEARUUiva4PiDzI"
     url2 = r"https://www.google.ru/maps/place/LOTTE+HOTEL+ST.+PETERSBURG/@59.9313986,30.2898216,14z/data=!4m11!3m10!1s0x469631034b662bf1:0x71def80ee9724829!5m2!4m1!1i2!8m2!3d59.931402!4d30.310422!9m1!1b1!16s%2Fg%2F11c6d_l0s2?entry=ttu&g_ep=EgoyMDI1MDQwMi4xIKXMDSoJLDEwMjExNjM5SAFQAw%3D%3D"
     google_maps_parse(url, sorting='new', collect_extra=True,
-                      min_date=datetime(year=2024, month=10, day=10))
+                      min_date=datetime(year=2024, month=1, day=1))
