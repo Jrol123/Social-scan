@@ -9,7 +9,7 @@ class MasterParser:
     def __init__(
         self,
         *services: Parser,
-        **parameters: dict[str, dict[str, str | list[str] | int]]
+        **parameters: dict[str, str | list[str] | int]
     ) -> None:
         """
         Сервисы передаются экземплярами!
