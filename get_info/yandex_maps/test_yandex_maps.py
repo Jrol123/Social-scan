@@ -1,13 +1,10 @@
 import pandas as pd
-from yandex_reviews_parser.utils import YandexParser
-id_ya = 1303073708 #ID Компании Yandex
-parser = YandexParser(id_ya)
+from yandex_reviews_parser.utils import YandexMapsParser
 
-while True:
-    # TODO: Почему-то периодически вылезает "неудалось кликнуть"
-    all_data = parser.parse() #Получаем все данные
-    if all_data.get('company_info'):
-        break
+id_ya = 1303073708  # ID Компании Yandex
+parser = YandexMapsParser()
+
+all_data = parser.parse(id_ya, count_items=10)
 print(all_data)
 # all_data
 
