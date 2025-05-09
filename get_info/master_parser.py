@@ -17,6 +17,10 @@ class MasterParser:
         Параметры должны быть вида `__class__.name__ = {"param": val}`
         """
         self.__serviceList = services
+        for service in self.__serviceList:
+            service_name = service.__class__.__name__
+            if service_name not in parameters:
+                print(f"Нет параметров для сервиса '{service_name}'.")
         self.__parseParameters = parameters
 
     def parse(self, **parameters) -> list[dict[str, str | int | float | None]]:
@@ -24,10 +28,12 @@ class MasterParser:
         Параметры такие же, как и в parse у Parser
         """
         final_result = []
+
         for service in self.__serviceList:
-            parseParameters = self.__parseParameters[service.__class__.__name__]
-            result = service.parse(
-                **parseParameters, **parameters
-            )
+            service_name = service.__class__.__name__
+            parseParameters = self.__parseParameters[service_name]
+
+            result = service.parse(**parseParameters, **parameters)
             final_result.extend(result)
+
         return final_result
