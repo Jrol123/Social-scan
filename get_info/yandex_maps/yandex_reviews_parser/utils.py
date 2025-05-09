@@ -15,7 +15,7 @@ logging.basicConfig(
 )
 
 # TODO: Добавить credits автору оригинального репозитория
-class YandexParser(aParser):
+class YandexMapsParser(aParser):
 
     def __init__(self):
         super().__init__(1)  # TODO: Считывать из .txt
