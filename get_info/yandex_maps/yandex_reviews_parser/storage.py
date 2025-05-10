@@ -7,7 +7,7 @@ class Review:
     service_id: int
     name: str
     # icon_href: Union[str, None]
-    additional_info: str | None
+    additional_id: str | None
     date: float
     text: str
     rating: float
