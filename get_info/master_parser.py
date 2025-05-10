@@ -1,7 +1,6 @@
 """
 Пайплайн парсинга.
 """
-import asyncio
 
 from .abstract import Parser
 
@@ -20,6 +19,10 @@ class MasterParser:
         self.__serviceList = services
         for service in self.__serviceList:
             service_name = service.__class__.__name__
+            if service_name == "TelegramParser":
+                #77
+                parameters.pop(service_name)
+                continue
             if service_name not in parameters:
                 print(f"Нет параметров для сервиса '{service_name}'.")
         self.__parseParameters = parameters
@@ -34,10 +37,7 @@ class MasterParser:
             service_name = service.__class__.__name__
             parseParameters = self.__parseParameters.get(service_name, {})
 
-            try:
-                result = service.parse(**parseParameters, **parameters)
-                final_result.extend(result)
-            except TypeError:
-                raise Warning(service_name + " may be asynchronous, so it skips.")
+            result = service.parse(**parseParameters, **parameters)
+            final_result.extend(result)
 
         return final_result
