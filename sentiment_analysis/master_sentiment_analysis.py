@@ -6,7 +6,7 @@ from torch.utils.data import Dataset, DataLoader
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 from transformers.models.auto.modeling_auto import AutoModelForSequenceClassification
 
-AVAIABLE_LABLE_SCHEME = ["binary", "3class"]
+AVAIABLE_LABLE_SCHEME = ["binary", "ternary"]
 
 
 class _PredictionDataset(Dataset):
@@ -35,7 +35,7 @@ class MasterSentimentAnalysis:
         modelPath: str,
         max_length: int,
         batch_size: int,
-        label_scheme: str = "3class",
+        label_scheme: str = "ternary",
         cache_dir: str | None = None,
     ):
         """
@@ -45,10 +45,10 @@ class MasterSentimentAnalysis:
             modelPath (str): _description_
             max_length (int): _description_
             batch_size (int): _description_
-            label_scheme (str, optional): Количество меток. Defaults to "3class".
+            label_scheme (str, optional): Количество меток. Defaults to "ternary".
                 ```
                 'binary' -> 0: не-негатив, 1: негатив
-                '3class' -> 0: нейтрал, 1: позитив, 2: негатив
+                'ternary' -> 0: нейтрал, 1: позитив, 2: негатив
                 ```
             cache_dir (str | None, optional): _description_. Defaults to None.
         """
@@ -110,7 +110,7 @@ class MasterSentimentAnalysis:
         Параметры:
         label_scheme:
             'binary' -> 0: не-негатив, 1: негатив
-            '3class' -> 0: нейтрал, 1: позитив, 2: негатив
+            'ternary' -> 0: нейтрал, 1: позитив, 2: негатив
         """
         assert num_labels in [
             3,
@@ -124,22 +124,23 @@ class MasterSentimentAnalysis:
                 other_logits = torch.max(logits[:, :2], dim=1)[0]
                 return torch.stack([other_logits, neg_logits], dim=1)
 
-            elif label_scheme == "3class":
+            elif label_scheme == "ternary":
                 # Оставляем оригинальные классы
                 return logits
 
         elif num_labels == 5:
-            # Предполагаем порядок классов: 0:negative, 1:neutral, 2:positive, 3:skip, 4:speech
+            # Классы: 0:negative, 1:neutral, 2:positive, 3:skip, 4:speech
             if label_scheme == "binary":
-                # Объединяем все кроме negative (0) в класс 0
-                neg_logits = logits[:, 0]
-                other_logits = torch.max(logits[:, 1:], dim=1)[0]
-                return torch.stack([other_logits, neg_logits], dim=1)
+                # 0: нейтрал (1) + позитив (2) + skip (3) + speech (4)
+                # 1: негатив (0)
+                non_negative = torch.max(logits[:, [1, 2, 3, 4]], dim=1)[0]
+                return torch.stack([non_negative, logits[:, 0]], dim=1)
 
-            elif label_scheme == "3class":
-                # 0:нейтрал (1), 1:позитив (2), 2:негатив (0)
-                # Игнорируем skip (3) и speech (4)
-                neutral = logits[:, 1]
+            elif label_scheme == "ternary":
+                # 0: нейтрал (max из 1,3,4)
+                # 1: позитив (2)
+                # 2: негатив (0)
+                neutral = torch.max(logits[:, [1, 3, 4]], dim=1)[0]
                 positive = logits[:, 2]
                 negative = logits[:, 0]
                 return torch.stack([neutral, positive, negative], dim=1)
