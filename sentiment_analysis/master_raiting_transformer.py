@@ -43,7 +43,9 @@ class MasterRaitingTransformer:
         self.is_bad_soft = is_bad_soft
         self.is_good_soft = is_good_soft
 
-        self.label_scheme = limit_bad == limit_good and any([is_bad_soft, is_good_soft])
+        self.label_scheme = not (
+            limit_bad == limit_good and any([is_bad_soft, is_good_soft])
+        )
         """
         True - бинарная, False - тернарная
         """
@@ -64,22 +66,29 @@ class MasterRaitingTransformer:
 
         rdf = df.copy()
 
+        fin_ratings = []
+        labels = []
+
         for id in SERVICE_DICT.values():
             ratings = rdf[rdf["service_id"] == id]["rating"].tolist()
-            labels = []
 
             scale = self.service_params.get(id, None)
 
             if scale == self.default_range or scale == None:
+                fin_ratings.extend(ratings)
                 continue
 
             for index, rating in enumerate(ratings):
                 ratings[index] = self.__scale(rating, scale, self.default_range)
 
-            for rating in ratings:
-                labels.append(self.__labeler(rating, self.label_scheme))
+            fin_ratings.extend(ratings)
 
-            rdf[rdf["service_id"] == id]["label"] = rating
+        for rating in fin_ratings:
+            labels.append(self.__labeler(rating))
+
+        rdf["label"] = labels
+
+        return rdf
 
     def __labeler(self, rating) -> int:
         if (rating < self.limit_bad) or (self.is_bad_soft and rating <= self.limit_bad):
