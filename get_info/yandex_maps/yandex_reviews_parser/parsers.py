@@ -111,6 +111,7 @@ class Parser:
         item = Review(
             name=name,
             # icon_href=icon_href,
+            additional_info=None,
             date=date,
             text=text,
             stars=stars,
