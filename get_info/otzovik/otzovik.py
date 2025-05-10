@@ -155,7 +155,8 @@ class OtzovikParser(Parser):
                                 By.CSS_SELECTOR, "div.comment-body").text
                             break
         
-        return {'name': user,
+        return {'service_id': self.service_id,
+                'name': user,
                 'additional_id': None,
                 'date': date,
                 'rating': rating,
