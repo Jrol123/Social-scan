@@ -70,7 +70,6 @@ class MasterSentimentAnalysis:
 
         Args:
             df (pd.DataFrame): df. Должен быть ТОЛЬКО С сообщениями без рейтинга.
-            count_labels (int): Количество меток. Может быть 2 или 3.
 
         Returns:
             pd.DataFrame: _description_
