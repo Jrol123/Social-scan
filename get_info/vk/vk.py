@@ -103,7 +103,6 @@ class VKParser(Parser):
             finish_res = self.__combine_result(result, next_result)
 
             return rem_count, finish_res
-        
         self.__clean_result(result)
         return total_count, result
 

@@ -26,9 +26,8 @@ logging.basicConfig(
 )
 
 class Parser:
-    def __init__(self, driver, service_id):
+    def __init__(self, driver):
         self.driver = driver
-        self.service_id = service_id
 
     def __scroll_to_bottom(self, elem) -> None:
         """
@@ -58,7 +57,7 @@ class Parser:
             icon_href: Union[str, None]
             date: int
             text: str
-            rating: float
+            stars: float
         }
         """
         try:
@@ -94,10 +93,10 @@ class Parser:
             logging.warning(f"{index}. Не найден блок с текстом отзыва", exc_info=True)
             text = None
         try:
-            rating = elem.find_element(By.XPATH, ".//meta[@itemprop='ratingValue']").get_attribute('content')
+            stars = elem.find_element(By.XPATH, ".//meta[@itemprop='ratingValue']").get_attribute('content')
         except NoSuchElementException:
             logging.warning(f"{index}. Не найден блок с оценкой", exc_info=True)
-            rating = 0
+            stars = 0
 
         try:
             answer = elem.find_element(By.CLASS_NAME, "business-review-view__comment-expand")
@@ -110,12 +109,11 @@ class Parser:
             logging.debug(f"{index}. Не найден блок с ответом объекта")  # При отсутствии не находится
             answer = None
         item = Review(
-            service_id=self.service_id,
             name=name,
             # icon_href=icon_href,
             date=date,
             text=text,
-            rating=rating,
+            stars=stars,
             answer=answer
         )
         return asdict(item)
@@ -220,7 +218,7 @@ class Parser:
                   icon_href: str
                   date: timestamp
                   text: str
-                  rating: float
+                  stars: float
                 }
             ]
         }

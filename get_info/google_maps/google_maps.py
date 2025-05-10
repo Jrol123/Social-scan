@@ -5,8 +5,8 @@ from datetime import datetime, timedelta
 
 import emoji
 import pandas as pd
-import undetected_chromedriver
-# from selenium import webdriver
+# import undetected_chromedriver
+from selenium import webdriver
 # from selenium.webdriver.chrome.options import Options
 # from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -28,9 +28,9 @@ class GoogleMapsParser(Parser):
     time_units = {'вчера': timedelta(days=1), 'день': timedelta(days=1),
                   'дн': timedelta(days=1), 'недел': timedelta(weeks=1)}
     SORT_TYPES = {'relevant': 'Самые релевантные',
-                  'new': 'Сначала новые',
-                  'ascending': 'По возрастанию рейтинга',
-                  'descending': 'По убыванию рейтинга'}
+                'new': 'Сначала новые',
+                'ascending': 'По возрастанию рейтинга',
+                'descending': 'По убыванию рейтинга'}
     """
     Возможные виды сортировок.
     """
@@ -51,7 +51,7 @@ class GoogleMapsParser(Parser):
         reviews = []
         try:
             # Wait for the business details to load
-            time.sleep(3)
+            # time.sleep(1)
             
             # # Locate and click the reviews section
             # # logger.info("Searching for reviews section")
@@ -79,16 +79,9 @@ class GoogleMapsParser(Parser):
             
             # Scroll to load more reviews
             # logger.info("Loading reviews...")
-            time.sleep(30)
             if count_items is None:
-                try:
-                    prev_element = driver.find_elements(By.CSS_SELECTOR,
-                                                        "div[data-review-id] > div")[-1]
-                except IndexError:
-                    print(driver.find_elements(By.CSS_SELECTOR,
-                                                        "div[data-review-id] > div"))
-                    raise
-                    
+                prev_element = driver.find_elements(By.CSS_SELECTOR,
+                                                    "div[data-review-id] > div")[-1]
                 i = 0
                 while True:
                     self.__scroll_reviews(driver)
@@ -182,7 +175,6 @@ class GoogleMapsParser(Parser):
                     answer = answer.replace('\n', ' ').replace('\t', ' ')
                 
                 reviews.append({
-                    "service_id": self.service_id,
                     "name": self.__clean_text(reviewer),
                     "additional_id": None,
                     "date": date,
@@ -241,13 +233,9 @@ class GoogleMapsParser(Parser):
     
     @staticmethod
     def __initialize_browser(url):
-        # driver = webdriver.Chrome()
-        opts = undetected_chromedriver.ChromeOptions()
-        opts.add_argument('--no-sandbox')
-        opts.add_argument('--disable-dev-shm-usage')
-        opts.add_argument('headless')
-        opts.add_argument('--disable-gpu')
-        driver = undetected_chromedriver.Chrome(options=opts)
+        opts = webdriver.ChromeOptions()
+        opts.add_argument('--headless')
+        driver = webdriver.Chrome(options=opts)
         driver.get(url if url.startswith('https')
                    else "https://www.google.com/maps/place/" + url)
         # time.sleep(2)

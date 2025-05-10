@@ -1,10 +1,10 @@
 from dotenv import dotenv_values
-from .vk import VKParser
+from vk import VKParser
 
 secrets = dotenv_values()
 """Секреты"""
 vk = VKParser(secrets["VK_TOKEN"])
-zp = vk.parse(count_items=10, q='Mriya Resort (Крым | Ялта) -купить')
+zp = vk.parse(count_items=-1, q='Mriya Resort (Крым | Ялта) -купить')
 print(len(zp["items"]))
 """
 МРИЯ / 342

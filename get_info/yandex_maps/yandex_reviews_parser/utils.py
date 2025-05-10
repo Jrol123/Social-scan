@@ -28,7 +28,7 @@ class YandexMapsParser(aParser):
         opts.add_argument('headless')
         opts.add_argument('--disable-gpu')
         driver = undetected_chromedriver.Chrome(options=opts)
-        parser = Parser(driver, self.service_id)
+        parser = Parser(driver)
         driver.get(url)
         return driver, parser
 
@@ -82,7 +82,7 @@ class YandexMapsParser(aParser):
             self.__click_element(driver, By.CLASS_NAME, 'rating-ranking-view')
 
             # Клик на второй div
-            self.__click_element(driver, By.CLASS_NAME, 'rating-ranking-view__popup-line', sort_type)
+            self.__click_element(driver, By.CLASS_NAME, 'rating-ranking-view__popup-line', 'Сначала отрицательные')
             
             logging.info("СОРТИРОВКА УСПЕШНА")
             
