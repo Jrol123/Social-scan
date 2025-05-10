@@ -1,12 +1,12 @@
 import os
 import time
 from datetime import datetime
-from dotenv import load_dotenv
 
 import pandas as pd
+from dotenv import load_dotenv
 from telethon import TelegramClient
 
-from get_info.abstract.base import Parser
+from get_info.abstract import Parser
 
 
 class TelegramParser(Parser):
@@ -24,8 +24,8 @@ class TelegramParser(Parser):
         self,
         q: str | list[str] = None,
         channels_list="channel_list.txt",
-        limit=100,
-        min_date=None,
+        limit: int | None = 100,
+        min_date: datetime | int | None = None,
         wait_sec=1
     ) -> list[dict[str, str | int | float | None]]:
         
@@ -46,7 +46,12 @@ class TelegramParser(Parser):
         return data
 
     async def get_channel_history(
-        self, channel_link, q=None, limit=100, min_date=None, wait_sec=1
+        self,
+        channel_link,
+        q=None,
+        limit: int | None = 100,
+        min_date: datetime | int | None = None,
+        wait_sec=1
     ):
         data = []
         try:
@@ -55,7 +60,7 @@ class TelegramParser(Parser):
             return []
         
         channel_id = channel.id
-        print(channel_link, end=' ')
+        print(channel_link)
         if limit is None:
             channel_history = [
                 message async for message in self.client.iter_messages(
@@ -72,7 +77,7 @@ class TelegramParser(Parser):
                     message async for message in self.client.iter_messages(
                         channel_link, limit=100, offset_date=last_date, search=q)
                 ]
-                if min_date:
+                if min_date is not None:
                     channel_history = list(filter(
                         lambda m: m.date.replace(tzinfo=None) > min_date,
                         channel_history))
@@ -105,30 +110,35 @@ class TelegramParser(Parser):
                     if message.text:
                         data.append(await self.__form_line(message, channel_id))
                     
-                if min_date and data and data[-1]['date'] < min_date:
+                if min_date is not None and data and data[-1]['date'] < min_date:
                     break
         
-        dellines = []
-        for i in range(len(data)):
-            if data[i]['date'] < min_date:
-                dellines.append(i)
+        if min_date is not None:
+            dellines = []
+            for i in range(len(data)):
+                if data[i]['date'] < min_date:
+                    dellines.append(i)
+                
+                data[i]['date'] = data[i]['date'].timestamp()
             
-            data[i]['date'] = data[i]['date'].timestamp()
+            if dellines:
+                data = [data[i] for i in range(len(data)) if i not in dellines]
+        else:
+            data = [data[i]['date'].timestamp() for i in range(len(data))]
         
-        if dellines:
-            data = [data[i] for i in range(len(data)) if i not in dellines]
-        
-        print(len(data))
+        # print(len(data))
         return data
     
     async def __form_line(self, message, channel_id):
         try:
+            # TODO: оптимизировать получение объекта пользователя путём кэширования
             user = await self.client.get_entity(message.from_id)
             user_id = user.id
         except (TypeError, ValueError, AttributeError):
             user_id = None
         
-        return {'name': user_id or channel_id,
+        return {'service_id': self.service_id,
+                'name': user_id or channel_id,
                 'additional_id': channel_id if user_id else None,
                 'date': message.date.replace(tzinfo=None),
                 'rating': None,
