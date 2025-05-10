@@ -4,7 +4,7 @@ from torch.utils.data import Dataset, DataLoader
 from transformers.models.auto.modeling_auto import AutoModelForSequenceClassification
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 
-AVAIABLE_LABLE_SCHEME = ["binary", "ternary"]
+AVAILABLE_LABEL_SCHEME = ["binary", "ternary"]
 
 
 class _PredictionDataset(Dataset):
