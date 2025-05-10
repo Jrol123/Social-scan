@@ -65,7 +65,7 @@ class MasterRaitingTransformer:
         rdf = df.copy()
 
         for id in SERVICE_DICT.values():
-            ratings = df["service_id" == id]["rating"].tolist()
+            ratings = rdf[rdf["service_id"] == id]["rating"].tolist()
             labels = []
 
             scale = self.service_params.get(id, None)
@@ -79,7 +79,7 @@ class MasterRaitingTransformer:
             for rating in ratings:
                 labels.append(self.__labeler(rating, self.label_scheme))
 
-            rdf["service_id" == id]["label"] = rating
+            rdf[rdf["service_id"] == id]["label"] = rating
 
     def __labeler(self, rating) -> int:
         if (rating < self.limit_bad) or (self.is_bad_soft and rating <= self.limit_bad):
