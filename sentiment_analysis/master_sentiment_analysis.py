@@ -51,8 +51,8 @@ class MasterSentimentAnalysis:
             cache_dir (str | None, optional): _description_. Defaults to None.
         """
         assert (
-            label_scheme in AVAIABLE_LABLE_SCHEME
-        ), f"Неправильная схема меток! Получено: {label_scheme}. Доступные: {AVAIABLE_LABLE_SCHEME}"
+            label_scheme in AVAILABLE_LABEL_SCHEME
+        ), f"Неправильная схема меток! Получено: {label_scheme}. Доступные: {AVAILABLE_LABEL_SCHEME}"
         self.DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.BATCH_SIZE = batch_size
         self.MAX_LENGTH = max_length
