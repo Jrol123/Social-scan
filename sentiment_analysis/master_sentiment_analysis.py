@@ -6,6 +6,8 @@ from torch.utils.data import Dataset, DataLoader
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 from transformers.models.auto.modeling_auto import AutoModelForSequenceClassification
 
+AVAIABLE_LABLE_SCHEME = ["binary", "3class"]
+
 
 class _PredictionDataset(Dataset):
     def __init__(self, texts, tokenizer, max_length):
@@ -33,24 +35,50 @@ class MasterSentimentAnalysis:
         modelPath: str,
         max_length: int,
         batch_size: int,
+        label_scheme: str = "3class",
         cache_dir: str | None = None,
     ):
+        """
+        Класс для семантического анализа сообщений.
+
+        Args:
+            modelPath (str): _description_
+            max_length (int): _description_
+            batch_size (int): _description_
+            label_scheme (str, optional): Количество меток. Defaults to "3class".
+                ```
+                'binary' -> 0: не-негатив, 1: негатив
+                '3class' -> 0: нейтрал, 1: позитив, 2: негатив
+                ```
+            cache_dir (str | None, optional): _description_. Defaults to None.
+        """
+        assert (
+            label_scheme in AVAIABLE_LABLE_SCHEME
+        ), f"Неправильная схема меток! Получено: {label_scheme}. Доступные: {AVAIABLE_LABLE_SCHEME}"
         self.DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.BATCH_SIZE = batch_size
         self.MAX_LENGTH = max_length
+
+        self.label_scheme = label_scheme
 
         self.tokenizer = AutoTokenizer.from_pretrained(modelPath, cache_dir=cache_dir)
         self.model = AutoModelForSequenceClassification.from_pretrained(
             modelPath, cache_dir=cache_dir
         ).to(self.DEVICE)
 
-    def predict(self, df: pd.DataFrame):
-        df["text"] = df["text"].astype(str)
-        df = df.dropna(subset=["text"])
+    def predict(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Предсказание label-ов
+
+        Args:
+            df (pd.DataFrame): df. Должен быть ТОЛЬКО С сообщениями без рейтинга.
+            count_labels (int): Количество меток. Может быть 2 или 3.
+
+        Returns:
+            pd.DataFrame: _description_
+        """
         texts = df["text"].apply(lambda x: str(x) if pd.notnull(x) else "").tolist()
-        dataset = _PredictionDataset(
-            texts, self.tokenizer, self.MAX_LENGTH
-        )
+        dataset = _PredictionDataset(texts, self.tokenizer, self.MAX_LENGTH)
         dataloader = DataLoader(dataset, batch_size=self.BATCH_SIZE)
 
         self.model.eval()
@@ -64,20 +92,59 @@ class MasterSentimentAnalysis:
                 }
                 outputs = self.model(**inputs)
                 logits = outputs.logits
-                if self.model.config.num_labels == 3:
-                    logits[:, 1] = torch.max(logits[:, :2], dim=1)[0]
-                    logits = logits[:, 1:]
-                elif self.model.config.num_labels == 5:
-                    logits[:, 1] = torch.max(logits[:, 1:], dim=1)[0]
-                    logits = torch.column_stack([logits[:, 1], logits[:, 0]])
+
+                logits = self.__adjust_logits(
+                    logits, self.model.config.num_labels, self.label_scheme
+                )
                 predictions.extend(torch.argmax(logits, dim=1).cpu().tolist())
-                
+
         # TODO: Вычлинять те строки, что без рейтинга
         # TODO: Переводить рейтинг в label
-                
+
         rdf = df.copy()
-        rdf["semLabel"] = predictions
+        rdf["label"] = predictions
         return rdf
+
+    def __adjust_logits(self, logits, num_labels, label_scheme):
+        """
+        Параметры:
+        label_scheme:
+            'binary' -> 0: не-негатив, 1: негатив
+            '3class' -> 0: нейтрал, 1: позитив, 2: негатив
+        """
+        assert num_labels in [
+            3,
+            5,
+        ], f"Неподдерживаемое число меток. Полученное: {num_labels} Доступное: {[3, 5]}"
+        if num_labels == 3:
+            if label_scheme == "binary":
+                # Объединяем нейтрал (0) и позитив (1) в класс 0
+                # Негатив (2) остается классом 1
+                neg_logits = logits[:, 2]
+                other_logits = torch.max(logits[:, :2], dim=1)[0]
+                return torch.stack([other_logits, neg_logits], dim=1)
+
+            elif label_scheme == "3class":
+                # Оставляем оригинальные классы
+                return logits
+
+        elif num_labels == 5:
+            # Предполагаем порядок классов: 0:negative, 1:neutral, 2:positive, 3:skip, 4:speech
+            if label_scheme == "binary":
+                # Объединяем все кроме negative (0) в класс 0
+                neg_logits = logits[:, 0]
+                other_logits = torch.max(logits[:, 1:], dim=1)[0]
+                return torch.stack([other_logits, neg_logits], dim=1)
+
+            elif label_scheme == "3class":
+                # 0:нейтрал (1), 1:позитив (2), 2:негатив (0)
+                # Игнорируем skip (3) и speech (4)
+                neutral = logits[:, 1]
+                positive = logits[:, 2]
+                negative = logits[:, 0]
+                return torch.stack([neutral, positive, negative], dim=1)
+
+        return logits
 
 
 # "sismetanin/mbart_ru_sum_gazeta-ru-sentiment-rusentiment"
