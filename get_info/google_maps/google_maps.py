@@ -38,7 +38,7 @@ class GoogleMapsParser(Parser):
     def parse(
         self,
         q: str | list[str],
-        count_items=None,
+        count_items=None,  #84 @Tyferse
         sort_type='relevant',
         min_date: datetime = None,
         max_date: datetime = datetime.now(),
