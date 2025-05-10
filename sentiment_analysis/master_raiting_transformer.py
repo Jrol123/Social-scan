@@ -32,7 +32,7 @@ class MasterRaitingTransformer:
         ```
 
         """
-        if limit_bad == limit_good and is_bad_soft * is_good_soft:
+        if limit_bad == limit_good and is_bad_soft and is_good_soft:
             raise ValueError(
                 "Край пределов общий для двух классов в случае с общим значением края! is_bad_soft == is_good_soft == True!"
             )
