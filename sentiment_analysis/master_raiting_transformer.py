@@ -24,13 +24,29 @@ class MasterRaitingTransformer:
 
         `limit_bad` считается по-умолчанию нестрого, тогда как `limit_good` строго.
 
+        Если `limit_bad` и `limit_good` совпадают и один is_*_soft=True, то будет два класса.
+
+        ```
+        'binary' -> 0: не-негатив, 1: негатив
+        'ternary' -> 0: нейтрал, 1: позитив, 2: негатив
+        ```
+
         """
+        if limit_bad == limit_good and is_bad_soft * is_good_soft:
+            raise ValueError(
+                "Край пределов общий для двух классов в случае с общим значением края! is_bad_soft == is_good_soft == True!"
+            )
+
         self.limit_bad = limit_bad
         self.limit_good = limit_good
 
         self.is_bad_soft = is_bad_soft
         self.is_good_soft = is_good_soft
 
+        self.label_scheme = limit_bad == limit_good and any([is_bad_soft, is_good_soft])
+        """
+        True - бинарная, False - тернарная
+        """
         self.default_range = default_range
 
         self.service_params: dict[int, tuple[float, float]] = {}
@@ -46,17 +62,48 @@ class MasterRaitingTransformer:
         """
         # 1 - Негативные отзывы
 
-        sdf = df[["service_id", "rating"]]
-        
+        rdf = df.copy()
+
         for id in SERVICE_DICT.values():
-            sdf["service_id" == id]
+            ratings = df["service_id" == id]["rating"].tolist()
+            labels = []
+
+            scale = self.service_params.get(id, None)
+
+            if scale == self.default_range or scale == None:
+                continue
+
+            for index, rating in enumerate(ratings):
+                ratings[index] = self.__scale(rating, scale, self.default_range)
+
+            for rating in ratings:
+                labels.append(self.__labeler(rating, self.label_scheme))
+
+            rdf["service_id" == id]["label"] = rating
+
+    def __labeler(self, rating) -> int:
+        if (rating < self.limit_bad) or (self.is_bad_soft and rating <= self.limit_bad):
+            # негатив
+            return 1 + 1 * self.label_scheme
+
+        if not self.label_scheme:
+            # нейтраль (бинарная)
+            return 0
+
+        if (rating < self.limit_good) or (
+            not self.is_good_soft and rating <= self.limit_good
+        ):
+            # нейтраль (тернарная)
+            return 0
+
+        return 1
 
     def __scale(
         self,
         rating: float,
         init_range: tuple[float, float],
         fin_range: tuple[float, float],
-    ):
+    ) -> float:
         if init_range == fin_range:
             return rating
 
