@@ -1,6 +1,7 @@
 """
 Пайплайн парсинга.
 """
+import asyncio
 
 from .abstract import Parser
 
@@ -14,7 +15,7 @@ class MasterParser:
 
         Параметры передаются лишь уникальные, по типу запросов, id и т. д., что будет отличаться от сервиса к сервису.
 
-        Параметры должны быть вида `__class__.name__ = {"param": val}`
+        Параметры должны быть вида `__class__.__name__ = {"param": val}`
         """
         self.__serviceList = services
         for service in self.__serviceList:
@@ -33,7 +34,10 @@ class MasterParser:
             service_name = service.__class__.__name__
             parseParameters = self.__parseParameters.get(service_name, {})
 
-            result = service.parse(**parseParameters, **parameters)
-            final_result.extend(result)
+            try:
+                result = service.parse(**parseParameters, **parameters)
+                final_result.extend(result)
+            except TypeError:
+                raise Warning(service_name + " may be asynchronous, so it skips.")
 
         return final_result

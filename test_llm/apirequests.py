@@ -1,16 +1,18 @@
 import asyncio
 import json
 import os
+import time
 
 import aiohttp
 import pandas as pd
 from dotenv import load_dotenv
-from openpyxl.styles.builtins import output
+from mistralai import Mistral
 
 load_dotenv()
 
 
-async def invoke_chute(query, model="deepseek-ai/DeepSeek-V3-0324", role="user"):
+async def invoke_chute(query, model="deepseek-ai/DeepSeek-V3-0324", role="user",
+                       instruction=None):
     api_token = os.environ.get("CHUTES_API_TOKEN")
     
     headers = {
@@ -18,24 +20,27 @@ async def invoke_chute(query, model="deepseek-ai/DeepSeek-V3-0324", role="user")
         "Content-Type": "application/json"
     }
     
+    if instruction is None:
+        instruction = ("Ты - опытный помощник по выявлению проблем бизнеса, "
+                       "на которые жалуются клиенты в своих отзывах. "
+                       "Твоя задача - максимально точно перечислить все конкретные "
+                       "проблемы и жалобы, упоминаемые пользователем, связанные "
+                       "с бизнесом, не теряя уточняющие детали. "
+                       "Сокращай объём текста минимум до 256 символов. "
+                       "Соблюдай шаблон ввода:\n\nтекст отзыва пользователя"
+                       "\n\n----\n\nтекст отзыва пользователя\n\n----\n\n"
+                       "... (все оставшиеся отзывы)\n\n----\n\nтекст отзыва\n\n"
+                       "и шаблон вывода:\n\nсуммаризация первого отзыва\n\n"
+                       "----\n\nсуммаризация второго отзыва\n\n----\n\n"
+                       "... (суммаризация всех оставшихся отзывов)\n\n----"
+                       "\n\nсуммаризация последнего отзыва")
+    
     body = {
         "model": model,
         "messages": [
             {
                 "role": "system",
-                "content": "Ты - опытный помощник по сокращению объёма текста "
-                           "и умеешь точно выделать из него всю суть. "
-                           "Твоя задача - максимально точно передать основное "
-                           "содержание отзыва пользователя. "
-                           "Сокращай объём текста минимум до 256 символов. "
-                           "Соблюдай шаблон входа:\n\n"
-                           "текст отзыва пользователя\n\n----\n\n"
-                           "текст отзыва пользователя\n\n----\n\n"
-                           "... (все оставшиеся отзывы)\n\n----\n\nтекст отзыва\n\n"
-                           "и шаблон вывода:\n\nсуммаризация первого отзыва\n\n"
-                           "----\n\nсуммаризация второго отзыва\n\n----\n\n"
-                           "... (суммаризация всех оставшихся отзывов)\n\n----"
-                           "\n\nсуммаризация последнего отзыва отзыва"
+                "content": instruction
             },
             {
                 "role": role,
@@ -44,7 +49,7 @@ async def invoke_chute(query, model="deepseek-ai/DeepSeek-V3-0324", role="user")
         ],
         "stream": True,
         "max_tokens": 16000,
-        "temperature": 0.7
+        "temperature": 0.6
     }
     
     output = ""
@@ -75,6 +80,47 @@ async def invoke_chute(query, model="deepseek-ai/DeepSeek-V3-0324", role="user")
     return output
 
 
+async def invoke_mistral(query, model="mistral-small-latest", role="user", instruction=None):
+    api_key = os.environ["MISTRAL_API_TOKEN"]
+    client = Mistral(api_key=api_key)
+    
+    if instruction is None:
+        instruction = ("Ты - опытный помощник по выявлению проблем бизнеса, "
+                       "на которые жалуются клиенты в своих отзывах. "
+                       "Твоя задача - максимально точно перечислить все конкретные "
+                       "проблемы и жалобы, упоминаемые пользователем, связанные "
+                       "с бизнесом, не теряя уточняющие детали. "
+                       "Сокращай объём текста минимум до 256 символов. "
+                       "Соблюдай шаблон ввода:\n\nтекст отзыва пользователя"
+                       "\n\n----\n\nтекст отзыва пользователя\n\n----\n\n"
+                       "... (все оставшиеся отзывы)\n\n----\n\nтекст отзыва\n\n"
+                       "и шаблон вывода:\n\nсуммаризация первого отзыва\n\n"
+                       "----\n\nсуммаризация второго отзыва\n\n----\n\n"
+                       "... (суммаризация всех оставшихся отзывов)\n\n----"
+                       "\n\nсуммаризация последнего отзыва")
+
+    response = await client.chat.stream_async(
+        model=model,
+        messages=[
+            {
+                "role": "system",
+                "content": instruction
+            },
+            {
+                "role": role,
+                "content": query
+            }
+        ],
+    )
+    
+    output = ""
+    async for chunk in response:
+        if chunk.data.choices[0].delta.content is not None:
+            output += chunk.data.choices[0].delta.content
+            # print(chunk.data.choices[0].delta.content, end="")
+    
+    return output
+
 gm = pd.read_csv("C:\Code\Social-scan\get_info\google_maps\google_reviews.csv")
 ot = pd.read_csv("C:\Code\Social-scan\get_info\otzovik\otzovik_reviews.csv")
 tg = pd.read_csv("C:\Code\Social-scan\get_info\\telegram\\mriya_messages.csv")
@@ -84,20 +130,85 @@ df = pd.concat([gm, ot, tg], ignore_index=True)
 df = df.dropna(how='all')
 df['len'] = df['text'].str.len()
 df['cumlen'] = df['len'].cumsum()
-df['cumlen'] = df['cumlen'] + [6*i for i in range(len(df))]
-max_texts = len(df[df['cumlen'] < 64000])
+df['cumlen'] = df['cumlen'] + [8*i for i in range(len(df))]
+max_texts = len(df[df['cumlen'] < 100000])
 df = df[:max_texts]
 prompt = "\n\n----\n\n".join(df['text'])
 # print(prompt)
 
-output = asyncio.run(invoke_chute(prompt))
-df['summary'] = [s.strip() for s in output.split('----')[-max_texts:]]
-for i, line in df[['text', 'summary']].iterrows():
-    print(line['text'], end="\n\n----\n\n")
-    print(line['summary'], end="\n\n----------\n\n")
+# output = asyncio.run(invoke_chute(prompt))
+# output = asyncio.run(invoke_mistral(prompt))
 
-df = df.drop(['len', 'cumlen'], axis=1)
-df.to_csv("summarized_data.csv", index=False)
+
+
+compare_models = ["deepseek-ai/DeepSeek-V3-0324", "Qwen/Qwen3-235B-A22B",
+                  "mistral-small-latest"]
+f = open('output_examples3.txt', 'w', encoding='utf-8')
+f.write(" | ".join(compare_models) + '\n\n')
+
+instr2 = ("Ты - опытный помощник по выявлению проблем бизнеса, на которые жалуются "
+          "клиенты в своих отзывах. Твоя задача - максимально точно перечислить "
+          "все конкретные проблемы и жалобы, упоминаемые пользователем, связанные "
+          "с бизнесом, не теряя уточняющие детали. "
+          "Каждую упоминаемую проблему отнеси к одному из предложенных классов: "
+          "столовая, номер, мероприятия, персонал, остальные - если нет проблем, "
+          "которые относятся к классу, ставь символ \"-\", "
+          "и если проблема не относится ни к одному классу, "
+          "относи её к классу \"остальные\"."
+          "Сокращай текст до 128 символов на класс. "
+          "Соблюдай шаблон ввода:"
+          "\n\nтекст отзыва пользователя\n\n----\n\nтекст отзыва пользователя"
+          "\n\n----\n\n... (все оставшиеся отзывы)\n\n----\n\nтекст отзыва\n\n"
+          "и шаблон вывода:\n\n")
+
+
+instr2 += "\n".join([k + f": перечисление проблем, связанных с \"{k}\" "
+                         f"в первом отзыве\n"
+    for k in "столовая, номер, мероприятия, персонал".split(', ')])
+instr2 += ("\nостальные: перечисление проблем в первом отзыве, не относящихся "
+           "ни к одному из классов выше\n\n----\n\n"
+           "... (все остальные отзывы)\n\n----\n\n")
+instr2 += "\n".join([k + f": перечисление проблем, связанных с \"{k}\" "
+                         f"в последнем отзыве\n"
+    for k in "столовая, номер, мероприятия, персонал".split(', ')])
+instr2 += ("\nостальные: перечисление проблем в последнем отзыве, не относящихся "
+           "ни к одному из классов выше")
+
+
+outputs = []
+for model_name in compare_models:
+    output = ""
+    print(model_name)
+    i = 0
+    while len(output.split('----')) != max_texts:
+        time.sleep(15)
+        print(i := i + 1)
+        print(output)
+        if "mistral" not in model_name:
+            output = asyncio.run(invoke_chute(prompt, model_name,
+                                              instruction=instr2))
+            if '</think>' in output:
+                _, output = output.split('</think>\n', 1)
+        else:
+            output = asyncio.run(invoke_mistral(prompt, model_name,
+                                                instruction=instr2))
+    
+    outputs.append([s.strip() for s in output.split('----')])
+
+for i in range(max_texts):
+    f.write('\n\n----\n\n'.join([outputs[j][i] for j in range(len(outputs))]))
+    f.write('\n\n------------\n\n')
+
+f.close()
+
+# try:
+#     df['summary'] = [s.strip() for s in output.split('----')]
+#     for i, line in df[['text', 'summary']].iterrows():
+#         print(line['text'], end="\n\n----\n\n")
+#         print(line['summary'], end="\n\n----------\n\n")
+# except Exception:
+#     print(output)
+#
+# df = df.drop(['len', 'cumlen'], axis=1)
+# df.to_csv("summarized_data.csv", index=False)
 # print(df['summary'])
-# Qwen/Qwen3-235B-A22B
-# chutesai/Llama-4-Maverick-17B-128E-Instruct-FP8

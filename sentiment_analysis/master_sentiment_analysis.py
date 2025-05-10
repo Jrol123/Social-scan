@@ -1,10 +1,8 @@
 import pandas as pd
-
 import torch
 from torch.utils.data import Dataset, DataLoader
-
-from transformers.models.auto.tokenization_auto import AutoTokenizer
 from transformers.models.auto.modeling_auto import AutoModelForSequenceClassification
+from transformers.models.auto.tokenization_auto import AutoTokenizer
 
 AVAIABLE_LABLE_SCHEME = ["binary", "ternary"]
 
