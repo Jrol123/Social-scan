@@ -20,7 +20,7 @@ class MasterParser:
         for service in self.__serviceList:
             service_name = service.__class__.__name__
             if service_name == "TelegramParser":
-                #77
+                #77. It had to be done because of the asinco...
                 parameters.pop(service_name)
                 continue
             if service_name not in parameters:
