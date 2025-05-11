@@ -3,6 +3,7 @@
 """
 
 from .abstract import Parser
+from datetime import datetime
 
 
 class MasterParser:
@@ -27,7 +28,7 @@ class MasterParser:
                 print(f"Нет параметров для сервиса '{service_name}'.")
         self.__parseParameters = parameters
 
-    def parse(self, **parameters) -> list[dict[str, str | int | float | None]]:
+    def parse(self, **parameters) -> list[dict[str, str | int | datetime | float | None]]:
         """
         Параметры такие же, как и в parse у Parser
         """
