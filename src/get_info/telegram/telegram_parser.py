@@ -33,7 +33,12 @@ class TelegramParser(Parser):
         if isinstance(channels_list, str):
             channels_list = open(channels_list).readlines()
             channels_list = list(map(str.strip, channels_list))
-            
+        
+        if isinstance(min_date, int):
+            min_date = datetime.fromtimestamp(min_date)
+        if isinstance(max_date, int):
+            max_date = datetime.fromtimestamp(max_date)
+        
         data = []
         for channel in channels_list:
             data.extend(await self.get_channel_history(
@@ -51,9 +56,9 @@ class TelegramParser(Parser):
         channel_link,
         q,
         count_items: int,
-        min_date: datetime | int,
-        max_date: datetime | int,
-        wait_sec
+        min_date: datetime,
+        max_date: datetime,
+        wait_sec: int
     ):
         data = []
         try:
@@ -63,7 +68,7 @@ class TelegramParser(Parser):
         
         channel_id = channel.id
         print(channel_link)
-        if count_items is None:
+        if count_items == -1:
             channel_history = [
                 message async for message in self.client.iter_messages(
                     channel_link, limit=100, search=q, offset_date=max_date)
@@ -84,20 +89,20 @@ class TelegramParser(Parser):
                         lambda m: m.date.replace(tzinfo=None) > min_date,
                         channel_history))
                 
-        elif count_items <= 100:
-            async for message in self.client.iter_messages(
-                  channel_link, limit=count_items, search=q, offset_date=max_date):
-                if message.text:
-                    data.append(await self.__form_line(message, channel_id))
         else:
             async for message in self.client.iter_messages(
                   channel_link, limit=100, search=q, offset_date=max_date):
                 if message.text:
                     data.append(await self.__form_line(message, channel_id))
+                
+                if len(data) >= count_items:
+                    break
             
             offset_data = None
-            for i in range(100, count_items, 100):
+            i = 0
+            while len(data) < count_items:
                 time.sleep(1)
+                i += 100
                 try:
                     offset_data = data[-1]['date']
                 except IndexError:
@@ -113,22 +118,13 @@ class TelegramParser(Parser):
                     if message.text:
                         data.append(await self.__form_line(message, channel_id))
                     
+                    if len(data) >= count_items:
+                        break
+                    
                 if min_date is not None and data and data[-1]['date'] < min_date:
                     break
         
-        if min_date is not None:
-            dellines = []
-            for i in range(len(data)):
-                if data[i]['date'] < min_date:
-                    dellines.append(i)
-                
-                data[i]['date'] = data[i]['date'].timestamp()
-            
-            if dellines:
-                data = [data[i] for i in range(len(data)) if i not in dellines]
-        else:
-            data = [data[i]['date'].timestamp() for i in range(len(data))]
-        
+        data = [data[i]['date'].timestamp() for i in range(len(data))]
         # print(len(data))
         return data
     
@@ -160,8 +156,14 @@ def save_reviews_to_csv(reviews, filename="telegram_reviews.csv"):
 async def telegram_parse(parser: TelegramParser, channels_list="channel_list.txt",
                          search=None, count_items=100, min_date=None, max_date=None,
                          filename="telegram_reviews.csv"):
-    messages = await parser.parse(search, channels_list,
-                                  min_date, max_date, count_items)
+    params = {"channels_list": channels_list, "q": search,
+              "count_items": count_items}
+    if min_date:
+        params["min_date"] = min_date
+    if max_date:
+        params["max_date"] = max_date
+    
+    messages = await parser.parse(**params)
     save_reviews_to_csv(messages, filename)
     
 
