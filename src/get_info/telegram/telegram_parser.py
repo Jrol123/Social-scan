@@ -3,7 +3,6 @@ import time
 from datetime import datetime
 
 import pandas as pd
-from Demos.mmapfile_demo import offset
 from dotenv import load_dotenv
 from telethon import TelegramClient
 
