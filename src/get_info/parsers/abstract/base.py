@@ -96,3 +96,20 @@ class Parser(ABC):
 
         """
         pass
+
+
+class AsyncParser(Parser):
+    @abstractmethod
+    async def parse(
+        self,
+        q: str | list[str],
+        min_date: datetime | int = datetime(1970, 1, 16),
+        max_date: datetime | int = datetime.now(),
+        sort_type: str = "ascending",
+        count_items: int = -1,
+    ) -> list[dict[str, str | int | float | None]]:
+        pass
+
+
+class ParserConfig(ABC):
+    pass
