@@ -2,7 +2,7 @@
 Пайплайн парсинга.
 """
 
-from .abstract import Parser
+from .parsers.abstract import Parser
 from datetime import datetime
 
 
