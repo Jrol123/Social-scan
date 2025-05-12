@@ -2,14 +2,20 @@
 Пайплайн парсинга.
 """
 
-from ..parsers.abstract import Parser
+from ..parsers.abstract import Parser, AsyncParser, ParserConfig
+from asyncio import run
 from datetime import datetime
+from dataclasses import dataclass
+
+
+@dataclass
+class ParserInstance:
+    parser: Parser | AsyncParser
+    config: ParserConfig
 
 
 class MasterParser:
-    def __init__(
-        self, *services: Parser, **parameters: dict[str, str | list[str] | int]
-    ) -> None:
+    def __init__(self, parsers: list[ParserInstance]) -> None:
         """
         Сервисы передаются экземплярами!
 
@@ -17,28 +23,30 @@ class MasterParser:
 
         Параметры должны быть вида `__class__.__name__ = {"param": val}`
         """
-        self.__serviceList = services
-        for service in self.__serviceList:
-            service_name = service.__class__.__name__
-            if service_name == "TelegramParser":
-                #77. It had to be done because of the asynchronous behavior...
-                parameters.pop(service_name)
+        self.parsers = parsers
+
+    async def async_parse(
+        self, **global_params: str | list[str] | int | datetime
+    ) -> list[dict[str, str | int | float | None]]:
+        """
+        Параметры такие же, как и в parse у Parser.
+        """
+        results = []
+
+        for instance in self.parsers:
+            instance.config.apply(instance.parser)
+
+            if isinstance(instance.parser, AsyncParser):
+                results += await instance.parser.parse(**global_params)
                 continue
-            if service_name not in parameters:
-                print(f"Нет параметров для сервиса '{service_name}'.")
-        self.__parseParameters = parameters
+            results += instance.parser.parse(**global_params)
 
-    def parse(self, **parameters) -> list[dict[str, str | int | datetime | float | None]]:
+        return results
+
+    def sync_parse(
+        self, **global_params: str | list[str] | int | datetime
+    ) -> list[dict[str, str | int | float | None]]:
         """
-        Параметры такие же, как и в parse у Parser
+        Синхронная обёртка для совместимости.
         """
-        final_result = []
-
-        for service in self.__serviceList:
-            service_name = service.__class__.__name__
-            parseParameters = self.__parseParameters.get(service_name, {})
-
-            result = service.parse(**parseParameters, **parameters)
-            final_result.extend(result)
-
-        return final_result
+        return run(self.async_parse(**global_params))
