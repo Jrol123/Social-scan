@@ -4,11 +4,13 @@ from typing import Union
 
 @dataclass
 class Review:
+    service_id: int
     name: str
     # icon_href: Union[str, None]
+    additional_id: str | None
     date: float
     text: str
-    stars: float
+    rating: float
     answer: str
 
 

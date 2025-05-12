@@ -1,0 +1,1 @@
+pip freeze | % { $_ -split '==' | Select-Object -First 1 } | % { pip uninstall -y $_ }

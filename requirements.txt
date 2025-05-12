@@ -6,10 +6,13 @@ pytest==7.2.0
 dotenv==0.9.9
 python-dotenv==1.0.1
 pandas==2.2.3
-DateTime==5.4
+datetime==5.5
 requests==2.32.3
-bs4==0.0.1
 beautifulsoup4==4.12.3
 emoji==2.14.1
 vk==3.0
-aiohttp==3.11.0b0
+aiohttp==3.9.3
+torch==2.7.0
+tensorflow==2.19.0
+transformers==4.51.3
+sentencepiece==0.2.0
