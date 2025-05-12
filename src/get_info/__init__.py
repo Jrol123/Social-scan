@@ -1,3 +1,1 @@
-from . import parsers
-
-from .core import MasterParser, MasterParserConfig
+from . import parsers, core

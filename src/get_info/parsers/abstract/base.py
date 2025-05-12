@@ -112,4 +112,8 @@ class AsyncParser(Parser):
 
 
 class ParserConfig(ABC):
-    pass
+    @abstractmethod
+    def apply(self, **local_params: str | list[str] | datetime | int | str) -> None:
+        """
+        
+        """
