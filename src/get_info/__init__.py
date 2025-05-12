@@ -1,7 +1,7 @@
-from src.get_info.yandex_maps import YandexMapsParser
-from src.get_info.vk import VKParser
-from src.get_info.telegram import TelegramParser
-from src.get_info.otzovik import OtzovikParser
-from src.get_info.google_maps import GoogleMapsParser
+from .yandex_maps import YandexMapsParser
+from .vk import VKParser
+from .telegram import TelegramParser
+from .otzovik import OtzovikParser
+from .google_maps import GoogleMapsParser
 
-from src.get_info.master_parser import MasterParser
+from .master_parser import MasterParser
