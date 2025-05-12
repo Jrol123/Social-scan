@@ -13,7 +13,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
-from get_info.abstract import Parser
+from src.get_info.abstract import Parser
+
 
 # Configure logging
 # logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -368,5 +369,5 @@ if __name__ == "__main__":
     # main()
     url = r"https://www.google.com/maps/place/?q=place_id:ChIJ7WjSWynClEARUUiva4PiDzI"
     url2 = r"https://www.google.ru/maps/place/LOTTE+HOTEL+ST.+PETERSBURG/@59.9313986,30.2898216,14z/data=!4m11!3m10!1s0x469631034b662bf1:0x71def80ee9724829!5m2!4m1!1i2!8m2!3d59.931402!4d30.310422!9m1!1b1!16s%2Fg%2F11c6d_l0s2?entry=ttu&g_ep=EgoyMDI1MDQwMi4xIKXMDSoJLDEwMjExNjM5SAFQAw%3D%3D"
-    google_maps_parse(url, sorting='new', collect_extra=True,
-                      min_date=datetime(year=2024, month=1, day=1))
+    # google_maps_parse(url, sorting='new', collect_extra=True,
+    #                   min_date=datetime(year=2024, month=1, day=1))

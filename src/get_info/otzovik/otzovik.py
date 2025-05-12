@@ -7,7 +7,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
-from get_info.abstract import Parser
+from src.get_info.abstract import Parser
 
 
 class OtzovikParser(Parser):
@@ -188,5 +188,5 @@ def otzovik_parse(url, min_date=None, file="otzovik_reviews.csv"):
 if __name__ == '__main__':
     url = 'https://otzovik.com/reviews/sanatoriy_mriya_resort_spa_russia_yalta/'
     url2 = 'https://otzovik.com/reviews/sanatoriy_slavutich_ukraina_alushta/'
-    otzovik_parse(url, datetime(year=2024, month=3, day=12))
+    # otzovik_parse(url, datetime(year=2024, month=3, day=12))
     # otzovik_parse(url2, 'pages_test.csv')

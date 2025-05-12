@@ -6,7 +6,7 @@ import pandas as pd
 from dotenv import load_dotenv
 from telethon import TelegramClient
 
-from get_info.abstract import Parser
+from src.get_info.abstract import Parser
 
 
 class TelegramParser(Parser):
@@ -182,7 +182,7 @@ def main():
 if __name__ == '__main__':
     # with client:
     #     client.loop.run_until_complete(main())
-    main()
+    # main()
     """
     МРИЯ / 6
     Отель Мрия / 1
