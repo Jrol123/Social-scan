@@ -35,6 +35,7 @@ class MasterSentimentAnalysis:
         batch_size: int,
         label_scheme: str = "ternary",
         cache_dir: str | None = None,
+        device: str | torch.device | None = None
     ):
         """
         Класс для семантического анализа сообщений.
@@ -53,7 +54,8 @@ class MasterSentimentAnalysis:
         assert (
             label_scheme in AVAILABLE_LABEL_SCHEME
         ), f"Неправильная схема меток! Получено: {label_scheme}. Доступные: {AVAILABLE_LABEL_SCHEME}"
-        self.DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.DEVICE = device if device else torch.device(
+            "cuda" if torch.cuda.is_available() else "cpu")
         self.BATCH_SIZE = batch_size
         self.MAX_LENGTH = max_length
 
@@ -80,7 +82,6 @@ class MasterSentimentAnalysis:
 
         self.model.eval()
         predictions = []
-
         with torch.no_grad():
             for batch in dataloader:
                 inputs = {

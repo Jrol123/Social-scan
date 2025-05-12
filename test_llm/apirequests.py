@@ -27,13 +27,14 @@ async def invoke_chute(query, model="deepseek-ai/DeepSeek-V3-0324", role="user",
                        "проблемы и жалобы, упоминаемые пользователем, связанные "
                        "с бизнесом, не теряя уточняющие детали. "
                        "Сокращай объём текста минимум до 256 символов. "
-                       "Соблюдай шаблон ввода:\n\nтекст отзыва пользователя"
-                       "\n\n----\n\nтекст отзыва пользователя\n\n----\n\n"
-                       "... (все оставшиеся отзывы)\n\n----\n\nтекст отзыва\n\n"
-                       "и шаблон вывода:\n\nсуммаризация первого отзыва\n\n"
-                       "----\n\nсуммаризация второго отзыва\n\n----\n\n"
-                       "... (суммаризация всех оставшихся отзывов)\n\n----"
-                       "\n\nсуммаризация последнего отзыва")
+                       "Соблюдай шаблон ввода для n отзывов:\n\n1. текст первого отзыва"
+                       "\n\n----\n\n2. текст второго отзыва\n\n----\n\n"
+                       "... (все оставшиеся отзывы)\n\n----\n\n"
+                       "n. последний текст отзыва\n\nи шаблон вывода:"
+                       "\n\n1. суммаризация первого отзыва\n\n----\n\n"
+                       "2. суммаризация второго отзыва\n\n----\n\n"
+                       "... (суммаризация всех оставшихся отзывов)\n\n----\n\n"
+                       "n. суммаризация последнего отзыва")
     
     body = {
         "model": model,
@@ -48,7 +49,7 @@ async def invoke_chute(query, model="deepseek-ai/DeepSeek-V3-0324", role="user",
             }
         ],
         "stream": True,
-        "max_tokens": 16000,
+        "max_tokens": 20000,
         "temperature": 0.6
     }
     
@@ -91,13 +92,14 @@ async def invoke_mistral(query, model="mistral-small-latest", role="user", instr
                        "проблемы и жалобы, упоминаемые пользователем, связанные "
                        "с бизнесом, не теряя уточняющие детали. "
                        "Сокращай объём текста минимум до 256 символов. "
-                       "Соблюдай шаблон ввода:\n\nтекст отзыва пользователя"
-                       "\n\n----\n\nтекст отзыва пользователя\n\n----\n\n"
-                       "... (все оставшиеся отзывы)\n\n----\n\nтекст отзыва\n\n"
-                       "и шаблон вывода:\n\nсуммаризация первого отзыва\n\n"
-                       "----\n\nсуммаризация второго отзыва\n\n----\n\n"
-                       "... (суммаризация всех оставшихся отзывов)\n\n----"
-                       "\n\nсуммаризация последнего отзыва")
+                       "Соблюдай шаблон ввода для n отзывов:\n\n1. текст первого отзыва"
+                       "\n\n----\n\n2. текст второго отзыва\n\n----\n\n"
+                       "... (все оставшиеся отзывы)\n\n----\n\n"
+                       "n. последний текст отзыва\n\nи шаблон вывода:"
+                       "\n\n1. суммаризация первого отзыва\n\n----\n\n"
+                       "2. суммаризация второго отзыва\n\n----\n\n"
+                       "... (суммаризация всех оставшихся отзывов)\n\n----\n\n"
+                       "n. суммаризация последнего отзыва")
 
     response = await client.chat.stream_async(
         model=model,
@@ -121,29 +123,24 @@ async def invoke_mistral(query, model="mistral-small-latest", role="user", instr
     
     return output
 
-gm = pd.read_csv("C:\Code\Social-scan\get_info\google_maps\google_reviews.csv")
-ot = pd.read_csv("C:\Code\Social-scan\get_info\otzovik\otzovik_reviews.csv")
-tg = pd.read_csv("C:\Code\Social-scan\get_info\\telegram\\mriya_messages.csv")
-tg = tg[tg['rating'] == 2]
-df = pd.concat([gm, ot, tg], ignore_index=True)
+df = pd.read_csv('filtered_data.csv', index_col=0)
 
 df = df.dropna(how='all')
 df['len'] = df['text'].str.len()
 df['cumlen'] = df['len'].cumsum()
 df['cumlen'] = df['cumlen'] + [8*i for i in range(len(df))]
-max_texts = len(df[df['cumlen'] < 100000])
-df = df[:max_texts]
-prompt = "\n\n----\n\n".join(df['text'])
+# max_texts = len(df[df['cumlen'] < 100000])
+# df = df[:max_texts]
+# prompt = "\n\n----\n\n".join(df['text'])
 # print(prompt)
 
 # output = asyncio.run(invoke_chute(prompt))
 # output = asyncio.run(invoke_mistral(prompt))
 
 
-
 compare_models = ["deepseek-ai/DeepSeek-V3-0324", "Qwen/Qwen3-235B-A22B",
                   "mistral-small-latest"]
-f = open('output_examples3.txt', 'w', encoding='utf-8')
+f = open('output_examples4.txt', 'w', encoding='utf-8')
 f.write(" | ".join(compare_models) + '\n\n')
 
 instr2 = ("Ты - опытный помощник по выявлению проблем бизнеса, на которые жалуются "
@@ -174,28 +171,37 @@ instr2 += "\n".join([k + f": перечисление проблем, связа
 instr2 += ("\nостальные: перечисление проблем в последнем отзыве, не относящихся "
            "ни к одному из классов выше")
 
-
 outputs = []
 for model_name in compare_models:
-    output = ""
     print(model_name)
-    i = 0
-    while len(output.split('----')) != max_texts:
-        time.sleep(15)
-        print(i := i + 1)
-        print(output)
-        if "mistral" not in model_name:
-            output = asyncio.run(invoke_chute(prompt, model_name,
-                                              instruction=instr2))
-            if '</think>' in output:
-                _, output = output.split('</think>\n', 1)
+    for i in range(df.loc[df.index[-1], 'cumlen'] // 20000 + 1):
+        output = ""
+        sample_df = df[(i * 20000 < df['cumlen'])
+                       & (df['cumlen'] < (i + 1) * 20000)]
+        max_texts = len(sample_df)
+        prompt = "\n\n----\n\n".join([
+            str(i + 1) + '. ' + t for i, t in enumerate(sample_df['text'].to_list())
+        ])
+        
+        j = 0
+        while len(output.split('----')) != max_texts:
+            time.sleep(20)
+            print(j := j + 1)
+            print(len(output.split('----')), max_texts)
+            if "mistral" not in model_name:
+                output = asyncio.run(invoke_chute(prompt, model_name,))
+                                                  # instruction=instr2))
+                if '</think>' in output:
+                    _, output = output.split('</think>\n', 1)
+            else:
+                output = asyncio.run(invoke_mistral(prompt, model_name,))
+                                                    # instruction=instr2))
+        if i == 0:
+            outputs.append([s.strip() for s in output.split('----')])
         else:
-            output = asyncio.run(invoke_mistral(prompt, model_name,
-                                                instruction=instr2))
-    
-    outputs.append([s.strip() for s in output.split('----')])
+            outputs[-1].extend([s.strip() for s in output.split('----')])
 
-for i in range(max_texts):
+for i in range(len(outputs[0])):
     f.write('\n\n----\n\n'.join([outputs[j][i] for j in range(len(outputs))]))
     f.write('\n\n------------\n\n')
 
