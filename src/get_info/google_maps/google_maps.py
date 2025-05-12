@@ -39,10 +39,10 @@ class GoogleMapsParser(Parser):
     def parse(
         self,
         q: str | list[str],
-        count_items=None,  #84 @Tyferse
+        count_items=-1,
         sort_type='relevant',
-        min_date: datetime = None,
-        max_date: datetime = datetime.now(),
+        min_date: datetime | int | None = None,
+        max_date: datetime | int | None = datetime.now(),
         collect_extra=False,
         wait_load=60
     ) -> list[dict[str, str | int | float | None]]:
@@ -80,57 +80,56 @@ class GoogleMapsParser(Parser):
             
             # Scroll to load more reviews
             # logger.info("Loading reviews...")
+            
+            now = datetime.now()
             time.sleep(30)
-            if count_items is None:
-                try:
-                    prev_element = driver.find_elements(By.CSS_SELECTOR,
-                                                        "div[data-review-id] > div")[-1]
-                except IndexError:
-                    print(driver.find_elements(By.CSS_SELECTOR,
-                                                        "div[data-review-id] > div"))
-                    raise
-                    
-                i = 0
-                while True:
-                    self.__scroll_reviews(driver)
-                    # time.sleep(3)
-                    curr_element = driver.find_elements(
-                        By.CSS_SELECTOR,"div[data-review-id] > div")[-1]
-                    if min_date is not None:
-                        if self.__check_date(curr_element, min_date, max_date):
-                            break
-                    
-                    time.sleep(2)
-                    if prev_element == curr_element:
-                        # Waiting for next reviews to load
-                        for _ in range(wait_load):
-                            time.sleep(1)
-                            curr_element = driver.find_elements(
-                                By.CSS_SELECTOR, "div[data-review-id] > div")[-1]
-                            if prev_element != curr_element:
-                                break
-                        else:  # If time is expired, consider we reached the bottom
-                            print(i)
-                            print(curr_element.text)
-                            break
-                    
-                    prev_element = curr_element
-                    i += 1
-            else:
-                for _ in range(count_items // 10 - 1):
-                    self.__scroll_reviews(driver)
-                    if min_date is not None:
+            try:
+                prev_element = driver.find_elements(By.CSS_SELECTOR,
+                                                    "div[data-review-id] > div")[-1]
+            except IndexError:
+                print(driver.find_elements(By.CSS_SELECTOR,
+                                                    "div[data-review-id] > div"))
+                raise
+             
+            i = 0
+            while True:
+                self.__scroll_reviews(driver)
+                # time.sleep(3)
+                curr_element = driver.find_elements(
+                    By.CSS_SELECTOR,"div[data-review-id] > div")[-1]
+                if min_date is not None:
+                    if self.__check_date(curr_element, min_date, now):
+                        break
+                
+                time.sleep(2)
+                if prev_element == curr_element:
+                    # Waiting for next reviews to load
+                    for _ in range(wait_load):
+                        time.sleep(1)
                         curr_element = driver.find_elements(
                             By.CSS_SELECTOR, "div[data-review-id] > div")[-1]
-                        if self.__check_date(curr_element, min_date, max_date):
+                        if prev_element != curr_element:
                             break
+                    else:  # If time is expired, consider we reached the bottom
+                        print(i)
+                        print(curr_element.text)
+                        break
+                
+                prev_element = curr_element
+                i += 1
             
             self.__expand_reviews(driver)
 
             # Extract reviews
+            # logger.info(f"Found {review_elements.count()} reviews")
+            
             review_elements = driver.find_elements(By.CSS_SELECTOR,
                                                    "div[data-review-id] > div")
-            # logger.info(f"Found {review_elements.count()} reviews")
+            if isinstance(min_date, int):
+                min_date = datetime.fromtimestamp(min_date)
+            if isinstance(max_date, int):
+                max_date = datetime.fromtimestamp(max_date)
+            
             for element in review_elements[1::2]:
                 reviewer = element.find_element(
                     By.CSS_SELECTOR,
@@ -150,15 +149,25 @@ class GoogleMapsParser(Parser):
                     "div:nth-child(4) > div:first-child > span:nth-child(2)").text
                 date = date.rsplit(',', 1)[0].strip()
                 
+                # Prepare data for output
+                date = self.text_to_date(date.lower(), now)
+                if ((min_date is not None and date < min_date)
+                   or (max_date is not None and date > max_date)
+                   or rating > 3):
+                    continue
+                else:
+                    date = date.timestamp()
+                
                 if collect_extra:
                     text_selector = "div > div > div[tabindex='-1'][id]"
                 else:
-                    text_selector = "div > div > div[tabindex='-1'][id]" \
-                                    " > span:first-child"
+                    text_selector = ("div > div > div[tabindex='-1'][id]"
+                                     " > span:first-child")
                 
                 try:
                     review_text = element.find_element(
                         By.CSS_SELECTOR, text_selector).text
+                    review_text = review_text.replace('\n', ' ').replace('\t', ' ')
                 except Exception:
                     continue
                 
@@ -169,19 +178,10 @@ class GoogleMapsParser(Parser):
                 if answer and subtitle and "Ответ владельца" in subtitle[-1].text:
                     answer = answer.find_element(By.CSS_SELECTOR,
                                                  "div:nth-child(2)").text
+                    answer = answer.replace('\n', ' ').replace('\t', ' ')
                 else:
                     answer = None
-                
-                # Prepare data for output
-                date = self.text_to_date(date.lower(), max_date)
-                if min_date is not None and date < min_date or rating > 3:
-                    continue
-                
-                date = date.timestamp()
-                review_text = review_text.replace('\n', ' ').replace('\t', ' ')
-                if answer:
-                    answer = answer.replace('\n', ' ').replace('\t', ' ')
-                
+                    
                 reviews.append({
                     "service_id": self.service_id,
                     "name": self.__clean_text(reviewer),
@@ -191,6 +191,9 @@ class GoogleMapsParser(Parser):
                     "text": self.__clean_text(review_text),
                     "answer": self.__clean_text(answer)
                 })
+                
+                if count_items != -1 and len(reviews) >= count_items:
+                    break
         
         except Exception as e:
             raise e
