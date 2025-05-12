@@ -1,6 +1,6 @@
 import pytest
 from difflib import SequenceMatcher
-from get_url.get_url import Finder
+from src.get_url.get_url import Finder
 
 FULL_MODE = "full"
 YANDEX = "Yandex"

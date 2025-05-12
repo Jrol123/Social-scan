@@ -162,7 +162,7 @@ cython_debug/
 *.csv
 *.session
 *.session-journal
-/get_info/telegram/*.html
+/src/get_info/telegram/*.html
 /tests/sentiment/
 test.py
-/test_llm/*.txt
+/src/test_llm/*.txt

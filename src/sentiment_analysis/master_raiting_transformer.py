@@ -74,7 +74,7 @@ class MasterRaitingTransformer:
 
             scale = self.service_params.get(id, None)
 
-            if scale == self.default_range or scale == None:
+            if scale == self.default_range or scale is None:
                 fin_ratings.extend(ratings)
                 continue
 
