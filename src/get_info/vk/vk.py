@@ -1,7 +1,7 @@
 import vk_api
 from datetime import datetime
 from time import sleep
-from ..abstract import Parser
+from src.get_info.abstract import Parser
 
 SERVICE_INDEX = 3
 GET_ALL_ITEMS = -1
