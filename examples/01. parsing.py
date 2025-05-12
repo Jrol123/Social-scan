@@ -1,7 +1,7 @@
 """
 Этот пример посвящён парсингу, первому этапу в pipeline.
 
-Пример 
+Пример
 """
 
 from datetime import datetime
