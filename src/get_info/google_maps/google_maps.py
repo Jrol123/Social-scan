@@ -181,7 +181,7 @@ class GoogleMapsParser(Parser):
                     answer = answer.replace('\n', ' ').replace('\t', ' ')
                 else:
                     answer = None
-                                
+                    
                 reviews.append({
                     "service_id": self.service_id,
                     "name": self.__clean_text(reviewer),
@@ -192,7 +192,7 @@ class GoogleMapsParser(Parser):
                     "answer": self.__clean_text(answer)
                 })
                 
-                if count_items != -1 and len(reviews) > count_items:
+                if count_items != -1 and len(reviews) >= count_items:
                     break
         
         except Exception as e:
