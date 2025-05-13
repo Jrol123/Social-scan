@@ -2,51 +2,40 @@
 Пайплайн парсинга.
 """
 
-from ..parsers.abstract import Parser, AsyncParser, ParserConfig
+from ..parsers.abstract import Parser, AsyncParser
+from .config import GlobalConfig
 from asyncio import run
-from datetime import datetime
-from dataclasses import dataclass
-
-
-@dataclass
-class ParserInstance:
-    parser: Parser | AsyncParser
-    config: ParserConfig
+from dataclasses import asdict
 
 
 class MasterParser:
-    def __init__(self, parsers: list[ParserInstance]) -> None:
+    def __init__(self, parsers: list[Parser]) -> None:
         """
         Сервисы передаются экземплярами!
-
-        Параметры передаются лишь уникальные, по типу запросов, id и т. д., что будет отличаться от сервиса к сервису.
-
-        Параметры должны быть вида `__class__.__name__ = {"param": val}`
         """
         self.parsers = parsers
 
     async def async_parse(
-        self, **global_params: str | list[str] | int | datetime
+        self, global_params: GlobalConfig
     ) -> list[dict[str, str | int | float | None]]:
         """
         Параметры такие же, как и в parse у Parser.
         """
         results = []
 
-        for instance in self.parsers:
-            instance.config.apply(instance.parser)
+        for parser in self.parsers:
 
-            if isinstance(instance.parser, AsyncParser):
-                results += await instance.parser.parse(**global_params)
+            if isinstance(parser, AsyncParser):
+                results += await parser.parse(global_params)
                 continue
-            results += instance.parser.parse(**global_params)
+            results += parser.parse(global_params)
 
         return results
 
     def sync_parse(
-        self, **global_params: str | list[str] | int | datetime
+        self, global_params: GlobalConfig
     ) -> list[dict[str, str | int | float | None]]:
         """
         Синхронная обёртка для совместимости.
         """
-        return run(self.async_parse(**global_params))
+        return run(self.async_parse(global_params))

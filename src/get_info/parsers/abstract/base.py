@@ -35,6 +35,7 @@ class Parser(ABC):
 
         """
         self.service_id = service_id
+        self.config = config
 
     def _date_convert(
         self, date_datetime: datetime | int, final_type: Type[int] | Type[datetime]
@@ -59,7 +60,7 @@ class Parser(ABC):
 
     @abstractmethod
     def parse(
-        self, global_config: ParserConfig | None = None
+        self, global_config: Config | None = None
     ) -> list[dict[str, str | int | float | None]]:
         """
         Получение информации с сервиса по запросу.
@@ -116,8 +117,6 @@ class Parser(ABC):
             ```
 
         """
-        if global_config is None:
-            global_config = ParserConfig()
         pass
 
     def update_config(self, config: ParserConfig) -> None:
@@ -131,11 +130,6 @@ class AsyncParser(Parser):
 
     @abstractmethod
     async def parse(
-        self,
-        q: str | list[str],
-        min_date: datetime | int = datetime(1970, 1, 16),
-        max_date: datetime | int = datetime.now(),
-        sort_type: str = "ascending",
-        count_items: int = -1,
+        self, global_config: Config | None = None
     ) -> list[dict[str, str | int | float | None]]:
         pass
