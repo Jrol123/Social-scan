@@ -4,8 +4,36 @@ from typing import Type
 
 
 class Parser(ABC):
-    def __init__(self, service_id: int):
+    def __init__(
+        self,
+        service_id: int,
+        q: str | list[str],
+        min_date: datetime | int = datetime(1970, 1, 16),
+        max_date: datetime | int = None,
+        sort_type: str = "ascending",
+        count_items: int = -1,
+    ):
+        """
+        Парсер.
+
+        Args:
+            service_id (int): Индекс сервиса.
+            q (str | list[str]): Информация, необходимая для поиска объекта в сервисе.
+            min_date (datetime | int): Время самого раннего сообщения в формате datetime или timestamp. Defaults to ```datetime.min```.
+            max_date (datetime | int): Время самого позднего сообщения в формате datetime или timestamp. Defaults to ```datetime.now()```.
+            sort_type (str): Вид сортировки. Зависят от сервиса (см. документацию к каждому сервису отдельно). Defaults to `ascending`.
+            count_items (int): Максимальное количество возвращаемых элементов. Для получения всех используется значение -1. Defaults to -1
+
+        """
         self.service_id = service_id
+        self.q = q
+        self.min_date = min_date
+        if max_date is None:
+            self.max_date = datetime.now()
+        else:
+            self.max_date = max_date
+        self.sort_type = sort_type
+        self.count_items = count_items
 
     def _date_convert(
         self, date_datetime: datetime | int, final_type: Type[int] | Type[datetime]
@@ -29,23 +57,9 @@ class Parser(ABC):
         return datetime.fromtimestamp(date_datetime)
 
     @abstractmethod
-    def parse(
-        self,
-        q: str | list[str],
-        min_date: datetime | int = datetime(1970, 1, 16),
-        max_date: datetime | int = datetime.now(),
-        sort_type: str = "ascending",
-        count_items: int = -1,
-    ) -> list[dict[str, str | int | float | None]]:
+    def parse(self) -> list[dict[str, str | int | float | None]]:
         """
         Получение информации с сервиса по запросу.
-
-        Args:
-            q (str | list[str]): Информация, необходимая для поиска объекта в сервисе.
-            min_date (datetime | int): Время самого раннего сообщения в формате datetime или timestamp. Defaults to ```datetime.min```.
-            max_date (datetime | int): Время самого позднего сообщения в формате datetime или timestamp. Defaults to ```datetime.now()```.
-            sort_type (str): Вид сортировки. Зависят от сервиса (см. документацию к каждому сервису отдельно). Defaults to `ascending`.
-            count_items (int): Максимальное количество возвращаемых элементов. Для получения всех используется значение -1. Defaults to -1
 
         Returns:
             list[dict[str,str|int|float|None]]: Список сообщений. Каждое сообщение - словарь с данными. Структура сообщения:
@@ -115,5 +129,8 @@ class ParserConfig(ABC):
     @abstractmethod
     def apply(self, **local_params: str | list[str] | datetime | int | str) -> None:
         """
-        
+        Обновление параметров парсера.
+
+        Передаются те же параметры, которые используются для инициализации парсера.
         """
+        pass
