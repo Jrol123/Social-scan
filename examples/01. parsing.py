@@ -9,7 +9,7 @@ from datetime import datetime
 import pandas as pd
 from dotenv import dotenv_values
 
-from get_info import (
+from src.get_info import (
     MasterParser,
     VKParser,
     TelegramParser,
