@@ -6,7 +6,7 @@ import pandas as pd
 from dotenv import load_dotenv
 from telethon import TelegramClient
 
-from get_info.abstract import Parser
+from src.get_info.abstract import Parser
 
 
 class TelegramParser(Parser):
@@ -22,21 +22,27 @@ class TelegramParser(Parser):
     
     async def parse(
         self,
-        q: str | list[str] = None,
+        q: str | list[str],
         channels_list="channel_list.txt",
-        limit: int | None = 100,
-        min_date: datetime | int | None = None,
+        min_date: datetime | int = datetime(1970, 1, 16),
+        max_date: datetime | int = datetime.now(),
+        count_items: int = -1,
         wait_sec=1
     ) -> list[dict[str, str | int | float | None]]:
         
         if isinstance(channels_list, str):
             channels_list = open(channels_list).readlines()
             channels_list = list(map(str.strip, channels_list))
-            
+        
+        if isinstance(min_date, int):
+            min_date = datetime.fromtimestamp(min_date)
+        if isinstance(max_date, int):
+            max_date = datetime.fromtimestamp(max_date)
+        
         data = []
         for channel in channels_list:
             data.extend(await self.get_channel_history(
-                channel, q, limit, min_date, wait_sec))
+                channel, q, count_items, min_date, max_date, wait_sec))
             time.sleep(wait_sec)
         
         if not data:
@@ -48,10 +54,11 @@ class TelegramParser(Parser):
     async def get_channel_history(
         self,
         channel_link,
-        q=None,
-        limit: int | None = 100,
-        min_date: datetime | int | None = None,
-        wait_sec=1
+        q,
+        count_items: int,
+        min_date: datetime,
+        max_date: datetime,
+        wait_sec: int
     ):
         data = []
         try:
@@ -61,10 +68,10 @@ class TelegramParser(Parser):
         
         channel_id = channel.id
         print(channel_link)
-        if limit is None:
+        if count_items == -1:
             channel_history = [
                 message async for message in self.client.iter_messages(
-                    channel_link, limit=100, search=q)
+                    channel_link, limit=100, search=q, offset_date=max_date)
             ]
             while channel_history:
                 time.sleep(wait_sec)
@@ -82,20 +89,20 @@ class TelegramParser(Parser):
                         lambda m: m.date.replace(tzinfo=None) > min_date,
                         channel_history))
                 
-        elif limit <= 100:
-            async for message in self.client.iter_messages(
-                  channel_link, limit=limit, search=q):
-                if message.text:
-                    data.append(await self.__form_line(message, channel_id))
         else:
             async for message in self.client.iter_messages(
-                  channel_link, limit=100, search=q):
+                  channel_link, limit=100, search=q, offset_date=max_date):
                 if message.text:
                     data.append(await self.__form_line(message, channel_id))
+                
+                if len(data) >= count_items:
+                    break
             
             offset_data = None
-            for i in range(100, limit, 100):
+            i = 0
+            while len(data) < count_items:
                 time.sleep(1)
+                i += 100
                 try:
                     offset_data = data[-1]['date']
                 except IndexError:
@@ -103,29 +110,21 @@ class TelegramParser(Parser):
                 
                 async for message in self.client.iter_messages(
                     channel_link,
-                    limit=100 if i + 100 < limit else abs(limit - i*100) % 100,
+                    limit=100 if i + 100 < count_items
+                          else (i - count_items) % 100,
                     offset_date=offset_data,
                     search=q
                 ):
                     if message.text:
                         data.append(await self.__form_line(message, channel_id))
                     
+                    if len(data) >= count_items:
+                        break
+                    
                 if min_date is not None and data and data[-1]['date'] < min_date:
                     break
         
-        if min_date is not None:
-            dellines = []
-            for i in range(len(data)):
-                if data[i]['date'] < min_date:
-                    dellines.append(i)
-                
-                data[i]['date'] = data[i]['date'].timestamp()
-            
-            if dellines:
-                data = [data[i] for i in range(len(data)) if i not in dellines]
-        else:
-            data = [data[i]['date'].timestamp() for i in range(len(data))]
-        
+        data = [data[i]['date'].timestamp() for i in range(len(data))]
         # print(len(data))
         return data
     
@@ -155,9 +154,16 @@ def save_reviews_to_csv(reviews, filename="telegram_reviews.csv"):
     df.to_csv(filename, index=False, encoding='utf-8')
 
 async def telegram_parse(parser: TelegramParser, channels_list="channel_list.txt",
-                         search=None, limit=100, min_date=None,
+                         search=None, count_items=100, min_date=None, max_date=None,
                          filename="telegram_reviews.csv"):
-    messages = await parser.parse(search, channels_list, limit, min_date)
+    params = {"channels_list": channels_list, "q": search,
+              "count_items": count_items}
+    if min_date:
+        params["min_date"] = min_date
+    if max_date:
+        params["max_date"] = max_date
+    
+    messages = await parser.parse(**params)
     save_reviews_to_csv(messages, filename)
     
 
@@ -173,7 +179,7 @@ def main():
     with parser.client:
         parser.client.loop.run_until_complete(
             telegram_parse(parser,
-                           limit=1000,
+                           count_items=1000,
                            search='МРИЯ',
                            min_date=datetime(year=2024, month=10, day=12),
                            filename='mriya_messages.csv'))
@@ -182,7 +188,7 @@ def main():
 if __name__ == '__main__':
     # with client:
     #     client.loop.run_until_complete(main())
-    main()
+    # main()
     """
     МРИЯ / 6
     Отель Мрия / 1

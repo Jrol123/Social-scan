@@ -7,7 +7,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
-from get_info.abstract import Parser
+from src.get_info.abstract import Parser
 
 
 class OtzovikParser(Parser):
@@ -17,8 +17,10 @@ class OtzovikParser(Parser):
     def parse(
         self,
         q: str | list[str],
-        limit=None,
-        min_date: datetime = None
+        min_date: datetime | int = datetime(1970, 1, 16),
+        max_date: datetime | int = datetime.now(),
+        sort_type: str = "ascending",
+        count_items: int = -1,
     ) -> list[dict[str, str | int | float | None]]:
         driver = self.__initialize_browser(q)
         review_links = list(set(self.__collect_review_links(driver)))
@@ -30,12 +32,13 @@ class OtzovikParser(Parser):
         
         data = []
         for link in review_links:
-            review = self.__get_review_data(driver, link, min_date, official)
+            review = self.__get_review_data(driver, link,
+                                            min_date, max_date, official)
             if review is None:
                 continue
             
             data.append(review)
-            if limit is not None and len(data) > limit:
+            if count_items != -1 and len(data) >= count_items:
                 break
         
         return data
@@ -114,7 +117,7 @@ class OtzovikParser(Parser):
         
         return links
     
-    def __get_review_data(self, driver, url, min_date=None, official=None):
+    def __get_review_data(self, driver, url, min_date, max_date, official=None):
         driver.get(url)
         time.sleep(1)
         while self.__check_captcha(driver):
@@ -125,7 +128,8 @@ class OtzovikParser(Parser):
                                     "span.review-postdate.dtreviewed > abbr")
                 .get_attribute('title'))
         date = datetime.fromisoformat(date)
-        if min_date is not None and date < min_date:
+        if ((min_date is not None and date < min_date)
+           or (max_date is not None and date > max_date)):
             return None
         
         date = date.timestamp()
@@ -188,5 +192,5 @@ def otzovik_parse(url, min_date=None, file="otzovik_reviews.csv"):
 if __name__ == '__main__':
     url = 'https://otzovik.com/reviews/sanatoriy_mriya_resort_spa_russia_yalta/'
     url2 = 'https://otzovik.com/reviews/sanatoriy_slavutich_ukraina_alushta/'
-    otzovik_parse(url, datetime(year=2024, month=3, day=12))
+    # otzovik_parse(url, datetime(year=2024, month=3, day=12))
     # otzovik_parse(url2, 'pages_test.csv')
