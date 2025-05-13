@@ -10,6 +10,12 @@ class Config(ABC):
         return time
 
 
+class GlobalConfig(Config):
+    """
+    Класс, содержащий общие параметры для всех Parser.
+    """
+
+
 class ParserConfig(Config):
     """
     Класс, содержащий локальные параметры для Parser.

@@ -6,10 +6,10 @@ import pandas as pd
 from dotenv import load_dotenv
 from telethon import TelegramClient
 
-from src.get_info.abstract import Parser
+from ..abstract import AsyncParser
 
 
-class TelegramParser(Parser):
+class TelegramParser(AsyncParser):
     def __init__(self, api_id, api_hash, phone, password=None,
                  session_name="monitoring", system_version="4.16.30-vxCUSTOM",
                  app_version="1.0.1"):

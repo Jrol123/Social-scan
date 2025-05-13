@@ -5,6 +5,13 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "T: single_parser",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "examples/01_single-parser.py",
+            "console": "integratedTerminal"
+        },        
+        {
             "name": "SenAn",
             "type": "debugpy",
             "request": "launch",

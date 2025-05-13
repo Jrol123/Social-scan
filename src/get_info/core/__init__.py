@@ -1,2 +1,2 @@
-from .master_parser import MasterParser, ParserInstance
+from .master_parser import MasterParser
 from .config import MasterParserConfig
