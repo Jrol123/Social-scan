@@ -1,1 +1,1 @@
-from .base import Parser, AsyncParser, ParserConfig
+from .base import Parser, AsyncParser, ParserConfig, Config
