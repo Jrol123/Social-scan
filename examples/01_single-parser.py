@@ -1,6 +1,13 @@
 from src.get_info.parsers.yandex_maps import YandexMapsParser, YandexMapsConfig
 from src.get_info.core import MasterParserConfig
 
+import sys
+import os
+
+# Добавляем корень проекта в путь поиска модулей
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(project_root)
+
 if __name__ == "__main__":
     global_config = MasterParserConfig(sort_type="Сначала положительные")
     local_config = YandexMapsConfig(1303073708)
