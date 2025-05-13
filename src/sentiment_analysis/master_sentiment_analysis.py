@@ -102,7 +102,8 @@ class MasterSentimentAnalysis:
         rdf["label"] = predictions
         return rdf
 
-    def __adjust_logits(self, logits, num_labels, label_scheme):
+    @staticmethod
+    def __adjust_logits(logits, num_labels, label_scheme):
         """
         Параметры:
         label_scheme:
