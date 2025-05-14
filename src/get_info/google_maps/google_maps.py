@@ -22,10 +22,6 @@ from src.get_info.abstract import Parser
 
 
 class GoogleMapsParser(Parser):
-    def __init__(self):
-        super().__init__(0)
-        
-    
     time_units = {'вчера': timedelta(days=1), 'день': timedelta(days=1),
                   'дн': timedelta(days=1), 'недел': timedelta(weeks=1)}
     SORT_TYPES = {'relevant': 'Самые релевантные',
@@ -35,6 +31,9 @@ class GoogleMapsParser(Parser):
     """
     Возможные виды сортировок.
     """
+    
+    def __init__(self):
+        super().__init__(0)
     
     def parse(
         self,
