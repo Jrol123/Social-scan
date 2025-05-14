@@ -62,7 +62,7 @@ class Parser(ABC):
         
         """
         if final_type not in (int, datetime):
-            raise ValueError("Достпна конвертация только в int и `datetime`")
+            raise ValueError("Доступна конвертация только в int и `datetime`")
         if isinstance(date_datetime, final_type):
             return date_datetime
         if isinstance(date_datetime, datetime):
