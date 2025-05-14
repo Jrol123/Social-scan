@@ -27,7 +27,7 @@ class MasterParser:
 
             if isinstance(parser, AsyncParser):
                 async with parser.client:
-                    results += await self.parse(global_params)
+                    results += await parser.parse(global_params)
                 # results += await parser.parse(global_params)
                 continue
             results += parser.parse(global_params)
