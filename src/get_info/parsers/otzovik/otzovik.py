@@ -227,14 +227,14 @@ def save_reviews_to_csv(reviews, filename="otzovik_reviews.csv"):
     df.to_csv(filename, index=False, encoding="utf-8")
 
 
-def otzovik_parse(url, min_date=None, file="otzovik_reviews.csv"):
-    parser = OtzovikParser(OtzovikConfig(url))
-    data = parser.parse(MasterConfig(min_date=min_date))
-    save_reviews_to_csv(data, file)
+# def otzovik_parse(url, min_date=None, file="otzovik_reviews.csv"):
+#     parser = OtzovikParser(OtzovikConfig(url))
+#     data = parser.parse(MasterConfig(min_date=min_date))
+#     save_reviews_to_csv(data, file)
 
 
-if __name__ == "__main__":
-    url = "https://otzovik.com/reviews/sanatoriy_mriya_resort_spa_russia_yalta/"
-    url2 = "https://otzovik.com/reviews/sanatoriy_slavutich_ukraina_alushta/"
-    otzovik_parse(url, datetime(year=2024, month=1, day=1))
-    # otzovik_parse(url2, 'pages_test.csv')
+# if __name__ == "__main__":
+#     url = "https://otzovik.com/reviews/sanatoriy_mriya_resort_spa_russia_yalta/"
+#     url2 = "https://otzovik.com/reviews/sanatoriy_slavutich_ukraina_alushta/"
+#     otzovik_parse(url, datetime(year=2024, month=1, day=1))
+#     # otzovik_parse(url2, 'pages_test.csv')
