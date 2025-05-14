@@ -166,3 +166,4 @@ src/get_info/telegram/*.html
 tests/sentiment/
 test.py
 src/test_llm/*.txt
+channel_list.txt

@@ -34,27 +34,24 @@ class TelegramParser(AsyncParser):
         self.client.start(phone, password)
 
     async def parse(
-        self,
-        global_conifg: GlobalConfig
+        self, global_conifg: GlobalConfig
     ) -> list[dict[str, str | int | float | None]]:
 
         if isinstance(self.config.channels_list, str):
-            channels_list = open(channels_list).readlines()
+            channels_list = open(self.config.channels_list).readlines()
             channels_list = list(map(str.strip, channels_list))
 
-        if isinstance(min_date, int):
-            min_date = datetime.fromtimestamp(min_date)
-        if isinstance(max_date, int):
-            max_date = datetime.fromtimestamp(max_date)
+        min_date = self._date_convert(global_conifg.min_date, datetime)
+        max_date = self._date_convert(global_conifg.max_date, datetime)
 
         data = []
         for channel in channels_list:
             data.extend(
                 await self.get_channel_history(
-                    channel, q, count_items, min_date, max_date, wait_sec
+                    channel, self.config.q, global_conifg.count_items, min_date, max_date, self.config.wait_sec
                 )
             )
-            time.sleep(wait_sec)
+            time.sleep(self.config.wait_sec)
 
         if not data:
             print("There is no data collected from telegram.")
