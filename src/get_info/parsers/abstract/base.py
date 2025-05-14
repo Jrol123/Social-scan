@@ -71,7 +71,7 @@ class Parser(ABC):
 
     @abstractmethod
     def parse(
-        self, global_config: Config | None = None
+        self, global_config: GlobalConfig
     ) -> list[dict[str, str | int | float | None]]:
         """
         Получение информации с сервиса по запросу.
@@ -138,9 +138,10 @@ class AsyncParser(Parser):
     """
     Абстрактный парсер.
     """
+    client: object
 
     @abstractmethod
     async def parse(
-        self, global_config: Config | None = None
+        self, global_config: GlobalConfig
     ) -> list[dict[str, str | int | float | None]]:
         pass
