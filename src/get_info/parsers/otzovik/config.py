@@ -1,4 +1,4 @@
-from src.get_info.parsers.abstract import ParserConfig
+from ..abstract import ParserConfig
 from dataclasses import dataclass
 
 

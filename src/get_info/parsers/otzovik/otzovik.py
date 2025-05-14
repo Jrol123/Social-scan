@@ -7,8 +7,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
-from src.get_info.core import MasterConfig
-from src.get_info.parsers.abstract import Parser, GlobalConfig
+from ..abstract import Parser, GlobalConfig
 from .config import OtzovikConfig
 
 
