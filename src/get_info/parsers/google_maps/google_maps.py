@@ -13,7 +13,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
-from ..abstract import Parser
+from ..abstract import Parser, GlobalConfig
+from .config import GoogleMapsConfig
 
 
 # Configure logging
@@ -21,34 +22,34 @@ from ..abstract import Parser
 # logger = logging.getLogger(__name__)
 
 
+SORT_TYPES = {'relevant': 'Самые релевантные',
+              'new': 'Сначала новые',
+              'ascending': 'По возрастанию рейтинга',
+              'descending': 'По убыванию рейтинга'}
+"""
+Возможные виды сортировок.
+"""
+
+
 class GoogleMapsParser(Parser):
-    def __init__(self):
-        super().__init__(0)
+    def __init__(self, config: GoogleMapsConfig):
+        super().__init__(0, config)
         
     
     time_units = {'вчера': timedelta(days=1), 'день': timedelta(days=1),
                   'дн': timedelta(days=1), 'недел': timedelta(weeks=1)}
-    SORT_TYPES = {'relevant': 'Самые релевантные',
-                  'new': 'Сначала новые',
-                  'ascending': 'По возрастанию рейтинга',
-                  'descending': 'По убыванию рейтинга'}
-    """
-    Возможные виды сортировок.
-    """
     
     def parse(
         self,
-        q: str | list[str],
-        count_items=-1,
-        sort_type='relevant',
-        min_date: datetime | int | None = None,
-        max_date: datetime | int | None = datetime.now(),
-        collect_extra=False,
-        wait_load=60
+        global_config: GlobalConfig
     ) -> list[dict[str, str | int | float | None]]:
-        assert sort_type in self.SORT_TYPES
+        sort_type = global_config.sort_type
+        assert sort_type in SORT_TYPES, "Нет такого вида сортировки"
+        count_items = global_config.count_items
+        min_date = self._date_convert(global_config.min_date, datetime)
+        max_date = self._date_convert(global_config.max_date, datetime)
         
-        driver = self.__initialize_browser(q)
+        driver = self.__initialize_browser(self.config.q)
         reviews = []
         try:
             # Wait for the business details to load
@@ -75,7 +76,7 @@ class GoogleMapsParser(Parser):
                                      "//div[contains(text(), 'Самые релевантные')]")
                 time.sleep(0.5)
                 self.__click_element(driver, By.XPATH,
-                                     f"//div[contains(text(), '{self.SORT_TYPES[sort_type]}')]")
+                                     f"//div[contains(text(), '{SORT_TYPES[sort_type]}')]")
                 time.sleep(3)
             
             # Scroll to load more reviews
@@ -104,7 +105,7 @@ class GoogleMapsParser(Parser):
                 time.sleep(2)
                 if prev_element == curr_element:
                     # Waiting for next reviews to load
-                    for _ in range(wait_load):
+                    for _ in range(self.config.wait_load):
                         time.sleep(1)
                         curr_element = driver.find_elements(
                             By.CSS_SELECTOR, "div[data-review-id] > div")[-1]
@@ -158,7 +159,7 @@ class GoogleMapsParser(Parser):
                 else:
                     date = date.timestamp()
                 
-                if collect_extra:
+                if self.config.collect_extra:
                     text_selector = "div > div > div[tabindex='-1'][id]"
                 else:
                     text_selector = ("div > div > div[tabindex='-1'][id]"

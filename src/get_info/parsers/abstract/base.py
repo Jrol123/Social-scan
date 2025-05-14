@@ -8,6 +8,10 @@ class Config(ABC):
         if time is None:
             return datetime.now()
         return time
+    
+    
+    
+# TODO: По-хорошему нужно было сделать отдельно конфиги для карт, отдельно для соц-сетей, чтобы разделить неиспользуемые атрибуты (по-типу сортировки), но...
 
 
 class GlobalConfig(Config):
@@ -55,6 +59,7 @@ class Parser(ABC):
 
         Returns:
             int|datetime: Время в указанном формате.
+        
         """
         if final_type not in (int, datetime):
             raise ValueError("Достпна конвертация только в int и `datetime`")
