@@ -1,5 +1,5 @@
 from src.get_info.parsers.yandex_maps import YandexMapsParser, YandexMapsConfig
-from src.get_info.core import MasterParserConfig
+from src.get_info.core import MasterConfig
 
 # import sys
 # import os
@@ -10,7 +10,7 @@ from src.get_info.core import MasterParserConfig
 
 if __name__ == "__main__":
     # yandex
-    global_config = MasterParserConfig(sort_type="Сначала положительные")
+    global_config = MasterConfig(sort_type="Сначала положительные")
     local_config = YandexMapsConfig(1303073708)
     parser = YandexMapsParser(local_config)
     result = parser.parse(global_config)

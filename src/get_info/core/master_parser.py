@@ -9,7 +9,7 @@ from dataclasses import asdict
 
 
 class MasterParser:
-    def __init__(self, parsers: list[Parser]) -> None:
+    def __init__(self, *parsers: Parser) -> None:
         """
         Сервисы передаются экземплярами!
         """
@@ -26,7 +26,9 @@ class MasterParser:
         for parser in self.parsers:
 
             if isinstance(parser, AsyncParser):
-                results += await parser.parse(global_params)
+                async with parser.client:
+                    results += await self.parse(global_params)
+                # results += await parser.parse(global_params)
                 continue
             results += parser.parse(global_params)
 
