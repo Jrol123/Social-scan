@@ -37,9 +37,15 @@ class TelegramParser(AsyncParser):
         self, global_conifg: GlobalConfig
     ) -> list[dict[str, str | int | float | None]]:
 
-        if isinstance(self.config.channels_list, str):
+        q = self.config.q
+        channels_list = self.config.channels_list
+        wait_sec = self.config.wait_sec
+        count_items = global_conifg.count_items
+        if isinstance(channels_list, str):
             channels_list = open(self.config.channels_list).readlines()
             channels_list = list(map(str.strip, channels_list))
+        else:
+            channels_list = self.config.channels_list
 
         min_date = self._date_convert(global_conifg.min_date, datetime)
         max_date = self._date_convert(global_conifg.max_date, datetime)
@@ -48,10 +54,10 @@ class TelegramParser(AsyncParser):
         for channel in channels_list:
             data.extend(
                 await self.get_channel_history(
-                    channel, self.config.q, global_conifg.count_items, min_date, max_date, self.config.wait_sec
+                    channel, q, count_items, min_date, max_date, wait_sec
                 )
             )
-            time.sleep(self.config.wait_sec)
+            time.sleep(wait_sec)
 
         if not data:
             print("There is no data collected from telegram.")
@@ -138,9 +144,10 @@ class TelegramParser(AsyncParser):
 
                 if min_date is not None and data and data[-1]["date"] < min_date:
                     break
-
-        data = [data[i]["date"].timestamp() for i in range(len(data))]
-        # print(len(data))
+        
+        for i in range(len(data)):
+            data[i]["date"] = int(data[i]["date"].timestamp())
+        
         return data
 
     async def __form_line(self, message, channel_id):
@@ -198,7 +205,7 @@ def main():
     phone_number = os.environ.get("PHONE")
     password = os.environ.get("PASSWORD")
 
-    parser = TelegramParser(int(api_id), api_hash, phone_number, password)
+    parser = TelegramParser(api_id, api_hash, phone_number, password)
     with parser.client:
         parser.client.loop.run_until_complete(
             telegram_parse(
