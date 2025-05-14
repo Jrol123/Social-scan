@@ -2,12 +2,13 @@ import time
 from datetime import datetime
 
 import pandas as pd
+import undetected_chromedriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
-import undetected_chromedriver
 
-from ..abstract import Parser, GlobalConfig
+from src.get_info.core import MasterConfig
+from src.get_info.parsers.abstract import Parser, GlobalConfig
 from .config import OtzovikConfig
 
 
@@ -18,28 +19,28 @@ class OtzovikParser(Parser):
     def parse(
         self, global_config: GlobalConfig
     ) -> list[dict[str, str | int | float | None]]:
+        min_date = self._date_convert(global_config.min_date, datetime)
+        max_date = self._date_convert(global_config.max_date, datetime)
+        count_items = global_config.count_items
+        
         driver = self.__initialize_browser(self.config.q)
-        review_links = list(set(self.__collect_review_links(driver)))
-
+        review_links, review_dates = self.__collect_review_links(
+            driver, min_date, max_date)
+        print(review_dates)
+        
         official = driver.find_elements(
             By.CSS_SELECTOR, "div.otz_product_header_left > a.product-official"
         )
         official = official[-1].get_attribute("href") if official else None
 
         data = []
-        for link in review_links:
-            review = self.__get_review_data(
-                driver,
-                link,
-                self._date_convert(global_config.min_date, datetime),
-                self._date_convert(global_config.max_date, datetime),
-                official,
-            )
+        for link, date in zip(review_links, review_dates):
+            review = self.__get_review_data(driver, link, date, official)
             if review is None:
                 continue
 
             data.append(review)
-            if global_config.count_items != -1 and len(data) >= global_config.count_items:
+            if count_items != -1 and len(data) >= count_items:
                 break
 
         return data
@@ -81,7 +82,7 @@ class OtzovikParser(Parser):
         except Exception:
             driver.execute_script("arguments[0].click();", element)
 
-    def __collect_review_links(self, driver):
+    def __collect_review_links(self, driver, min_date, max_date):
         self.__click_element(driver, value="span.tab.neg > a")
         time.sleep(2)
         self.__click_element(driver, value="#reviews-sort-tools-btn")
@@ -97,18 +98,49 @@ class OtzovikParser(Parser):
         self.__click_element(driver, value="button", find_value="Применить")
         time.sleep(3)
 
-        reviews = driver.find_elements(By.CSS_SELECTOR, "a.review-btn.review-read-link")
-        links = [link.get_attribute("href") for link in reviews]
-
+        reviews = driver.find_elements(By.CSS_SELECTOR, "div[itemprop='review']")
+        links = []
+        dates = []
+        for review in reviews:
+            date = review.find_element(
+                By.CSS_SELECTOR,
+                "div.item-right > div.rating-wrap > div.review-postdate"
+            )
+            date = (datetime.strptime(date.get_attribute("content"),
+                                     "%Y-%m-%dT%H:%M:%S%z")
+                    .replace(tzinfo=None))
+            if ((min_date is not None and date < min_date)
+               or (max_date is not None and date > max_date)):
+                continue
+            
+            links.append(review.find_element(
+                By.CSS_SELECTOR, "a.review-btn.review-read-link"
+            ).get_attribute("href"))
+            dates.append(date)
+            
         next_page = driver.find_elements(By.CSS_SELECTOR, "div.pager > div > a.next")
         if not driver.find_elements(By.CSS_SELECTOR, "div.pager") or not next_page:
-            return links
+            return links, dates
 
         while next_page:
             reviews = driver.find_elements(
-                By.CSS_SELECTOR, "a.review-btn.review-read-link"
+                By.CSS_SELECTOR, "div[itemprop='review']"
             )
-            links.extend([link.get_attribute("href") for link in reviews])
+            for review in reviews:
+                date = review.find_element(
+                    By.CSS_SELECTOR,
+                    "div.item-right > div.rating-wrap > div.review-postdate"
+                )
+                date = datetime.strptime(date.get_attribute("content"),
+                                         "%Y-%m-%dT%H:%M:%S%z")
+                if ((min_date is not None and date < min_date)
+                    or (max_date is not None and date > max_date)):
+                    continue
+                
+                links.append(review.find_element(
+                    By.CSS_SELECTOR, "a.review-btn.review-read-link"
+                ).get_attribute("href"))
+                dates.append(date)
 
             self.__click_element(driver, value="div.pager > div > a.next")
             time.sleep(2)
@@ -116,25 +148,25 @@ class OtzovikParser(Parser):
                 By.CSS_SELECTOR, "div.pager > div > a.next"
             )
 
-        return links
+        return links, dates
 
-    def __get_review_data(self, driver, url, min_date, max_date, official=None):
+    def __get_review_data(self, driver, url, date, official=None):
         driver.get(url)
         time.sleep(1)
         while self.__check_captcha(driver):
             print("Please, enter captcha to continue parsing Otzovik")
             time.sleep(5)
 
-        date = driver.find_element(
-            By.CSS_SELECTOR, "span.review-postdate.dtreviewed > abbr"
-        ).get_attribute("title")
-        date = datetime.fromisoformat(date)
-        if (min_date is not None and date < min_date) or (
-            max_date is not None and date > max_date
-        ):
-            return None
-
-        date = date.timestamp()
+        # date = driver.find_element(
+        #     By.CSS_SELECTOR, "span.review-postdate.dtreviewed > abbr"
+        # ).get_attribute("title")
+        # date = datetime.fromisoformat(date)
+        # if (min_date is not None and date < min_date) or (
+        #     max_date is not None and date > max_date
+        # ):
+        #     return None
+        #
+        # date = date.timestamp()
 
         user = driver.find_element(
             By.CSS_SELECTOR, "div.login-col > a > span[itemprop='name']"
@@ -171,7 +203,7 @@ class OtzovikParser(Parser):
             "service_id": self.service_id,
             "name": user,
             "additional_id": None,
-            "date": date,
+            "date": int(date.timestamp()),
             "rating": rating,
             "text": review_text,
             "answer": answer,
@@ -197,13 +229,13 @@ def save_reviews_to_csv(reviews, filename="otzovik_reviews.csv"):
 
 
 def otzovik_parse(url, min_date=None, file="otzovik_reviews.csv"):
-    parser = OtzovikParser()
-    data = parser.parse(url, min_date=min_date)
+    parser = OtzovikParser(OtzovikConfig(url))
+    data = parser.parse(MasterConfig(min_date=min_date))
     save_reviews_to_csv(data, file)
 
 
 if __name__ == "__main__":
     url = "https://otzovik.com/reviews/sanatoriy_mriya_resort_spa_russia_yalta/"
     url2 = "https://otzovik.com/reviews/sanatoriy_slavutich_ukraina_alushta/"
-    # otzovik_parse(url, datetime(year=2024, month=3, day=12))
+    otzovik_parse(url, datetime(year=2024, month=1, day=1))
     # otzovik_parse(url2, 'pages_test.csv')
