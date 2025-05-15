@@ -2,16 +2,10 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Type
 
-from ...abstract import Config
+from ...abstract import Config, GlobalConfig
 
 
 # TODO: По-хорошему нужно было сделать отдельно конфиги для карт, отдельно для соц-сетей, чтобы разделить неиспользуемые атрибуты (по-типу сортировки), но...
-
-
-class GlobalConfig(Config):
-    """
-    Класс, содержащий общие параметры для всех Parser.
-    """
 
 
 class ParserConfig(Config):

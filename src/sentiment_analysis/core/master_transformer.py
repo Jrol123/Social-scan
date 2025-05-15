@@ -1,2 +1,5 @@
+from .config import MasterTransformerConfig
+
 class MasterTransformer:
-    pass
+    def __init__(self) -> None:
+        pass

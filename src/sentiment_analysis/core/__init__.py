@@ -1,1 +1,2 @@
 from .master_transformer import MasterTransformer
+from .config import MasterTransformerConfig

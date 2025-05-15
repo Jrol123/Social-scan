@@ -3,8 +3,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from transformers.models.auto.modeling_auto import AutoModelForSequenceClassification
 from transformers.models.auto.tokenization_auto import AutoTokenizer
-
-AVAILABLE_LABEL_SCHEME = ["binary", "ternary"]
+from .config import MasterSentimentConfig
 
 
 class _PredictionDataset(Dataset):
@@ -28,41 +27,11 @@ class _PredictionDataset(Dataset):
 
 
 class MasterSentimentAnalysis:
-    def __init__(
-        self,
-        modelPath: str,
-        max_length: int,
-        batch_size: int,
-        label_scheme: str = "ternary",
-        cache_dir: str | None = None,
-    ):
+    def __init__(self, config: MasterSentimentConfig):
         """
         Класс для семантического анализа сообщений.
-
-        Args:
-            modelPath (str): _description_
-            max_length (int): _description_
-            batch_size (int): _description_
-            label_scheme (str, optional): Количество меток. Defaults to "ternary".
-                ```
-                'binary' -> 0: не-негатив, 1: негатив
-                'ternary' -> 0: нейтрал, 1: позитив, 2: негатив
-                ```
-            cache_dir (str | None, optional): _description_. Defaults to None.
         """
-        assert (
-            label_scheme in AVAILABLE_LABEL_SCHEME
-        ), f"Неправильная схема меток! Получено: {label_scheme}. Доступные: {AVAILABLE_LABEL_SCHEME}"
-        self.DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.BATCH_SIZE = batch_size
-        self.MAX_LENGTH = max_length
-
-        self.label_scheme = label_scheme
-
-        self.tokenizer = AutoTokenizer.from_pretrained(modelPath, cache_dir=cache_dir)
-        self.model = AutoModelForSequenceClassification.from_pretrained(
-            modelPath, cache_dir=cache_dir
-        ).to(self.DEVICE)
+        self.config = config
 
     def predict(self, df: pd.DataFrame) -> pd.DataFrame:
         """
@@ -75,23 +44,23 @@ class MasterSentimentAnalysis:
             pd.DataFrame: _description_
         """
         texts = df["text"].apply(lambda x: str(x) if pd.notnull(x) else "").tolist()
-        dataset = _PredictionDataset(texts, self.tokenizer, self.MAX_LENGTH)
-        dataloader = DataLoader(dataset, batch_size=self.BATCH_SIZE)
+        dataset = _PredictionDataset(texts, self.config.tokenizer, self.config.MAX_LENGTH)
+        dataloader = DataLoader(dataset, batch_size=self.config.BATCH_SIZE)
 
-        self.model.eval()
+        self.config.model.eval()
         predictions = []
 
         with torch.no_grad():
             for batch in dataloader:
                 inputs = {
-                    "input_ids": batch["input_ids"].to(self.DEVICE),
-                    "attention_mask": batch["attention_mask"].to(self.DEVICE),
+                    "input_ids": batch["input_ids"].to(self.config.DEVICE),
+                    "attention_mask": batch["attention_mask"].to(self.config.DEVICE),
                 }
-                outputs = self.model(**inputs)
+                outputs = self.config.model(**inputs)
                 logits = outputs.logits
 
                 logits = self.__adjust_logits(
-                    logits, self.model.config.num_labels, self.label_scheme
+                    logits, self.config.model.config.num_labels, self.config.label_scheme
                 )
                 predictions.extend(torch.argmax(logits, dim=1).cpu().tolist())
 
