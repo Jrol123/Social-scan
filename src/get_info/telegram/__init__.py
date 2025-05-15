@@ -1,1 +1,0 @@
-from .telegram_parser import TelegramParser

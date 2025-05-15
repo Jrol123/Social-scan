@@ -1,3 +1,1 @@
-from .get_info import *
-from .get_url import *
-from .sentiment_analysis import *
+from . import get_info, get_url, sentiment_analysis

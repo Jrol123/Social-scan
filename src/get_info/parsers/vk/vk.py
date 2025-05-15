@@ -1,7 +1,8 @@
 import vk_api
 from datetime import datetime
 from time import sleep
-from src.get_info.abstract import Parser
+from ..abstract import Parser, GlobalConfig
+from .config import VKConfig
 
 SERVICE_INDEX = 3
 GET_ALL_ITEMS = -1
@@ -9,9 +10,8 @@ MAX_COUNT = 200
 
 
 class VKParser(Parser):
-
-    def __init__(self, vk_token: str | tuple[str, str]):
-        super().__init__(SERVICE_INDEX)
+    def __init__(self, vk_token: str | tuple[str, str], local_config: VKConfig):
+        super().__init__(SERVICE_INDEX, local_config)
         if isinstance(vk_token, str):
             self.vk: vk_api.VkApi = vk_api.VkApi(token=vk_token)
         elif isinstance(vk_token, tuple):
@@ -21,21 +21,19 @@ class VKParser(Parser):
             raise TypeError("vk_token must be a str or a tuple of (login, password)")
 
     def parse(
-        self,
-        q: str,
-        count_items: int = 1000,
-        start_from: str = "0",
-        min_date: int | datetime = int(datetime(1970, 1, 16).timestamp()),
-        max_date: int | datetime = int(datetime.now().timestamp()),
-        fields: str = "id, first_name, last_name",
-        return_count: bool = False,
+        self, global_config: GlobalConfig
     ) -> list[dict[str, list[dict[str, str | int]]]] | int:
-        min_date = self._date_convert(min_date, int)
-        max_date = self._date_convert(max_date, int)
+        min_date = self._date_convert(global_config.min_date, int)
+        max_date = self._date_convert(global_config.max_date, int)
+
+        return_only_count = self.config.return_only_count
+        count_items = global_config.count_items
         
-        min_count = self.__get_count_items(q, min_date, max_date)
-        
-        if return_count:
+        start_from = self.config.start_from
+
+        min_count = self.__get_count_items(self.config.q, min_date, max_date)
+
+        if return_only_count:
             return min_count
         if count_items == GET_ALL_ITEMS:
             count_items = min_count
@@ -49,7 +47,7 @@ class VKParser(Parser):
         while count_items != 0:
             #! Как определять, когда записей действительно нет, а когда это просто ошибка/временное ограничение?
             count_items, cur_result = self.__search(
-                q, count_items, start_from, min_date, max_date, fields
+                self.config.q, count_items, start_from, min_date, max_date, self.config.fields
             )
             result = self.__combine_result(result, cur_result)
             print(f"rem_count: {count_items}\tlen: {len(cur_result['items'])}")
@@ -64,13 +62,13 @@ class VKParser(Parser):
                 max_date = last_date
 
         print(count_items)
-        
+
         return result["items"]
 
     def __search(
         self,
         q: str,
-        total_count: int = 1000,
+        total_count: int = -1,
         start_from: str = "0",
         start_time: int | None = 0,
         end_time: int = int(datetime.now().timestamp()),
@@ -103,21 +101,21 @@ class VKParser(Parser):
             finish_res = self.__combine_result(result, next_result)
 
             return rem_count, finish_res
-        
+
         self.__clean_result(result)
         return total_count, result
 
     def __get_count_items(self, q, min_date, max_date):
         res = self.vk.method(
-                "newsfeed.search",
-                values={
-                    "q": q,
-                    "count": 1,
-                    "start_time": min_date,
-                    "end_time": max_date,
-                },
-                raw=True,
-            )
+            "newsfeed.search",
+            values={
+                "q": q,
+                "count": 1,
+                "start_time": min_date,
+                "end_time": max_date,
+            },
+            raw=True,
+        )
         count_items = res["response"]["total_count"]
         return count_items
 
@@ -140,12 +138,14 @@ class VKParser(Parser):
             finish_res[name] = __combinator(res1[name], res2[name])
         finish_res["items"] = res1["items"] + res2["items"]
         return finish_res
+
     """
     owner_id - сообщество, from_id - тот, кто публиковал от сообщества
     
     from_id - name
     owner_id - additional_id
     """
+
     # TODO: Чистить
     def __clean_result(self, result: dict[str, list[dict[str, str | int]]]) -> None:
         def __key_clean(d: dict[str, str | list], save_keys: list[str]) -> None:
@@ -156,7 +156,9 @@ class VKParser(Parser):
                 if key not in save_keys:
                     del d[key]
 
-        def __clean(toClean_dict: list[dict[str, str | list]], save_keys: list[str]) -> None:
+        def __clean(
+            toClean_dict: list[dict[str, str | list]], save_keys: list[str]
+        ) -> None:
             for d in toClean_dict:
                 __key_clean(d, save_keys)
 
@@ -191,7 +193,7 @@ class VKParser(Parser):
             for key, rename_key in item_rename_keys.items():
                 item[rename_key] = item[key]
             for key in item_rename_keys.keys():
-                del(item[key])
+                del item[key]
 
 
 """

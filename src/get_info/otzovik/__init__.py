@@ -1,1 +1,0 @@
-from .otzovik import OtzovikParser

@@ -3,9 +3,49 @@ from datetime import datetime
 from typing import Type
 
 
+class Config(ABC):
+    def _check_data(self, time: datetime | int) -> datetime | int:
+        if time is None:
+            return datetime.now()
+        return time
+    
+    
+    
+# TODO: По-хорошему нужно было сделать отдельно конфиги для карт, отдельно для соц-сетей, чтобы разделить неиспользуемые атрибуты (по-типу сортировки), но...
+
+
+class GlobalConfig(Config):
+    """
+    Класс, содержащий общие параметры для всех Parser.
+    """
+
+
+class ParserConfig(Config):
+    """
+    Класс, содержащий локальные параметры для Parser.
+
+    На вход подаются параметры, которые индивидуальны для каждого парсера.
+
+    Args:
+        q (str | list[str]): Информация, необходимая для поиска объекта в сервисе.
+
+    """
+
+    def __init__(self, q: str | list[str]) -> None:
+        self.q = q
+
+
 class Parser(ABC):
-    def __init__(self, service_id: int):
+    def __init__(self, service_id: int, config: ParserConfig = None):
+        """
+        Парсер.
+
+        Args:
+            service_id (int): Индекс сервиса.
+
+        """
         self.service_id = service_id
+        self.config = config
 
     def _date_convert(
         self, date_datetime: datetime | int, final_type: Type[int] | Type[datetime]
@@ -19,9 +59,10 @@ class Parser(ABC):
 
         Returns:
             int|datetime: Время в указанном формате.
+        
         """
         if final_type not in (int, datetime):
-            raise ValueError("Достпна конвертация только в int и `datetime`")
+            raise ValueError("Доступна конвертация только в int и `datetime`")
         if isinstance(date_datetime, final_type):
             return date_datetime
         if isinstance(date_datetime, datetime):
@@ -30,22 +71,14 @@ class Parser(ABC):
 
     @abstractmethod
     def parse(
-        self,
-        q: str | list[str],
-        min_date: datetime | int = datetime(1970, 1, 16),
-        max_date: datetime | int = datetime.now(),
-        sort_type: str = "ascending",
-        count_items: int = -1,
+        self, global_config: GlobalConfig
     ) -> list[dict[str, str | int | float | None]]:
         """
         Получение информации с сервиса по запросу.
 
-        Args:
-            q (str | list[str]): Информация, необходимая для поиска объекта в сервисе.
-            min_date (datetime | int): Время самого раннего сообщения в формате datetime или timestamp. Defaults to ```datetime.min```.
-            max_date (datetime | int): Время самого позднего сообщения в формате datetime или timestamp. Defaults to ```datetime.now()```.
-            sort_type (str): Вид сортировки. Зависят от сервиса (см. документацию к каждому сервису отдельно). Defaults to `ascending`.
-            count_items (int): Максимальное количество возвращаемых элементов. Для получения всех используется значение -1. Defaults to -1
+        На вход получаются параметры, которые будут общими для всех парсеров.
+
+        Возможно получение пустого конфига и автогенерация полного.
 
         Returns:
             list[dict[str,str|int|float|None]]: Список сообщений. Каждое сообщение - словарь с данными. Структура сообщения:
@@ -95,4 +128,20 @@ class Parser(ABC):
             ```
 
         """
+        pass
+
+    def update_config(self, config: ParserConfig) -> None:
+        self.local_config = config
+
+
+class AsyncParser(Parser):
+    """
+    Абстрактный парсер.
+    """
+    client: object
+
+    @abstractmethod
+    async def parse(
+        self, global_config: GlobalConfig
+    ) -> list[dict[str, str | int | float | None]]:
         pass

@@ -162,7 +162,8 @@ cython_debug/
 *.csv
 *.session
 *.session-journal
-src/get_info/telegram/*.html
+src/get_info/parsers/telegram/*.html
 tests/sentiment/
-test.py
+test*.py
 src/test_llm/*.txt
+channel_list.txt

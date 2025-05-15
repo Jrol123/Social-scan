@@ -1,1 +1,0 @@
-from .vk import VKParser

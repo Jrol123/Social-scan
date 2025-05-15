@@ -1,0 +1,2 @@
+from .yandex_reviews_parser import YandexMapsParser
+from .yandex_reviews_parser import YandexMapsConfig
