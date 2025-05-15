@@ -1,1 +1,0 @@
-from .yandex_reviews_parser.utils import YandexMapsParser
