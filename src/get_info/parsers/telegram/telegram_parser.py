@@ -14,7 +14,7 @@ class TelegramParser(AsyncParser):
     def __init__(
         self,
         local_config: TelegramConfig,
-        api_id,
+        api_id: int,
         api_hash,
         phone,
         password=None,
