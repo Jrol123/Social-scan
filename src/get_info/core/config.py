@@ -5,7 +5,7 @@ from ..abstract import GlobalConfig
 
 
 @dataclass
-class MasterConfig(GlobalConfig):
+class MasterParserConfig(GlobalConfig):
     """
     Класс, содержащий глобальные параметры для MasterParser.
 
