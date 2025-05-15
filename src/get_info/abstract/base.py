@@ -2,15 +2,9 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Type
 
+from ...abstract import Config
 
-class Config(ABC):
-    def _check_data(self, time: datetime | int) -> datetime | int:
-        if time is None:
-            return datetime.now()
-        return time
-    
-    
-    
+
 # TODO: По-хорошему нужно было сделать отдельно конфиги для карт, отдельно для соц-сетей, чтобы разделить неиспользуемые атрибуты (по-типу сортировки), но...
 
 
@@ -59,7 +53,7 @@ class Parser(ABC):
 
         Returns:
             int|datetime: Время в указанном формате.
-        
+
         """
         if final_type not in (int, datetime):
             raise ValueError("Доступна конвертация только в int и `datetime`")
@@ -138,6 +132,7 @@ class AsyncParser(Parser):
     """
     Абстрактный парсер.
     """
+
     client: object
 
     @abstractmethod

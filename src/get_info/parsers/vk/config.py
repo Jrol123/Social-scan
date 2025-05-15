@@ -1,4 +1,4 @@
-from ..abstract import ParserConfig
+from ...abstract import ParserConfig
 from dataclasses import dataclass
 
 
@@ -19,7 +19,7 @@ class VKConfig(ParserConfig):
         Конфиг для VKParser
 
         Args:
-            q (str): Текст запроса. (# TODO: Описать параметры с + и -)
+            q (str): Текст запроса. Используются регулярные выражения.
             return_only_count (bool, optional): Возвращать ли только количество результатов, или нет. Defaults to False.
             fields (str, optional): Поля, которые нужно возвращать. Defaults to "id, first_name, last_name".
             start_from (str, optional): Локальный id начального сообщения (сдвиг). Defaults to "0".
