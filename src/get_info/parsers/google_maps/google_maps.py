@@ -110,7 +110,7 @@ class GoogleMapsParser(Parser):
                     time.sleep(1)
                     curr_element = driver.find_elements(
                         By.CSS_SELECTOR, "div[data-review-id] > div")[-1]
-                    print(self.config.wait_load)
+                    logging.debug(f"Waiting load time: {self.config.wait_load}")
                     if prev_element != curr_element:
                         break
                 else:  # If time is expired, consider we reached the bottom
