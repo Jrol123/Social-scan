@@ -1,21 +1,20 @@
 import pandas as pd
 from .config import MasterRatingConfig
+from ...core import MasterTransformerConfig
+from ...abstract import Transformer
 
 
-class MasterRaitingTransformer:
+class MasterRaitingTransformer(Transformer):
     def __init__(self, config: MasterRatingConfig) -> None:
         self.config = config
 
-    def transform(self, df: pd.DataFrame) -> pd.DataFrame:
+    def transform(self, global_config: MasterTransformerConfig) -> pd.DataFrame:
         """
         Трансформирование рейтинга в label
-
-        Args:
-            df (pd.DataFrame): Должен быть ТОЛЬКО С сообщениями с рейтингом.
         """
         # 1 - Негативные отзывы
 
-        rdf = df.copy()
+        rdf = global_config.rDf.copy()
 
         fin_ratings = []
         labels = []

@@ -1,9 +1,9 @@
 import pandas as pd
 import torch
 from torch.utils.data import Dataset, DataLoader
-from transformers.models.auto.modeling_auto import AutoModelForSequenceClassification
-from transformers.models.auto.tokenization_auto import AutoTokenizer
 from .config import MasterSentimentConfig
+from ...core import MasterTransformerConfig
+from ...abstract import Transformer
 
 
 class _PredictionDataset(Dataset):
@@ -26,25 +26,24 @@ class _PredictionDataset(Dataset):
         return len(self.encodings["input_ids"])
 
 
-class MasterSentimentAnalysis:
+class MasterSentimentTransformer(Transformer):
     def __init__(self, config: MasterSentimentConfig):
         """
         Класс для семантического анализа сообщений.
         """
         self.config = config
 
-    def predict(self, df: pd.DataFrame) -> pd.DataFrame:
+    def transform(self, global_config: MasterTransformerConfig) -> pd.DataFrame:
         """
         Предсказание label-ов
-
-        Args:
-            df (pd.DataFrame): df. Должен быть ТОЛЬКО С сообщениями без рейтинга.
 
         Returns:
             pd.DataFrame: _description_
         """
-        texts = df["text"].apply(lambda x: str(x) if pd.notnull(x) else "").tolist()
-        dataset = _PredictionDataset(texts, self.config.tokenizer, self.config.MAX_LENGTH)
+        texts = global_config.sDf["text"].tolist()
+        dataset = _PredictionDataset(
+            texts, self.config.tokenizer, self.config.MAX_LENGTH
+        )
         dataloader = DataLoader(dataset, batch_size=self.config.BATCH_SIZE)
 
         self.config.model.eval()
@@ -60,14 +59,16 @@ class MasterSentimentAnalysis:
                 logits = outputs.logits
 
                 logits = self.__adjust_logits(
-                    logits, self.config.model.config.num_labels, self.config.label_scheme
+                    logits,
+                    self.config.model.config.num_labels,
+                    self.config.label_scheme,
                 )
                 predictions.extend(torch.argmax(logits, dim=1).cpu().tolist())
 
         # TODO: Вычлинять те строки, что без рейтинга
         # TODO: Переводить рейтинг в label
 
-        rdf = df.copy()
+        rdf = global_config.sDf.copy()
         rdf["label"] = predictions
         return rdf
 
