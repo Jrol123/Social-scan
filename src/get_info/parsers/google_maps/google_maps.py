@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 import emoji
 import pandas as pd
 import undetected_chromedriver
-from selenium import webdriver
+# from selenium import webdriver
 # from selenium.webdriver.chrome.options import Options
 # from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -252,13 +252,13 @@ class GoogleMapsParser(Parser):
     
     @staticmethod
     def __initialize_browser(url):
-        driver = webdriver.Chrome()
-        # opts = undetected_chromedriver.ChromeOptions()
-        # opts.add_argument('--no-sandbox')
-        # opts.add_argument('--disable-dev-shm-usage')
-        # opts.add_argument('headless')
-        # opts.add_argument('--disable-gpu')
-        # driver = undetected_chromedriver.Chrome(options=opts)
+        # driver = webdriver.Chrome()
+        opts = undetected_chromedriver.ChromeOptions()
+        opts.add_argument('--no-sandbox')
+        opts.add_argument('--disable-dev-shm-usage')
+        opts.add_argument('headless')
+        opts.add_argument('--disable-gpu')
+        driver = undetected_chromedriver.Chrome(options=opts)
         driver.get(url if url.startswith('https')
                    else "https://www.google.com/maps/place/" + url)
         # time.sleep(2)
