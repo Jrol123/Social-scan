@@ -1,4 +1,4 @@
-# import logging
+import logging
 import re
 import time
 from datetime import datetime, timedelta
@@ -156,7 +156,7 @@ class GoogleMapsParser(Parser):
                    # or rating > 3):
                     continue
                 else:
-                    date = date.timestamp()
+                    date = int(date.timestamp())
                 
                 if self.config.collect_extra:
                     text_selector = "div > div > div[tabindex='-1'][id]"
