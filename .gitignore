@@ -166,4 +166,5 @@ src/get_info/parsers/telegram/*.html
 tests/sentiment/
 test*.py
 src/test_llm/*.txt
+src/clustering/*.txt
 channel_list.txt

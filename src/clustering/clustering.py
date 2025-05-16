@@ -15,6 +15,8 @@ from transformers import AutoTokenizer, AutoModel, T5EncoderModel
 
 warnings.filterwarnings("ignore")
 
+CLUSTERING_ALGORITHMS = ["kmeans", "dbscan", "agg", "hdbscan", "optics"]
+
 
 def last_token_pool(last_hidden_states: Tensor, attention_mask: Tensor) -> Tensor:
     left_padding = (attention_mask[:, -1].sum() == attention_mask.shape[0])
@@ -80,7 +82,6 @@ def gen_embeddings(data,
         max_len = (tokenizer.model_max_length
                    if tokenizer.model_max_length <= 2**20 else 512)
     
-    print(max_len)
     if task:
         embeddings = task_embeds(
             data, model, tokenizer, task, max_len,
@@ -97,7 +98,7 @@ def gen_embeddings(data,
     return embeddings
 
 
-def is_large_data(X, mem_threshold_gb=2):
+def is_large_data(X):
     """
     Определяет, считаются ли данные "большими" на основе доступной памяти.
 
@@ -113,14 +114,16 @@ def is_large_data(X, mem_threshold_gb=2):
     bool
         True, если данные большие, иначе False.
     """
+    # is_large_data.mem_threshold_gb = 2
     available_mem_gb = psutil.virtual_memory().available / (1024 ** 3)
-    dtype_memory = (X.memory_usage(deep=True, index=False).mean() / X.shape[0]
-                    if isinstance(X, pd.DataFrame) else X.nbytes / (
-            X.shape[0] * X.shape[1]))
-    estimated_mem_usage_gb = (X.shape[0] ** 2) * dtype_memory / (
-            1024 ** 3)  # Оценка памяти для матрицы расстояний (в ГБ)
+    dtype_memory =  X.nbytes / (X.shape[0] * X.shape[1])
     
-    return estimated_mem_usage_gb > mem_threshold_gb or available_mem_gb < 4
+    # Оценка памяти для матрицы расстояний (в ГБ)
+    estimated_mem_usage_gb = (X.shape[0] ** 2) * dtype_memory / (1024 ** 3)
+    return (estimated_mem_usage_gb > is_large_data.mem_threshold_gb
+            or available_mem_gb < 2)
+
+is_large_data.mem_threshold_gb = 2
 
 def compute_distance_matrix(X, metric="euclidean"):
     """
@@ -211,15 +214,18 @@ def cluster_with_algorithm(X, algorithm_name, params, distance_matrix=None):
         model = KMeans(**params, random_state=42)
     elif algorithm_name == "dbscan":
         model = DBSCAN(**params,
-                       metric="precomputed" if distance_matrix is not None else "euclidean")
+                       metric="precomputed"
+                       if distance_matrix is not None else "euclidean")
     elif algorithm_name == "agg":
         model = AgglomerativeClustering(**params)
     elif algorithm_name == 'hdbscan':
         model = HDBSCAN(**params,
-                        metric="precomputed" if distance_matrix is not None else "euclidean")
+                        metric="precomputed"
+                        if distance_matrix is not None else "euclidean")
     elif algorithm_name == 'optics':
         model = OPTICS(**params,
-                       metric="precomputed" if distance_matrix is not None else "euclidean",
+                       metric="precomputed"
+                       if distance_matrix is not None else "euclidean",
                        n_jobs=-1)
     else:
         raise ValueError(f"Алгоритм {algorithm_name} не поддерживается.")
@@ -298,6 +304,7 @@ def optimize_clustering(
     use_silhouette=True,
     n_trials=50,
     n_jobs=-1,
+    
 ):
     """
     Оптимизирует гиперпараметры кластеризации через Optuna.
@@ -340,16 +347,35 @@ def optimize_clustering(
     study.optimize(objective_partial, n_trials=n_trials, n_jobs=n_jobs)
     
     best_params = study.best_params
-    best_labels = cluster_with_algorithm(X, algorithm_name, best_params,
-                                         distance_matrix)
+    best_labels = cluster_with_algorithm(
+        X, algorithm_name, best_params, distance_matrix
+    )
     
     return best_params, best_labels, study.best_value
 
 
-data = open('../test_llm/output_examples4.txt', encoding='utf-8').read()
-data = data.strip().split('\n\n------------\n\n')
-data = [ans.split('\n\n----\n\n')[2].split('. ', 1)[1] for ans in data]
-print(*data[:10], sep='\n\n')
-
-embeds = gen_embeddings(data, task="paraphrase")
-print(embeds[:10])
+if __name__ == "__main__":
+    data = open('../test_llm/output_examples4.txt', encoding='utf-8').read()
+    data = data.strip().split('\n\n------------\n\n')
+    data = [ans.split('\n\n----\n\n')[2].split('. ', 1)[1] for ans in data]
+    # print(*data[:10], sep='\n\n')
+    
+    embeds = gen_embeddings(data, task="paraphrase")
+    
+    is_large_data.mem_threshold_gb = 1
+    best_results = {}
+    best_score = -1
+    best_alg = None
+    for alg in CLUSTERING_ALGORITHMS:
+        params, labels, score = optimize_clustering(
+            embeds, alg, use_silhouette=True, n_trials=100, n_jobs=-1
+        )
+        best_results[alg] = {'params': params, 'labels': labels, 'score': score}
+        if score > best_score:
+            best_score = score
+            best_alg = alg
+    
+    print(best_score, best_alg, best_results[best_alg]['params'])
+    (pd.DataFrame({'summary': data, 'cluster': best_results[best_alg]['labels']})
+     .to_csv('clustered_summaries1.csv'))
+    
