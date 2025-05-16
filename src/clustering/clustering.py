@@ -74,14 +74,21 @@ def gen_embeddings(data,
     else:
         model = AutoModel.from_pretrained(model_path, cache_dir=cache_dir)
     
+    try:
+        max_len = model.config.max_position_embeddings
+    except AttributeError:
+        max_len = (tokenizer.model_max_length
+                   if tokenizer.model_max_length <= 2**20 else 512)
+    
+    print(max_len)
     if task:
         embeddings = task_embeds(
-            data, model, tokenizer, task, model.config.max_position_embeddings,
+            data, model, tokenizer, task, max_len,
             "cls" if model_path == "ai-forever/FRIDA" else "mean"
         )
     else:
         embeddings = base_embeds(
-            data, model, tokenizer, model.config.max_position_embeddings
+            data, model, tokenizer, max_len
         )
     
     if normalize:
