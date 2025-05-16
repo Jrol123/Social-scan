@@ -1,3 +1,8 @@
+"""
+Этот пример посвящён разметке, второму этапу в pipeline.
+
+Здесь мы определяем, в какую из двух (трёх) групп попадёт тот или иной отзыв.
+"""
 from pandas import read_csv
 
 from src.sentiment_analysis.core import MasterTransformer, MasterTransformerConfig
@@ -39,4 +44,5 @@ if __name__ == "__main__":
     mtf = MasterTransformerConfig(results)
     mts = MasterTransformer(mtf)
     resultT = mts.transform(ratT, senT)
+    
     resultT.to_csv("test_transform.csv")
