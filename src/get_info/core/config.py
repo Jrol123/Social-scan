@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from datetime import datetime
 
-from ..parsers.abstract import GlobalConfig
+from ..abstract import GlobalConfig
 
 
 @dataclass
-class MasterConfig(GlobalConfig):
+class MasterParserConfig(GlobalConfig):
     """
     Класс, содержащий глобальные параметры для MasterParser.
 

@@ -2,7 +2,7 @@
 Пайплайн парсинга.
 """
 
-from ..parsers.abstract import Parser, AsyncParser
+from ..abstract import Parser, AsyncParser
 from .config import GlobalConfig
 from asyncio import run
 from dataclasses import asdict

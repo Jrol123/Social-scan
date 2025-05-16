@@ -1,7 +1,7 @@
 import vk_api
 from datetime import datetime
 from time import sleep
-from ..abstract import Parser, GlobalConfig
+from ...abstract import Parser, GlobalConfig
 from .config import VKConfig
 
 SERVICE_INDEX = 3
