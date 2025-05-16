@@ -25,7 +25,8 @@ from .config import GoogleMapsConfig
 SORT_TYPES = {'relevant': 'Самые релевантные',
               'new': 'Сначала новые',
               'ascending': 'По возрастанию рейтинга',
-              'descending': 'По убыванию рейтинга'}
+              'descending': 'По убыванию рейтинга',
+              'Сначала положительные': 'По убыванию рейтинга'}
 """
 Возможные виды сортировок.
 """
@@ -45,93 +46,91 @@ class GoogleMapsParser(Parser):
     ) -> list[dict[str, str | int | float | None]]:
         sort_type = global_config.sort_type
         assert sort_type in SORT_TYPES, "Нет такого вида сортировки"
+        
         count_items = global_config.count_items
         min_date = self._date_convert(global_config.min_date, datetime)
         max_date = self._date_convert(global_config.max_date, datetime)
         
         driver = self.__initialize_browser(self.config.q)
         reviews = []
-        try:
-            # Wait for the business details to load
+        # try:
+        # Wait for the business details to load
+        time.sleep(3)
+        
+        # # Locate and click the reviews section
+        # # logger.info("Searching for reviews section")
+        self.__click_element(driver, By.XPATH, "//div[contains(text(), 'Отзывы')]")
+        time.sleep(1)
+        
+        # Choose google reviews
+        if driver.find_elements(By.XPATH,
+                                "//div[contains(text(), 'Все отзывы')]"):
+            self.__click_element(driver, By.XPATH,
+                                 "//div[contains(text(), 'Все отзывы')]")
+            time.sleep(0.5)
+            self.__click_element(driver, By.XPATH,
+                                 f"//div[contains(text(), 'Google')]")
             time.sleep(3)
-            
-            # # Locate and click the reviews section
-            # # logger.info("Searching for reviews section")
-            self.__click_element(driver, By.XPATH, "//div[contains(text(), 'Отзывы')]")
-            time.sleep(1)
-            
-            # Choose google reviews
-            if driver.find_elements(By.XPATH,
-                                    "//div[contains(text(), 'Все отзывы')]"):
-                self.__click_element(driver, By.XPATH,
-                                     "//div[contains(text(), 'Все отзывы')]")
-                time.sleep(0.5)
-                self.__click_element(driver, By.XPATH,
-                                     f"//div[contains(text(), 'Google')]")
-                time.sleep(3)
-            
-            # Choose sorting type
-            if sort_type != 'relevant':
-                self.__click_element(driver, By.XPATH,
-                                     "//div[contains(text(), 'Самые релевантные')]")
-                time.sleep(0.5)
-                self.__click_element(driver, By.XPATH,
-                                     f"//div[contains(text(), '{SORT_TYPES[sort_type]}')]")
-                time.sleep(3)
-            
-            # Scroll to load more reviews
-            # logger.info("Loading reviews...")
-            
-            now = datetime.now()
-            time.sleep(30)
-            try:
-                prev_element = driver.find_elements(By.CSS_SELECTOR,
-                                                    "div[data-review-id] > div")[-1]
-            except IndexError:
-                print(driver.find_elements(By.CSS_SELECTOR,
-                                                    "div[data-review-id] > div"))
-                raise
-             
-            i = 0
-            while True:
-                self.__scroll_reviews(driver)
-                # time.sleep(3)
-                curr_element = driver.find_elements(
-                    By.CSS_SELECTOR,"div[data-review-id] > div")[-1]
-                if min_date is not None:
-                    if self.__check_date(curr_element, min_date, now):
-                        break
-                
-                time.sleep(2)
-                if prev_element == curr_element:
-                    # Waiting for next reviews to load
-                    for _ in range(self.config.wait_load):
-                        time.sleep(1)
-                        curr_element = driver.find_elements(
-                            By.CSS_SELECTOR, "div[data-review-id] > div")[-1]
-                        if prev_element != curr_element:
-                            break
-                    else:  # If time is expired, consider we reached the bottom
-                        print(i)
-                        print(curr_element.text)
-                        break
-                
-                prev_element = curr_element
-                i += 1
-            
+        
+        # Choose sorting type
+        if sort_type != 'relevant':
+            self.__click_element(driver, By.XPATH,
+                                 "//div[contains(text(), 'Самые релевантные')]")
+            time.sleep(0.5)
+            self.__click_element(driver, By.XPATH,
+                                 f"//div[contains(text(), '{SORT_TYPES[sort_type]}')]")
+            time.sleep(3)
+        
+        # Scroll to load more reviews
+        # logger.info("Loading reviews...")
+        
+        now = datetime.now()
+        # time.sleep(30)
+        try:
+            prev_element = driver.find_elements(By.CSS_SELECTOR,
+                                                "div[data-review-id] > div")[-1]
+        except IndexError:
+            print(driver.find_elements(By.CSS_SELECTOR,
+                                                "div[data-review-id] > div"))
+            raise
+        
+        last_checked = 0
+        while True:
             self.__expand_reviews(driver)
+            # self.__scroll_reviews(driver)
+            # time.sleep(3)
+            curr_element = driver.find_elements(
+                By.CSS_SELECTOR,"div[data-review-id] > div")[-1]
+            # print(curr_element)
+            
+            time.sleep(2)
+            if prev_element == curr_element:
+                # Waiting for next reviews to load
+                for _ in range(self.config.wait_load):
+                    time.sleep(1)
+                    curr_element = driver.find_elements(
+                        By.CSS_SELECTOR, "div[data-review-id] > div")[-1]
+                    logging.debug(f"Waiting load time: {self.config.wait_load}")
+                    if prev_element != curr_element:
+                        break
+                else:  # If time is expired, consider we reached the bottom
+                    print(last_checked)
+                    print(curr_element.text)
+                    break
+            
+            prev_element = curr_element
+            
+            # self.__expand_reviews(driver)
+            self.__scroll_reviews(driver)
 
             # Extract reviews
             # logger.info(f"Found {review_elements.count()} reviews")
             
-            review_elements = driver.find_elements(By.CSS_SELECTOR,
-                                                   "div[data-review-id] > div")
-            if isinstance(min_date, int):
-                min_date = datetime.fromtimestamp(min_date)
-            if isinstance(max_date, int):
-                max_date = datetime.fromtimestamp(max_date)
-            
-            for element in review_elements[1::2]:
+            review_elements = driver.find_elements(
+                By.CSS_SELECTOR, "div[data-review-id] > div"
+            )
+            print(len(review_elements), last_checked)
+            for element in review_elements[last_checked + 1::2]:
                 reviewer = element.find_element(
                     By.CSS_SELECTOR,
                     "div:nth-child(2) > div"
@@ -153,8 +152,8 @@ class GoogleMapsParser(Parser):
                 # Prepare data for output
                 date = self.text_to_date(date.lower(), now)
                 if ((min_date is not None and date < min_date)
-                   or (max_date is not None and date > max_date)
-                   or rating > 3):
+                   or (max_date is not None and date > max_date)):
+                   # or rating > 3):
                     continue
                 else:
                     date = date.timestamp()
@@ -193,16 +192,23 @@ class GoogleMapsParser(Parser):
                     "answer": self.__clean_text(answer)
                 })
                 
-                if count_items != -1 and len(reviews) >= count_items:
-                    break
+            if count_items != -1 and len(reviews) >= count_items:
+                break
+            # else:
+            #     print(len(reviews))
+            
+            last_checked = len(review_elements)
         
-        except Exception as e:
-            raise e
+        # except Exception as e:
+        #     raise e
             # logger.error(f"Error during scraping: {e}")
-        finally:
-            time.sleep(5)
-            driver.quit()
+        # finally:
+        time.sleep(5)
+        driver.quit()
         
+        if count_items != -1:
+            reviews = reviews[:count_items]
+            
         return reviews
         
     @staticmethod
@@ -299,8 +305,7 @@ class GoogleMapsParser(Parser):
         last_element = driver.find_elements(
             By.CSS_SELECTOR,
             "div[role='main'] > div > div > div[aria-hidden='true']:last-child")[-1]
-        driver.execute_script("arguments[0].scrollIntoView();",
-                              last_element)
+        driver.execute_script("arguments[0].scrollIntoView();", last_element)
         time.sleep(wait_sec)
 
     @staticmethod
@@ -330,11 +335,11 @@ class GoogleMapsParser(Parser):
                         driver.execute_script("arguments[0].click();", button)
             else:
                 # Если цикл завершился без нахождения кнопки для нажатия
-                print("There are no any 'Ещё' buttons to load.")
+                print("Больше нет кнопок 'Ещё' для загрузки.")
                 return
         
         except Exception as e:
-            print("Error occurred:", e)
+            print("Произошла ошибка:", e)
             return
     
     def __check_date(self, curr_element, min_date, now):
@@ -349,7 +354,7 @@ class GoogleMapsParser(Parser):
 
 def save_reviews_to_csv(reviews, filename="google_reviews.csv"):
     if not reviews:
-        print('There is no data collected from google maps.')
+        print('С google maps не собрано данных.')
         return
     
     df = pd.DataFrame(reviews)
