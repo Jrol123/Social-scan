@@ -1,5 +1,6 @@
 import warnings
 from functools import partial
+from typing import Iterable
 
 import numpy as np
 import optuna
@@ -42,15 +43,15 @@ def get_detailed_instruct(task_description: str, query: str) -> str:
     return f'Instruct: {task_description}\nQuery: {query}'
 
 
-def base_embeds(data, model, tokenizer, max_length=4096):
+def base_embeds(data: list[str], model, tokenizer, max_length=4096):
     tokens = tokenizer(data, max_length=max_length, padding=True, truncation=True,
                        return_tensors="pt")
     outputs = model(**tokens)
     return last_token_pool(outputs.last_hidden_state, tokens['attention_mask'])
 
 
-def task_embeds(data, model, tokenizer, task='paraphrase', max_length=512,
-                pooling_method="mean"):
+def task_embeds(data: list[str], model, tokenizer, task='paraphrase',
+                max_length=512, pooling_method="mean"):
     assert task in ['search_query', 'paraphrase', 'categorize',
                     'categorize_sentiment', 'categorize_topic',
                     'categorize_entailment']
@@ -65,7 +66,7 @@ def task_embeds(data, model, tokenizer, task='paraphrase', max_length=512,
     return pool(outputs.last_hidden_state, tokens["attention_mask"],
                 pooling_method=pooling_method)
 
-def gen_embeddings(data,
+def gen_embeddings(data: list[str],
                    model_path: str = "ai-forever/FRIDA",
                    task: str | None = None,
                    cache_dir: str | None = None,
@@ -80,7 +81,7 @@ def gen_embeddings(data,
         max_len = model.config.max_position_embeddings
     except AttributeError:
         max_len = (tokenizer.model_max_length
-                   if tokenizer.model_max_length <= 2**20 else 512)
+                   if tokenizer.model_max_length <= 1<<30 else 512)
     
     if task:
         embeddings = task_embeds(
@@ -353,6 +354,53 @@ def optimize_clustering(
     
     return best_params, best_labels, study.best_value
 
+
+def transform_cluster_labels(labels: np.array, embeddings: Tensor,
+                             divide_clusters: dict[int, int] = None,
+                             union_clusters: list[list[int]] = None):
+    # Если пересечение разделяемых и объединяемых кластеров не пустое,
+    # то исключаем в объединяемых все, что разделяются
+    if (not (divide_clusters is None or union_clusters is None)
+       and set(divide_clusters.keys()) & set(
+            [union_clusters[i][j] for i in range(len(union_clusters))
+             for j in range(len(union_clusters[i]))])):
+        i = 0
+        while i < len(union_clusters):
+            for k in divide_clusters.keys():
+                if k in union_clusters[i]:
+                    union_clusters[i].remove(k)
+            
+            if len(union_clusters[i]) <= 1:
+                del union_clusters[i]
+                continue
+            
+            i += 1
+    
+    # Заменяем метки кластеров на новые через KMeans от заданного числа кластеров
+    max_cluster = labels.max()
+    if divide_clusters is not None:
+        for i in divide_clusters.keys():
+            indices = labels == i
+            cluster_labels = (KMeans(n_clusters=divide_clusters[i], n_init=20)
+                              .fit_predict(embeddings[indices]))
+            labels[indices] = cluster_labels + max_cluster + 1
+            max_cluster = labels.max()
+    
+    # Заменяем метки кластеров меткой наименьшего кластера в группе
+    if union_clusters and union_clusters[0]:
+        for group in union_clusters:
+            group_label = min(group)
+            group.remove(group_label)
+            for k in group:
+                labels[labels == k] = group_label
+    
+    # Смещаем все метки до значений от 0 до числа кластеров - 1
+    n_labels = np.unique(labels).size
+    for k in range(n_labels):
+        while k not in labels:
+            labels[labels > k] -= 1
+    
+    return labels
 
 if __name__ == "__main__":
     data = open('../test_llm/output_examples4.txt', encoding='utf-8').read()

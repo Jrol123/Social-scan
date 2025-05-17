@@ -117,3 +117,64 @@ async def invoke_mistral(query, model="mistral-small-latest", role="user", instr
             # print(chunk.data.choices[0].delta.content, end="")
     
     return output
+
+
+def process_deepseek_clustering_correction(output):
+    output = output.split('Анализ кластеров:\n\n', 1)[1]
+    cluster_desc, results = output.split('\n\n---\n\n', 1)
+    cluster_problems = []
+    for cluster in cluster_desc.split('#### **')[1:]:
+        k, other = cluster.split(': ', 1)
+        k = int(k.split()[1])
+        theme, other = other.split('**\n', 1)
+        outliers = None
+        if '**Выбросы:**' in other:
+            problems, outliers = other.split('\n- **Выбросы:**')
+            problems = problems.split('**Проблемы:**\n')[1]
+            outliers = outliers.split('\n  - *"')[1:]
+            outliers = [outlier.rsplit('"*', 1)[0] for outlier in outliers]
+        else:
+            problems = other.split('**Проблемы:**\n')[1]
+        
+        problems = problems.strip().split('\n')
+        if isinstance(problems, list):
+            problems = [problem.strip().split(' ', 1)[1]
+                        for problem in problems]
+        elif isinstance(problems, str):
+            problems = [problems.split(' ', 1)[1]]
+        
+        cluster_problems.append({
+            'cluster': k,
+            'theme': theme,
+            'problems': problems,
+            'outliers': outliers
+        })
+    
+    print(cluster_problems)
+    
+    results = results.rsplit('**Итог:**\n', 1)[1]
+    results = results.split('- **')[1:]
+    results = [results[i].split('**', 1)[1].strip()
+               for i in range(len(results))]
+    
+    results[0] = results[0].split('\n')
+    results[0] = [[int(s) for s in results[0][i].split(' ') if s.isdigit()]
+                  for i in range(len(results[0]))]
+    divide_clusters = {results[0][i][0]: results[0][i][1]
+                       for i in range(len(results[0]))}
+    print(divide_clusters)
+    
+    results[1] = results[1].split('\n')
+    if isinstance(results[1], list):
+        results[1] = [list(map(int, results[1][i].split(': ', 1)[1].split(', ')))
+                      for i in range(len(results[1]))]
+    elif isinstance(results[1], str):
+        results[1] = [results[1].split(': ', 1)[1].split(', ')]
+    
+    union_clusters = results[1][:]
+    print(union_clusters)
+    
+    delete_clusters = list(map(int, results[2].split(', ')))
+    print(delete_clusters)
+    
+    return cluster_problems, divide_clusters, union_clusters, delete_clusters
