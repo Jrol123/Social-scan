@@ -1,6 +1,7 @@
+import asyncio
+import time
 import warnings
 from functools import partial
-from typing import Iterable
 
 import numpy as np
 import optuna
@@ -14,10 +15,18 @@ from sklearn.metrics.pairwise import pairwise_distances
 from torch import Tensor
 from transformers import AutoTokenizer, AutoModel, T5EncoderModel
 
+from src.test_llm.apirequests import invoke_chute, process_clustering_correction
+
 warnings.filterwarnings("ignore")
 
 CLUSTERING_ALGORITHMS = ["kmeans", "dbscan", "agg", "hdbscan", "optics"]
+CLUSTERING_ALGORITHM_ALIASES = {"kmeans": "k-средних",
+                                "dbscan": "DBSCAN",
+                                "agg": "агломеративная кластеризация",
+                                "hdbscan": "HDBSCAN",
+                                "optics": "OPTICS"}
 
+# ---- ГЕНЕРАЦИЯ ЭМБЕДДИНГОВ ТЕКСТА
 
 def last_token_pool(last_hidden_states: Tensor, attention_mask: Tensor) -> Tensor:
     left_padding = (attention_mask[:, -1].sum() == attention_mask.shape[0])
@@ -50,7 +59,7 @@ def base_embeds(data: list[str], model, tokenizer, max_length=4096):
     return last_token_pool(outputs.last_hidden_state, tokens['attention_mask'])
 
 
-def task_embeds(data: list[str], model, tokenizer, task='paraphrase',
+def task_embeds(data: list[str], model, tokenizer, task: str = 'paraphrase',
                 max_length=512, pooling_method="mean"):
     assert task in ['search_query', 'paraphrase', 'categorize',
                     'categorize_sentiment', 'categorize_topic',
@@ -98,6 +107,7 @@ def gen_embeddings(data: list[str],
 
     return embeddings
 
+# ---- КЛАСТЕРИЗАЦИЯ
 
 def is_large_data(X):
     """
@@ -155,19 +165,20 @@ def get_param_distributions(algorithm_name, X):
     
     if algorithm_name == "kmeans":
         return {
-            "n_clusters": optuna.distributions.IntUniformDistribution(2, min(20,
-                                                                             n_samples // 2)),
+            "n_clusters": optuna.distributions.IntUniformDistribution(
+                2, min(20, n_samples // 2)),
         }
     elif algorithm_name == "dbscan":
         return {
-            "eps": optuna.distributions.FloatDistribution(0.001, 1.0, step=0.001),
-            "min_samples": optuna.distributions.IntUniformDistribution(2, min(10,
-                                                                              n_features * 2)),
+            "eps": optuna.distributions.FloatDistribution(
+                0.001, 1.0, step=0.001),
+            "min_samples": optuna.distributions.IntUniformDistribution(
+                2, min(10, n_features * 2)),
         }
     elif algorithm_name == "agg":
         return {
-            "n_clusters": optuna.distributions.IntUniformDistribution(2, min(20,
-                                                                             n_samples // 2)),
+            "n_clusters": optuna.distributions.IntUniformDistribution(
+                2, min(20, n_samples // 2)),
             "linkage": optuna.distributions.CategoricalDistribution(
                 ["ward", "complete", "average", "single"]),
         }
@@ -175,16 +186,15 @@ def get_param_distributions(algorithm_name, X):
         return {
             "cluster_selection_epsilon": optuna.distributions.FloatDistribution(
                 0.001, 1.0, step=0.001),
-            "min_cluster_size": optuna.distributions.IntUniformDistribution(2,
-                                                                            min(20,
-                                                                                n_samples // 2)),
+            "min_cluster_size": optuna.distributions.IntUniformDistribution(
+                2, min(20, n_samples // 2)),
         }
     elif algorithm_name == "optics":
         return {
-            "min_samples": optuna.distributions.IntUniformDistribution(2, min(10,
-                                                                              n_features * 2)),
-            "max_eps": optuna.distributions.FloatDistribution(0.001, 2.0,
-                                                              step=0.001),
+            "min_samples": optuna.distributions.IntUniformDistribution(
+                2, min(10, n_features * 2)),
+            "max_eps": optuna.distributions.FloatDistribution(
+                0.001, 2.0, step=0.001),
             "cluster_method": optuna.distributions.CategoricalDistribution(
                 ["xi", "dbscan"]),
         }
@@ -215,24 +225,24 @@ def cluster_with_algorithm(X, algorithm_name, params, distance_matrix=None):
         model = KMeans(**params, random_state=42)
     elif algorithm_name == "dbscan":
         model = DBSCAN(**params,
-                       metric="precomputed"
-                       if distance_matrix is not None else "euclidean")
+                       metric="precomputed" if distance_matrix is not None
+                              else "euclidean")
     elif algorithm_name == "agg":
         model = AgglomerativeClustering(**params)
     elif algorithm_name == 'hdbscan':
         model = HDBSCAN(**params,
-                        metric="precomputed"
-                        if distance_matrix is not None else "euclidean")
+                        metric="precomputed" if distance_matrix is not None
+                               else "euclidean")
     elif algorithm_name == 'optics':
         model = OPTICS(**params,
-                       metric="precomputed"
-                       if distance_matrix is not None else "euclidean",
+                       metric="precomputed" if distance_matrix is not None
+                              else "euclidean",
                        n_jobs=-1)
     else:
         raise ValueError(f"Алгоритм {algorithm_name} не поддерживается.")
     
-    if distance_matrix is not None and algorithm_name in ["dbscan", "hdbscan",
-                                                          "optics"]:
+    if (distance_matrix is not None
+       and algorithm_name in ["dbscan", "hdbscan", "optics"]):
         labels = model.fit_predict(distance_matrix)
     else:
         X_pos = X - X.min() if algorithm_name == 'optics' else X.copy()
@@ -240,10 +250,13 @@ def cluster_with_algorithm(X, algorithm_name, params, distance_matrix=None):
     
     return labels
 
-def objective(trial, X, algorithm_name, distance_matrix=None, use_silhouette=True):
+def objective(trial: optuna.trial, X: np.array, algorithm_name: str,
+              distance_matrix: np.array = None, use_silhouette: bool = True):
     """
     Целевая функция для Optuna с поддержкой всех типов распределений.
     """
+    assert algorithm_name in CLUSTERING_ALGORITHMS
+    
     params = {}
     param_distributions = get_param_distributions(algorithm_name, X)
     
@@ -287,7 +300,7 @@ def objective(trial, X, algorithm_name, distance_matrix=None, use_silhouette=Tru
     
     labels = cluster_with_algorithm(X, algorithm_name, params, distance_matrix)
     
-    if len(np.unique(labels)) <= 3:
+    if len(np.unique(labels)) < 3:
         return -1.0 if use_silhouette else 0.0
     
     if use_silhouette:
@@ -354,6 +367,32 @@ def optimize_clustering(
     
     return best_params, best_labels, study.best_value
 
+def clustering_selection(data: list[str], n_trials, save_folder="src/clustering/",
+                         *, embeddings_model: str = "ai-forever/FRIDA",
+                         cache_dir=None, task="paraphrase", large_data_thr=1,
+                         use_silhouette=True, n_jobs=-1):
+    embeds = gen_embeddings(data, embeddings_model, task=task, cache_dir=cache_dir)
+    
+    is_large_data.mem_threshold_gb = large_data_thr
+    best_results = {}
+    best_score = -1 if use_silhouette else 0
+    best_alg = None
+    for alg in CLUSTERING_ALGORITHMS:
+        params, labels, score = optimize_clustering(
+            embeds, alg, use_silhouette=use_silhouette,
+            n_trials=n_trials, n_jobs=n_jobs
+        )
+        best_results[alg] = {'params': params, 'labels': labels, 'score': score}
+        if score > best_score:
+            best_score = score
+            best_alg = alg
+    
+    # print(best_score, best_alg, best_results[best_alg]['params'])
+    (pd.DataFrame({'summary': data, 'cluster': best_results[best_alg]['labels']})
+     .to_csv(save_folder + 'clustered_summaries1.csv'))
+    return embeds, best_alg
+
+# ---- ПРИМЕНЕНИЕ LLM ДЛЯ УЛУЧШЕНИЯ КЛАСТЕРИЗАЦИИ
 
 def transform_cluster_labels(labels: np.array, embeddings: Tensor,
                              divide_clusters: dict[int, int] = None,
@@ -402,28 +441,116 @@ def transform_cluster_labels(labels: np.array, embeddings: Tensor,
     
     return labels
 
+def clustering_correction(clusters_folder: str, embeddings: Tensor,
+                          model_name: str = "deepseek-ai/DeepSeek-V3-0324",
+                          best_alg: str = "kmeans", timeout=15):
+    assert best_alg in CLUSTERING_ALGORITHMS
+    
+    instr1 = (
+        "Ты — аналитик отзывов. Проанализируй суммаризации негативных отзывов "
+        "о компании, разбитые на кластеры, и выдели ключевые проблемы "
+        "в каждом.\nЗадача:\n1. Выдели **ключевые проблемы**, "
+        "которые чаще всего упоминаются в кластере.\n"
+        "2. Укажи (если есть) выбросы (отзывы, не соответствующие общей "
+        "теме кластера).\n"
+        "3. В конце по выявленным проблемам укажи метки кластеров, "
+        "которые можно было бы разъединить, и на какое количество кластеров, "
+        "если такие есть, иначе поставь символ \"-\".\n"
+        "4. Группы меток кластеров, которые можно было бы объединить из-за "
+        "схожести их тематик (проблем), если такие есть, "
+        "иначе поставь символ \"-\"."
+        "5. Метки кластеров, которые можно удалить, если они не описывают"
+        " проблем, связанных с бизнесом, если такие есть, "
+        "иначе поставь символ \"-\".\nНЕ ПИШИ ПОЯСНЕНИЙ К ВЫБОРУ! "
+        "НЕ ИСПОЛЗУЙ ОФОРМЛЕНИЕ MARKDOWN!"
+        "\n\nИсходные данные:\n"
+        "- Алгоритм кластеризации: {название_алгоритма} "
+        "(например, K-Means, DBSCAN, иерархическая кластеризация).\n"
+        "- Количество кластеров: {число_кластеров}.\n"
+        "- Формат входа - тексты и метки их кластеров:\n\n"
+        "Кластер 0:\nтекст1\n----\nтекст2\n----\n...\n\n"
+        "Кластер 1:\nтекст1\n----\nтекст2\n----\n...\n\n...\n\n"
+        "-Формат вывода:\n\nКластер N: тема кластера N\n - Проблемы:\n"
+        "1. ... \n2. ... \n - Выбросы:\n1. текст отзыва\n"
+        "2. текст отзыва\n...\n\nРазделённые кластеры:\n"
+        "Кластер k1 на n1 кластеров\nКластер k2 на n2 кластеров\n\n"
+        "Объединённые кластеры:\nГруппа кластеров 1: k1, k2, k3, ...\n"
+        "Группа кластеров 2: k4, k5, ...\n\nЛишние кластеры: k8, k9, ...")
+    
+    df = pd.read_csv(clusters_folder + "clustered_summaries1.csv", index_col=0)
+    labels = df['cluster'].unique()
+    labels.sort()
+    prompt = (f"- Алгоритм кластеризации: {CLUSTERING_ALGORITHM_ALIASES[best_alg]}.\n"
+              f"- Количество кластеров: {len(labels)}.\n\n")
+    for k in labels:
+        prompt += f"Кластер {k}:\n"
+        cluster = df.loc[df['cluster'] == k, 'summary']
+        if cluster.size > 30:
+            cluster = cluster.sample(30)
+        
+        prompt += '\n----\n'.join(cluster.to_list())
+        prompt += '\n\n'
+    
+    # print(prompt)
+    output = asyncio.run(invoke_chute(prompt, model_name, instruction=instr1))
+    if '</think>' in output:
+        _, output = output.split('</think>\n', 1)
+    
+    # print(output)
+    _, divide_clusters, union_clusters, delete_clusters = (
+        process_clustering_correction(output))
+    embeds = embeddings[~df['cluster'].isin(delete_clusters)]
+    df = df[~df['cluster'].isin(delete_clusters)].reset_index(drop=True)
+    new_labels = transform_cluster_labels(
+        df['cluster'].to_numpy().copy(), embeds, divide_clusters, union_clusters
+    )
+    
+    df['new_cluster'] = new_labels
+    df.to_csv(clusters_folder + 'clustered_summaries2.csv')
+    
+    instr2 = ("Ты помощник в составлении отчетов. Твоя задача из списка отзывов "
+              "ниже выявить одну общую категорию, к которой они относятся.\n\n"
+              "Формат входа - отзывы из одного кластера:\n\n"
+              "отзыв1\n----\nотзыв2\n----\n...\n\nФормат вывода:\n\n"
+              "Название категории: [название общей категории сообщений из кластера]"
+              "\nОбоснование: [рассуждения почему ты выбрал именно эту категорию]")
+    
+    labels = df['new_cluster'].unique()
+    labels.sort()
+    categories = []
+    for k in labels:
+        cluster = df.loc[df['new_cluster'] == k, 'summary']
+        if cluster.size > 60:
+            cluster = cluster.sample(60)
+        
+        prompt = '\n----\n'.join(cluster.to_list())
+        output = asyncio.run(invoke_chute(prompt, model_name, instruction=instr2))
+        if '</think>' in output:
+            _, output = output.split('</think>\n', 1)
+        
+        # print(output, end='\n\n')
+        name, reasoning = output.split('\n', 1)
+        name = (name.split(': ', 1)[1].replace('**', '')
+                .replace('[', '').replace(']', ''))
+        reasoning = reasoning.split(': ', 1)[1]
+        categories.append({"cluster": k, "name": name, "reasoning": reasoning})
+        time.sleep(timeout)
+    
+    categories = pd.DataFrame(categories)
+    categories.to_csv(clusters_folder + "categories.csv")
+    return categories
+
+
 if __name__ == "__main__":
     data = open('../test_llm/output_examples4.txt', encoding='utf-8').read()
     data = data.strip().split('\n\n------------\n\n')
     data = [ans.split('\n\n----\n\n')[2].split('. ', 1)[1] for ans in data]
     # print(*data[:10], sep='\n\n')
     
-    embeds = gen_embeddings(data, task="paraphrase")
-    
-    is_large_data.mem_threshold_gb = 1
-    best_results = {}
-    best_score = -1
-    best_alg = None
-    for alg in CLUSTERING_ALGORITHMS:
-        params, labels, score = optimize_clustering(
-            embeds, alg, use_silhouette=True, n_trials=100, n_jobs=-1
-        )
-        best_results[alg] = {'params': params, 'labels': labels, 'score': score}
-        if score > best_score:
-            best_score = score
-            best_alg = alg
-    
-    print(best_score, best_alg, best_results[best_alg]['params'])
-    (pd.DataFrame({'summary': data, 'cluster': best_results[best_alg]['labels']})
-     .to_csv('clustered_summaries1.csv'))
+    embeds, best_alg = clustering_selection(
+        data, 100, "", embeddings_model="ai-forever/FRIDA",
+        large_data_thr=1, use_silhouette=True, n_jobs=-1
+    )
+    print(CLUSTERING_ALGORITHM_ALIASES[best_alg])
+    clustering_correction("", embeds, best_alg=best_alg)
     
