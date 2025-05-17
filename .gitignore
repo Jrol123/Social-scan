@@ -168,3 +168,5 @@ test*.py
 src/test_llm/*.txt
 src/clustering/*.txt
 channel_list.txt
+
+!examples/*.csv
