@@ -6,7 +6,7 @@ import pandas as pd
 from dotenv import load_dotenv
 from telethon import TelegramClient
 
-from ..abstract import AsyncParser, GlobalConfig
+from ...abstract import AsyncParser, GlobalConfig
 from .config import TelegramConfig
 
 

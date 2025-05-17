@@ -8,7 +8,7 @@ import asyncio
 
 from dotenv import dotenv_values
 
-from src.get_info.core import MasterParser, MasterConfig
+from src.get_info.core import MasterParser, MasterParserConfig
 from src.get_info.parsers.google_maps import GoogleMapsConfig, GoogleMapsParser
 from src.get_info.parsers.otzovik import OtzovikConfig, OtzovikParser
 from src.get_info.parsers.telegram import TelegramConfig, TelegramParser
@@ -20,7 +20,9 @@ secrets = dotenv_values()
 
 
 async def main():
-    global_config = MasterConfig(count_items=10, sort_type="Сначала положительные")
+    global_config = MasterParserConfig(
+        count_items=10, sort_type="Сначала положительные"
+    )
 
     google_config = GoogleMapsConfig(
         r"https://www.google.com/maps/place/?q=place_id:ChIJ7WjSWynClEARUUiva4PiDzI"
@@ -48,12 +50,11 @@ async def main():
     )
 
     # Инициализируем клиент Telegram внутри общего event loop
-    async with tg_parser.client:
-        master_parser = MasterParser(
-            google_parser, otzovik_parser, yandex_parser, vk_parser, tg_parser
-        )
-        results = await master_parser.async_parse(global_config)
-        print(results)
+    master_parser = MasterParser(
+        tg_parser, otzovik_parser, yandex_parser, vk_parser, google_parser
+    )
+    results = await master_parser.async_parse(global_config)
+    print(results)
 
 
 if __name__ == "__main__":

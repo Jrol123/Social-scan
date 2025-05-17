@@ -2,8 +2,8 @@ import time
 import undetected_chromedriver
 from .parser import Parser
 from .config import YandexMapsConfig
-from ...abstract import Parser as aParser
-from ...abstract import GlobalConfig
+from ....abstract import Parser as aParser
+from ....abstract import GlobalConfig
 from selenium.webdriver.common.by import By
 
 import logging
