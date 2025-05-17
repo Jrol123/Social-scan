@@ -1,4 +1,4 @@
-import pandas as pd
+from pandas import DataFrame
 import torch
 from torch.utils.data import Dataset, DataLoader
 from .config import MasterSentimentConfig
@@ -33,14 +33,15 @@ class MasterSentimentTransformer(Transformer):
         """
         self.config = config
 
-    def transform(self, global_config: MasterTransformerConfig) -> pd.DataFrame:
+    def transform(self, global_config: MasterTransformerConfig) -> DataFrame:
         """
         Предсказание label-ов
 
         Returns:
-            pd.DataFrame: _description_
+            DataFrame: _description_
         """
-        texts = global_config.sDf["text"].tolist()
+        sdf = global_config.sDf.copy()
+        texts = sdf["text"].tolist()
         dataset = _PredictionDataset(
             texts, self.config.tokenizer, self.config.MAX_LENGTH
         )
@@ -65,12 +66,8 @@ class MasterSentimentTransformer(Transformer):
                 )
                 predictions.extend(torch.argmax(logits, dim=1).cpu().tolist())
 
-        # TODO: Вычлинять те строки, что без рейтинга
-        # TODO: Переводить рейтинг в label
-
-        rdf = global_config.sDf.copy()
-        rdf["label"] = predictions
-        return rdf
+        sdf["label"] = predictions
+        return sdf
 
     @staticmethod
     def __adjust_logits(logits, num_labels, label_scheme):
