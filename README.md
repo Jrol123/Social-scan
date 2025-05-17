@@ -92,7 +92,7 @@ TODO
 
 `numpy`
 
-[Mbart](https://huggingface.co/sismetanin/mbart_ru_sum_gazeta-ru-sentiment-rusentiment) — лучший компромис между количеством токенов и качеством.
+[Mbart](https://huggingface.co/sismetanin/mbart_ru_sum_gazeta-ru-sentiment-rusentiment) — лучший компромисс между количеством токенов и качеством.
 
 - (Имеет длину в 1024 токена, что покрывает примерно 87% отзывов с сайтов без рейтинга)
 
