@@ -167,3 +167,5 @@ tests/sentiment/
 test*.py
 src/test_llm/*.txt
 channel_list.txt
+
+!examples/*.csv

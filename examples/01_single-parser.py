@@ -1,12 +1,11 @@
+"""
+Этот пример посвящён парсингу, первому этапу в pipeline.
+
+В данном примере показано, как работать с парсерами по-отдельности.
+"""
 from src.get_info.parsers.yandex_maps import YandexMapsParser, YandexMapsConfig
 from src.get_info.core import MasterParserConfig
 
-# import sys
-# import os
-
-# # Добавляем корень проекта в путь поиска модулей
-# project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-# sys.path.append(project_root)
 
 if __name__ == "__main__":
     # yandex
