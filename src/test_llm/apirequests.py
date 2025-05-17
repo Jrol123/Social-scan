@@ -31,6 +31,8 @@ async def invoke_chute(
     query, model="deepseek-ai/DeepSeek-V3-0324", role="user", instruction=None
 ):
     api_token = os.environ.get("CHUTES_API_TOKEN")
+    if not api_token:
+        raise ValueError("CHUTES_API_TOKEN is missing. Please set it in the environment variables.")
 
     headers = {
         "Authorization": "Bearer " + api_token,
