@@ -22,6 +22,8 @@ if __name__ == "__main__":
         "Mriya Resort (Крым | Ялта) -купить",
         "Mriya Resort&Spa",
         "Mriya Resort&Spa (Крым | Ялта)",
+        "МРИЯ -купить",
+        "МРИЯ ('Отель') -купить"
     ]
     configs = [VKConfig(q = text, return_only_count=True) for text in texts]
     parsers = [VKParser(secrets["VK_TOKEN"], config) for config in configs]

@@ -6,7 +6,8 @@ import pandas as pd
 from dotenv import load_dotenv
 from telethon import TelegramClient
 
-from ...abstract import AsyncParser, GlobalConfig
+from ...abstract import AsyncParser
+from ...core import MasterParserConfig
 from .config import TelegramConfig
 
 
@@ -41,7 +42,7 @@ class TelegramParser(AsyncParser):
         print("ssSSss")
 
     async def parse(
-        self, global_conifg: GlobalConfig
+        self, global_conifg: MasterParserConfig
     ) -> list[dict[str, str | int | float | None]]:
         print("ssSSss")
         # assert await self.client.connect()
