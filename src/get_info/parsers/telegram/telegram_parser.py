@@ -19,8 +19,9 @@ class TelegramParser(AsyncParser):
         phone,
         password=None,
         session_name="monitoring",
-        system_version="4.16.30-vxCUSTOM",
-        app_version="1.0.1",
+        system_version="Windows 10", # 4.16.30-vxCUSTOM
+        app_version="4.16.3",
+        device_model="PC"
     ):
         super().__init__(4, local_config)
 
@@ -30,13 +31,25 @@ class TelegramParser(AsyncParser):
             api_hash,
             system_version=system_version,
             app_version=app_version,
+            device_model=device_model
         )
-        self.client.start(phone, password)
+        self.phone = phone
+        self.password = password
+        # self.client.start(phone=phone, password=password)
+        # assert self.client.connect()
+        # if not self.client.is_user_authorized():
+        print("ssSSss")
 
     async def parse(
         self, global_conifg: GlobalConfig
     ) -> list[dict[str, str | int | float | None]]:
-
+        print("ssSSss")
+        # assert await self.client.connect()
+        # if not self.client.is_user_authorized():
+        #     await self.client.send_code_request(self.phone)
+        #     await self.client.sign_in(self.phone, input("Enter code: "))
+            
+        await self.client.start(phone=self.phone, password=self.password)
         q = self.config.q
         channels_list = self.config.channels_list
         wait_sec = self.config.wait_sec
@@ -79,14 +92,15 @@ class TelegramParser(AsyncParser):
             channel = await self.client.get_entity(channel_link)
         except ValueError:
             return []
-
+        
+        num_messages = 200
         channel_id = channel.id
         print(channel_link)
         if count_items == -1:
             channel_history = [
                 message
                 async for message in self.client.iter_messages(
-                    channel_link, limit=100, search=q, offset_date=max_date
+                    channel_link, limit=num_messages, search=q, offset_date=max_date
                 )
             ]
             while channel_history:
@@ -99,7 +113,8 @@ class TelegramParser(AsyncParser):
                 channel_history = [
                     message
                     async for message in self.client.iter_messages(
-                        channel_link, limit=100, offset_date=last_date, search=q
+                        channel_link, limit=num_messages,
+                        offset_date=last_date, search=q
                     )
                 ]
                 if min_date is not None:
@@ -109,10 +124,9 @@ class TelegramParser(AsyncParser):
                             channel_history,
                         )
                     )
-
         else:
             async for message in self.client.iter_messages(
-                channel_link, limit=100, search=q, offset_date=max_date
+                channel_link, limit=num_messages, search=q, offset_date=max_date
             ):
                 if message.text:
                     data.append(await self.__form_line(message, channel_id))
@@ -124,7 +138,7 @@ class TelegramParser(AsyncParser):
             i = 0
             while len(data) < count_items:
                 time.sleep(1)
-                i += 100
+                i += num_messages
                 try:
                     offset_data = data[-1]["date"]
                 except IndexError:
@@ -132,7 +146,8 @@ class TelegramParser(AsyncParser):
 
                 async for message in self.client.iter_messages(
                     channel_link,
-                    limit=100 if i + 100 < count_items else (i - count_items) % 100,
+                    limit=num_messages if i + num_messages < count_items
+                          else (i - count_items) % num_messages,
                     offset_date=offset_data,
                     search=q,
                 ):
@@ -206,16 +221,16 @@ def main():
     password = os.environ.get("PASSWORD")
 
     parser = TelegramParser(api_id, api_hash, phone_number, password)
-    with parser.client:
-        parser.client.loop.run_until_complete(
-            telegram_parse(
-                parser,
-                count_items=1000,
-                search="МРИЯ",
-                min_date=datetime(year=2024, month=10, day=12),
-                filename="mriya_messages.csv",
-            )
+    # with parser.client:
+    parser.client.loop.run_until_complete(
+        telegram_parse(
+            parser,
+            count_items=1000,
+            search="МРИЯ",
+            min_date=datetime(year=2024, month=10, day=12),
+            filename="mriya_messages.csv",
         )
+    )
 
 
 if __name__ == "__main__":

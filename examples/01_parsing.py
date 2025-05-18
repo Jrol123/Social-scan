@@ -3,6 +3,7 @@
 """
 
 import asyncio
+from datetime import datetime
 
 from dotenv import dotenv_values
 from pandas import DataFrame
@@ -23,7 +24,8 @@ async def main():
     # Подготовка конфигураций
     
     global_config = MasterParserConfig(
-        count_items=100, sort_type="Сначала отрицательные"
+        # count_items=100, sort_type="Сначала отрицательные",
+        min_date = datetime(2024, 1,1)
     )
 
     # В парсер идёт его конфигурация + необходимые параметры (такие как токен для vk)
@@ -40,10 +42,10 @@ async def main():
     )
     otzovik_parser = OtzovikParser(otzovik_config)
 
-    vk_config = VKConfig(q="Mriya Resort (Крым | Ялта) -купить")
+    vk_config = VKConfig(q="Мрия -купить") # Mriya Resort (Крым | Ялта) -купить
     vk_parser = VKParser(secrets["VK_TOKEN"], vk_config)
 
-    tg_config = TelegramConfig("МРИЯ", ["t.me/mriyaresortchat"])
+    tg_config = TelegramConfig("МРИЯ", ["t.me/mriyaresortchat"]) # МРИЯ
     tg_parser = TelegramParser(
         tg_config,
         int(secrets["TG_ID"]),
@@ -54,7 +56,7 @@ async def main():
 
     # Парсинг
     master_parser = MasterParser(
-        tg_parser, otzovik_parser, yandex_parser, vk_parser, google_parser
+        tg_parser, vk_parser, otzovik_parser, yandex_parser, google_parser
     )
     results = await master_parser.async_parse(global_config)
 
@@ -69,5 +71,6 @@ if __name__ == "__main__":
         result = DataFrame(loop.run_until_complete(main()))
     finally:
         loop.close()
-
+    
+    print(result.groupby('service_id').count())
     result.to_csv("test_parse.csv")
