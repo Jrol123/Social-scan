@@ -563,16 +563,26 @@ def clustering_correction(
         prompt += "\n\n"
 
     # print(prompt)
-    output = asyncio.run(invoke_chute(prompt, model_name, instruction=instr1))
-    if "</think>" in output:
-        _, output = output.split("</think>\n", 1)
-
-    # print(output)
-    _, divide_clusters, union_clusters, delete_clusters = process_clustering_correction(
-        output
-    )
-    embeds = embeddings[~df["cluster"].isin(delete_clusters)]
-    df = df[~df["cluster"].isin(delete_clusters)].reset_index(drop=True)
+    while True:
+        output = asyncio.run(
+            invoke_chute(prompt, model_name, instruction=instr1))
+        if "</think>" in output:
+            _, output = output.split("</think>\n", 1)
+        
+        print(output)
+        try:
+            _, divide_clusters, union_clusters, delete_clusters = (
+                process_clustering_correction(output)
+            )
+        except IndexError:
+            continue
+        
+        break
+    
+    if delete_clusters is not None:
+        embeds = embeddings[~df["cluster"].isin(delete_clusters)]
+        df = df[~df["cluster"].isin(delete_clusters)].reset_index(drop=True)
+        
     new_labels = transform_cluster_labels(
         df["cluster"].to_numpy().copy(), embeds, divide_clusters, union_clusters
     )

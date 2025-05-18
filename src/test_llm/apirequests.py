@@ -181,24 +181,33 @@ def process_clustering_correction(output: str):
 
     results = [results[i].split(':', 1)[1].strip() for i in range(len(results))]
     
-    results[0] = results[0].split('\n')
-    results[0] = [[int(s) for s in results[0][i].split(' ') if s.isdigit()]
-                  for i in range(len(results[0]))]
-    divide_clusters = {results[0][i][0]: results[0][i][1]
-                       for i in range(len(results[0]))}
-    # print(divide_clusters)
+    divide_clusters = None
+    if results[0] != '-':
+        results[0] = results[0].split('\n')
+        if isinstance(results[0], list):
+            results[0] = [[int(s) for s in results[0][i].split(' ') if s.isdigit()]
+                          for i in range(len(results[0]))]
+        else:
+            results[0] = [[int(s) for s in results[0].split(' ') if s.isdigit()]]
+        
+        divide_clusters = {results[0][i][0]: results[0][i][1]
+                           for i in range(len(results[0]))}
+        # print(divide_clusters)
     
-    results[1] = results[1].split('\n')
-    if isinstance(results[1], list):
-        results[1] = [list(map(int, results[1][i].split(': ', 1)[1].split(', ')))
-                      for i in range(len(results[1]))]
-    elif isinstance(results[1], str):
-        results[1] = [results[1].split(': ', 1)[1].split(', ')]
+    union_clusters = None
+    if results[1] != '-':
+        results[1] = results[1].split('\n')
+        if isinstance(results[1], list):
+            results[1] = [list(map(int, results[1][i].split(': ', 1)[1].split(', ')))
+                          for i in range(len(results[1]))]
+        elif isinstance(results[1], str):
+            results[1] = [results[1].split(': ', 1)[1].split(', ')]
+        
+        union_clusters = results[1][:]
+        # print(union_clusters)
     
-    union_clusters = results[1][:]
-    # print(union_clusters)
-    
-    delete_clusters = list(map(int, results[2].split(', ')))
+    delete_clusters = (list(map(int, results[2].split(', ')))
+                       if results[2] != '-' else None)
     # print(delete_clusters)
     
     return cluster_problems, divide_clusters, union_clusters, delete_clusters
