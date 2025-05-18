@@ -17,13 +17,13 @@ DEFAULT_INSTRUCTION = (
     "проблемы и жалобы, упоминаемые пользователем, связанные "
     "с бизнесом, не теряя уточняющие детали. "
     "Сокращай объём текста минимум до 256 символов. "
-    "Соблюдай шаблон ввода:\n\nтекст отзыва пользователя"
-    "\n\n----\n\nтекст отзыва пользователя\n\n----\n\n"
-    "... (все оставшиеся отзывы)\n\n----\n\nтекст отзыва\n\n"
-    "и шаблон вывода:\n\nсуммаризация первого отзыва\n\n"
-    "----\n\nсуммаризация второго отзыва\n\n----\n\n"
-    "... (суммаризация всех оставшихся отзывов)\n\n----"
-    "\n\nсуммаризация последнего отзыва"
+    "Соблюдай шаблон ввода:\n\n1. текст отзыва"
+    "\n----\n2. текст отзыва\n----\n"
+    "... (все оставшиеся отзывы)\n----\nn. текст отзыва\n\n"
+    "Шаблон вывода:\n\n1. суммаризация первого отзыва\n"
+    "----\n2. суммаризация второго отзыва\n----\n"
+    "... (суммаризация всех оставшихся отзывов)\n----"
+    "\nn. суммаризация последнего отзыва"
 )
 
 # ---- ОТПРАВКА ЗАПРОСОВ К LLM ПО API
@@ -52,7 +52,6 @@ async def invoke_chute(
         "stream": True,
         "max_tokens": 32000,
         "temperature": 0.6
-
     }
 
     output = ""
@@ -107,7 +106,41 @@ async def invoke_mistral(
 
 # ---- ВСПОМАГАТЕЛНЫЕ ФУНКЦИИ ДЛЯ РЕШЕНИЯ ЗАДАЧ
 
-def process_clustering_correction(output):
+def summarize_reviews(reviews: pd.DataFrame,
+                      batch_size: int = 32000,
+                      instr=DEFAULT_INSTRUCTION):
+    df = reviews[['text']].reset_index(drop=True)
+    df = df.dropna(how="all")
+    df["len"] = df["text"].str.len()
+    df["cumlen"] = df["len"].cumsum()
+    df["cumlen"] = df["cumlen"] + [6 * i for i in range(len(df))]
+    
+    i = 0
+    outputs = []
+    while i*batch_size <= df.iloc[-1, -1]:
+        batch = df.loc[(i*batch_size < df['cumlen'])
+                       & (df['cumlen'] < (i + 1)*batch_size), "text"]
+        batch = [str(j + 1) + '. ' for j in range(len(batch))] + batch
+        prompt = "\n----\n".join(batch)
+        
+        output = asyncio.run(invoke_mistral(prompt, instruction=instr))
+        if output:
+            outputs.append(output)
+        else:
+            continue
+            
+        i += 1
+    
+    output = "\n----\n".join(outputs)
+    output = output.split('\n----\n')
+    if "1. " in output[0]:
+        output = [summary.split('. ', 1)[1] for summary in output]
+    elif "1.\n" in output[0]:
+        output = [summary.split('.\n', 1)[1] for summary in output]
+
+    return output
+
+def process_clustering_correction(output: str):
     output = output.split('\n\n', 1)[1]
     cluster_desc, *results = output.rsplit('\n\n', 3)
     cluster_problems = []
@@ -210,24 +243,22 @@ def summary_comparison():
         'которые относятся к классу, ставь символ "-", '
         "и если проблема не относится ни к одному классу, "
         'относи её к классу "остальные".'
-        "Сокращай текст до 128 символов на класс. "
-        "Соблюдай шаблон ввода:"
-        "\n\nтекст отзыва пользователя\n\n----\n\nтекст отзыва пользователя"
-        "\n\n----\n\n... (все оставшиеся отзывы)\n\n----\n\nтекст отзыва\n\n"
-        "и шаблон вывода:\n\n"
+        "Соблюдай шаблон ввода:\n\n1. текст отзыва\n\n----\n\n"
+        "2. текст отзыва\n\n----\n\n... (все оставшиеся отзывы)\n\n----\n\n"
+        "n. текст отзыва\n\nШаблон вывода:\n\n1.\n"
     )
-    
     
     instr2 += "\n".join(
         [
-            k + f': перечисление проблем, связанных с "{k}" ' f"в первом отзыве\n"
+            k + f': перечисление проблем с разделителем ";", '
+                f'связанных с "{k}" в отзыве 1\n'
             for k in "столовая, номер, мероприятия, персонал".split(", ")
         ]
     )
     instr2 += (
         "\nостальные: перечисление проблем в первом отзыве, не относящихся "
         "ни к одному из классов выше\n\n----\n\n"
-        "... (все остальные отзывы)\n\n----\n\n"
+        "... (все остальные отзывы)\n\n----\n\nn.\n"
     )
     instr2 += "\n".join(
         [
@@ -239,7 +270,6 @@ def summary_comparison():
         "\nостальные: перечисление проблем в последнем отзыве, не относящихся "
         "ни к одному из классов выше"
     )
-    
     
     outputs = []
     for model_name in compare_models:
@@ -278,3 +308,10 @@ def summary_comparison():
     # df = df.drop(['len', 'cumlen'], axis=1)
     # df.to_csv("summarized_data.csv", index=False)
     # print(df['summary'])
+
+
+if __name__ == "__main__":
+    reviews = pd.read_csv("../../filtered_data.csv", index_col=0)
+    summaries = summarize_reviews(reviews, instr=DEFAULT_INSTRUCTION)
+    reviews['summary'] = summaries
+    reviews[['text', 'summary']].to_csv("summarized_data.csv")

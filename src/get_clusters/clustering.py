@@ -115,7 +115,8 @@ def gen_embeddings(
         max_len = model.config.max_position_embeddings
     except AttributeError:
         max_len = (
-            tokenizer.model_max_length if tokenizer.model_max_length <= 1 << 30 else 512
+            tokenizer.model_max_length
+            if tokenizer.model_max_length <= 1 << 30 else 512
         )
 
     if task:
@@ -616,14 +617,12 @@ def clustering_correction(
 
 
 if __name__ == "__main__":
-    data = open("../test_llm/output_examples4.txt", encoding="utf-8").read()
-    data = data.strip().split("\n\n------------\n\n")
-    data = [ans.split("\n\n----\n\n")[2].split(". ", 1)[1] for ans in data]
+    data = pd.read_csv("../test_llm/summarized_data.csv", index_col=0)
     # print(*data[:10], sep='\n\n')
 
     embeds, best_alg = clustering_selection(
-        data,
-        100,
+        data['summary'].to_list().copy(),
+        200,
         "",
         embeddings_model="ai-forever/FRIDA",
         large_data_thr=1,

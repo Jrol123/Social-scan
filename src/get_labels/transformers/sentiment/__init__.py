@@ -1,2 +1,2 @@
-from .master_sentiment_transformer import MasterSentimentTransformer
 from .config import MasterSentimentConfig
+from .master_sentiment_transformer import MasterSentimentTransformer
