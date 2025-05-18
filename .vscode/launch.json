@@ -5,6 +5,13 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Cluster testing",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "src/get_clusters/clustering.py",
+            "console": "integratedTerminal"
+        }
+        {
             "name": "T: single_parser",
             "type": "debugpy",
             "request": "launch",
