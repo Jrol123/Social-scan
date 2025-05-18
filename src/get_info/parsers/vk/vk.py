@@ -1,11 +1,11 @@
 import vk_api
 from datetime import datetime
 from time import sleep
-from ...abstract import Parser, GlobalConfig
+from ...abstract import Parser
+from ...core import MasterParserConfig
 from .config import VKConfig
 
 SERVICE_INDEX = 3
-GET_ALL_ITEMS = -1
 MAX_COUNT = 200
 
 
@@ -21,21 +21,27 @@ class VKParser(Parser):
             raise TypeError("vk_token must be a str or a tuple of (login, password)")
 
     def parse(
-        self, global_config: GlobalConfig
+        self, global_config: MasterParserConfig
     ) -> list[dict[str, list[dict[str, str | int]]]] | int:
         min_date = self._date_convert(global_config.min_date, int)
         max_date = self._date_convert(global_config.max_date, int)
 
         return_only_count = self.config.return_only_count
         count_items = global_config.count_items
-        
+
         start_from = self.config.start_from
 
         min_count = self.__get_count_items(self.config.q, min_date, max_date)
 
+        if min_count == 0:
+            # VK иногда без причины выдаёт 0.
+            print(
+                "API вернул 0! Возможно, ваш запрос некорректный, а возможно виноват VK. Пожалуйста, попробуйте ещё раз. Если такое поведение сохранится, попробуйте поменять запрос."
+            )
+
         if return_only_count:
             return min_count
-        if count_items == GET_ALL_ITEMS:
+        if count_items == global_config.GET_ALL_ITEMS:
             count_items = min_count
         else:
             count_items = min(min_count, count_items)
@@ -47,7 +53,12 @@ class VKParser(Parser):
         while count_items != 0:
             #! Как определять, когда записей действительно нет, а когда это просто ошибка/временное ограничение?
             count_items, cur_result = self.__search(
-                self.config.q, count_items, start_from, min_date, max_date, self.config.fields
+                self.config.q,
+                count_items,
+                start_from,
+                min_date,
+                max_date,
+                self.config.fields,
             )
             result = self.__combine_result(result, cur_result)
             print(f"rem_count: {count_items}\tlen: {len(cur_result['items'])}")
