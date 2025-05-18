@@ -319,8 +319,80 @@ def summary_comparison():
     # print(df['summary'])
 
 
+def gen_report(theme: str,
+               data: pd.DataFrame,
+               model_name="deepseek-ai/DeepSeek-V3-0324",
+               batch_size=32000):
+    instr1 = ("Ты помощник в составлении отчетов. Твоя задача - написать "
+              "детализированный и аргументированный отчёт на заданную тему "
+              "(проблему).\n\n**Цель:** Подготовить структурированный "
+              "и детализированный подотчет на тему {theme}\n\n"
+              "### Формат отчета и требования:\n- **Формат:** Markdown\n"
+              "- **Заголовки:** Используй заголовки с уровня 2 (##).\n"
+              "- **Анализ:** Выдели основные проблемы и предложения, "
+              "которые пишут в своих отзывах пользователи.\n"
+              "- **Стиль:** Стремись к аналитическому и связному изложению;\n\n"
+              "Формат входа\n\n1. текст отзыва\n----\n2. текст отзыва\n----\n"
+              "... (все оставшиеся отзывы)\n----\nn. текст отзыва\n\n"
+              "Твой отчет:\n## {theme}"
+              )
+    instr2 = ("Ты помощник в составлении отчетов. Твоя задача - дополнить отчёт "
+              "на заданную тему (проблему).\n\n**Цель:** Дополнить "
+              "структурированный и детализированный подотчет на тему {theme}\n\n"
+              "### Формат отчета и требования:\n- **Формат:** Markdown\n"
+              "- **Заголовки:** Используй заголовки с уровня 2 (##).\n"
+              "- **Анализ:** Выдели основные проблемы и предложения, "
+              "которые пишут в своих отзывах пользователи.\n"
+              "- **Стиль:** Стремись к аналитическому и связному изложению;\n\n"
+              "Формат входа\n\nТекст подотчёта\n\n--------\n\n(n+1). текст отзыва\n----\n"
+              "(n+2). текст отзыва\n----\n... (все оставшиеся отзывы)\n----\n"
+              "(n+k). текст отзыва"
+              )
+    instr1 = instr1.format(theme=theme)
+    instr2 = instr2.format(theme=theme)
+    
+    df = data[['summary']].reset_index(drop=True)
+    df = df.dropna(how="all")
+    df["len"] = df["summary"].str.len()
+    df["cumlen"] = df["len"].cumsum()
+    df["cumlen"] = df["cumlen"] + [6 * i for i in range(len(df))]
+    
+    zero_batch = df.loc[df['cumlen'] <= batch_size, "summary"]
+    zero_batch = [str(j + 1) + '. ' for j in range(len(zero_batch))] + zero_batch
+    prompt = ("\n----\n".join(zero_batch)
+              + f"\n\nТвой отчет:\n## {theme}")
+    output = asyncio.run(invoke_chute(prompt, model_name, instruction=instr1))
+    
+    i = 1
+    start_index = len(zero_batch)
+    while i * batch_size <= df.iloc[-1, -1]:
+        batch = df.loc[(i * batch_size < df['cumlen'])
+                       & (df['cumlen'] <= (i + 1) * batch_size), "summary"]
+        batch = [str(j + start_index) + '. ' for j in range(len(batch))] + batch
+        start_index = len(batch)
+        
+        prompt = output + "\n\n--------\n\n" + "\n----\n".join(batch)
+        output = asyncio.run(invoke_chute(prompt, model_name, instruction=instr2))
+        if not output:
+            continue
+        
+        i += 1
+        
+    print(output)
+    return output
+
+
 if __name__ == "__main__":
-    reviews = pd.read_csv("../../filtered_data.csv", index_col=0)
-    summaries = summarize_reviews(reviews, instr=DEFAULT_INSTRUCTION)
-    reviews['summary'] = summaries
-    reviews[['text', 'summary']].to_csv("summarized_data.csv")
+    # reviews = pd.read_csv("../../filtered_data.csv", index_col=0)
+    # summaries = summarize_reviews(reviews, instr=DEFAULT_INSTRUCTION)
+    # reviews['summary'] = summaries
+    # reviews[['text', 'summary']].to_csv("summarized_data.csv")
+    summaries = pd.read_csv("../get_clusters/clustered_summaries2.csv", index_col=0)
+    clusters = pd.read_csv("../get_clusters/categories.csv", index_col=0)
+    subreports = []
+    for i in range(len(clusters)):
+        subreports.append(gen_report(
+            str(clusters.loc[i, 'name']),
+            summaries[summaries['new_cluster'] == clusters.loc[i, 'cluster']]
+        ))
+    
