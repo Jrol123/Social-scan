@@ -17,7 +17,7 @@ from transformers.models.auto.tokenization_auto import AutoTokenizer
 from transformers.models.auto.modeling_auto import AutoModel
 from transformers.models.t5 import T5EncoderModel
 
-from src.test_llm.apirequests import invoke_chute, process_clustering_correction
+from ..test_llm import invoke_chute, process_clustering_correction
 
 warnings.filterwarnings("ignore")
 
