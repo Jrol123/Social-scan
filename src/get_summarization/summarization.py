@@ -1,7 +1,7 @@
 import asyncio
 import pandas as pd
 
-from ..apirequests import invoke_chute, invoke_mistral
+from ...apirequests import invoke_chute, invoke_mistral
 
 NNAME = {
     "mistral": [invoke_mistral, "mistral-small-latest"],

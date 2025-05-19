@@ -1,1 +1,4 @@
-from . import apirequests, summarization, clusterization
+"""
+Суммаризация отзывов.
+"""
+from .summarization import summarize_reviews
