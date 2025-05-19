@@ -32,6 +32,7 @@ CLUSTERING_ALGORITHM_ALIASES = {
 
 
 def process_clustering_correction(output: str):
+    """Обработка структурированного запроса для улучшения кластеризации"""
     output = output.split("\n\n", 1)[1]
     cluster_desc, *results = output.rsplit("\n\n", 3)
     cluster_problems = []
@@ -136,6 +137,7 @@ def get_detailed_instruct(task_description: str, query: str) -> str:
 
 
 def base_embeds(data: list[str], model, tokenizer, max_length=4096):
+    """Генерация эмбеддингов обычными моделями"""
     tokens = tokenizer(
         data, max_length=max_length, padding=True, truncation=True, return_tensors="pt"
     )
@@ -151,6 +153,7 @@ def task_embeds(
     max_length=512,
     pooling_method="mean",
 ):
+    """Генерация эмбеддингов task моделями, с инструкциями для решения определённой задачи"""
     assert task in [
         "search_query",
         "paraphrase",
@@ -182,6 +185,7 @@ def gen_embeddings(
     cache_dir: str | None = None,
     normalize: bool = False,
 ):
+    """Генерация эмбеддингов текста выбранной моделью"""
     tokenizer = AutoTokenizer.from_pretrained(model_path, cache_dir=cache_dir)
     if model_path == "ai-forever/FRIDA":
         model = T5EncoderModel.from_pretrained(model_path, cache_dir=cache_dir)
@@ -270,7 +274,7 @@ def compute_distance_matrix(X, metric="euclidean"):
 
 def get_param_distributions(algorithm_name, X):
     """
-    Возвращает распределения параметров для Optuna (совместимые с v3.0+).
+    Возвращает распределения параметров для Optuna.
     """
     n_samples, n_features = X.shape
 
@@ -510,6 +514,7 @@ def clustering_selection(
     n_jobs=-1,
     exclude_algorithms: list[str] = None
 ):
+    """Подбирает наилучший алгоритм кластеризации по метрике"""
     embeds = gen_embeddings(data, embeddings_model, task=task, cache_dir=cache_dir,
                             normalize=normalize)
 
@@ -568,6 +573,7 @@ def transform_cluster_labels(
     divide_clusters: dict[int, int] = None,
     union_clusters: list[list[int]] = None,
 ):
+    """Преобразует метки кластеров в соответствии с заданными изменениями"""
     # Если пересечение разделяемых и объединяемых кластеров не пустое,
     # то исключаем в объединяемых все, что разделяются
     if not (divide_clusters is None or union_clusters is None) and set(
@@ -627,6 +633,8 @@ def clustering_correction(
     best_alg: str = "kmeans",
     timeout=15,
 ):
+    """Отправляет запросы к LLM для улучшения кластеризации
+       и формирует их названия и обоснование"""
     assert best_alg in CLUSTERING_ALGORITHMS
 
     instr1 = (
