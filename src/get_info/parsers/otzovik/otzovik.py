@@ -7,9 +7,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
+from .config import OtzovikConfig
 from ...abstract import Parser
 from ...core import MasterParserConfig
-from .config import OtzovikConfig
 
 
 class OtzovikParser(Parser):

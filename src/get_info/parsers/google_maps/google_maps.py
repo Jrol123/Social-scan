@@ -30,10 +30,10 @@ SORT_DICT = {
         "default": "По умолчанию",
     }
 
-SORT_TYPES = {'relevant': 'Самые релевантные',
-              'new': 'Сначала новые',
-              'ascending': 'По возрастанию рейтинга',
-              'descending': 'По убыванию рейтинга',}
+SORT_TYPES = {'default': 'Самые релевантные',
+              'date_descending': 'Сначала новые',
+              'rating_ascending': 'По возрастанию рейтинга',
+              'rating_descending': 'По убыванию рейтинга',}
 """
 Возможные виды сортировок.
 """
@@ -80,7 +80,7 @@ class GoogleMapsParser(Parser):
             time.sleep(3)
         
         # Choose sorting type
-        if sort_type != 'relevant':
+        if sort_type != 'default':
             self.__click_element(driver, By.XPATH,
                                  "//div[contains(text(), 'Самые релевантные')]")
             time.sleep(0.5)
@@ -161,6 +161,9 @@ class GoogleMapsParser(Parser):
                 if ((min_date is not None and date < min_date)
                    or (max_date is not None and date > max_date)):
                    # or rating > 3):
+                    if sort_type == 'date_descending':
+                        break
+                        
                     continue
                 else:
                     date = int(date.timestamp())
