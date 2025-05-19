@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 
-from ..abstract import GlobalConfig
+from ...abstract import GlobalConfig
 
 
 @dataclass
@@ -15,7 +15,7 @@ class MasterParserConfig(GlobalConfig):
         self,
         min_date: datetime | int = datetime(1970, 1, 16),
         max_date: datetime | int | None = None,
-        sort_type: str = "ascending",
+        sort_type: str = "rating_ascending",
         count_items: int = GET_ALL_ITEMS,
     ) -> None:
         """
@@ -24,7 +24,7 @@ class MasterParserConfig(GlobalConfig):
         Args:
             min_date (datetime | int): Время самого раннего сообщения в формате datetime или timestamp. Defaults to ```datetime(1970, 1, 16)```.
             max_date (datetime | int): Время самого позднего сообщения в формате datetime или timestamp. Defaults to ```datetime.now()``` (now считается от момента генерации конфига). #! TODO: сделать так, чтобы пересчитывалось каждый раз при запуске парсинга
-            sort_type (str): Вид сортировки. Зависит от сервиса (см. документацию к каждому сервису отдельно). Defaults to `ascending`.
+            sort_type (str): Вид сортировки. Доступные виды сортировок можно посмотреть в SORT_TYPES. Defaults to `rating_ascending`.
             count_items (int): Максимальное количество возвращаемых элементов. Для получения всех используется значение {self.GET_ALL_ITEMS}. Defaults to {self.GET_ALL_ITEMS}
 
         """

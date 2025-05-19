@@ -14,3 +14,4 @@ class GlobalConfig(Config):
     """
     Класс, содержащий общие параметры.
     """
+    pass

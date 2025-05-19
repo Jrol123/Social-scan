@@ -7,7 +7,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
-from ...abstract import Parser, GlobalConfig
+from ...abstract import Parser
+from ...core import MasterParserConfig
 from .config import OtzovikConfig
 
 
@@ -16,7 +17,7 @@ class OtzovikParser(Parser):
         super().__init__(2, local_config)
 
     def parse(
-        self, global_config: GlobalConfig
+        self, global_config: MasterParserConfig
     ) -> list[dict[str, str | int | float | None]]:
         min_date = self._date_convert(global_config.min_date, datetime)
         max_date = self._date_convert(global_config.max_date, datetime)

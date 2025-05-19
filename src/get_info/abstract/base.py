@@ -2,8 +2,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Type
 
-from ...abstract import Config
-from ..core import MasterParserConfig
+from ...abstract import Config, GlobalConfig
 
 
 # TODO: По-хорошему нужно было сделать отдельно конфиги для карт, отдельно для соц-сетей, чтобы разделить неиспользуемые атрибуты (по-типу сортировки), но...
@@ -25,7 +24,7 @@ class ParserConfig(Config):
 
 
 class Parser(ABC):
-    def __init__(self, service_id: int, config: ParserConfig = None):
+    def __init__(self, service_id: int, config: ParserConfig):
         """
         Парсер.
 
@@ -60,7 +59,7 @@ class Parser(ABC):
 
     @abstractmethod
     def parse(
-        self, global_config: MasterParserConfig
+        self, global_config: GlobalConfig
     ) -> list[dict[str, str | int | float | None]]:
         """
         Получение информации с сервиса по запросу.

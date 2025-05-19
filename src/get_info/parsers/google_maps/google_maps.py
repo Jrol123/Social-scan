@@ -13,7 +13,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
-from ...abstract import Parser, GlobalConfig
+from ...abstract import Parser
+from ...core import MasterParserConfig
 from .config import GoogleMapsConfig
 
 
@@ -22,11 +23,19 @@ from .config import GoogleMapsConfig
 # logger = logging.getLogger(__name__)
 
 
+SORT_DICT = {
+        "rating_ascending": "Сначала отрицательные",
+        "rating_descending": "Сначала положительные",
+        "date_descending": "По новизне",
+        "default": "По умолчанию",
+    }
+
 SORT_TYPES = {'relevant': 'Самые релевантные',
               'new': 'Сначала новые',
               'ascending': 'По возрастанию рейтинга',
               'descending': 'По убыванию рейтинга',
               'Сначала положительные': 'По убыванию рейтинга'}
+
 """
 Возможные виды сортировок.
 """
@@ -42,10 +51,10 @@ class GoogleMapsParser(Parser):
     
     def parse(
         self,
-        global_config: GlobalConfig
+        global_config: MasterParserConfig
     ) -> list[dict[str, str | int | float | None]]:
         sort_type = global_config.sort_type
-        assert sort_type in SORT_TYPES, "Нет такого вида сортировки"
+        assert sort_type in SORT_DICT, "Нет такого вида сортировки"
         
         count_items = global_config.count_items
         min_date = self._date_convert(global_config.min_date, datetime)
