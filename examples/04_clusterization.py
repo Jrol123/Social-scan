@@ -13,15 +13,14 @@ if __name__ == "__main__":
 
     secrets = dotenv_values()
 
-    res = MasterClusterization(
+    MasterClusterization(
         data,
         secrets["CHUTES_API_TOKEN"],
         200,
-        "",
+        "examples/04_clusterization/",
         embeddings_model="ai-forever/FRIDA",
         cache_dir="D:/TRANSFORMERS_MODELS",
         large_data_thr=1,
         use_silhouette=True,
         n_jobs=-1,
     )
-    res.to_csv("examples/example_clusterized_data.csv")
