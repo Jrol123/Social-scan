@@ -5,7 +5,6 @@
 from ..abstract import Parser, AsyncParser
 from .config import MasterParserConfig
 from asyncio import run
-from dataclasses import asdict
 
 
 class MasterParser:
@@ -26,6 +25,7 @@ class MasterParser:
         #! TODO: Сделать сохранение промежуточных результатов в папке tmp. После полного парсинга собирать файлы и удалять эту папку вместе с содержимым.
 
         for parser in self.parsers:
+            print(parser.__class__.__name__)
             if isinstance(parser, AsyncParser):
                 # async with parser.client:
                 results += await parser.parse(global_params)
