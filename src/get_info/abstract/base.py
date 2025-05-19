@@ -2,7 +2,8 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Type
 
-from ...abstract import Config, GlobalConfig
+from ...abstract import Config
+from ..core import MasterParserConfig
 
 
 # TODO: По-хорошему нужно было сделать отдельно конфиги для карт, отдельно для соц-сетей, чтобы разделить неиспользуемые атрибуты (по-типу сортировки), но...
@@ -59,7 +60,7 @@ class Parser(ABC):
 
     @abstractmethod
     def parse(
-        self, global_config: GlobalConfig
+        self, global_config: MasterParserConfig
     ) -> list[dict[str, str | int | float | None]]:
         """
         Получение информации с сервиса по запросу.
