@@ -361,13 +361,13 @@ def gen_report(theme: str,
     
     zero_batch = df.loc[df['cumlen'] <= batch_size, "summary"]
     zero_batch = [str(j + 1) + '. ' for j in range(len(zero_batch))] + zero_batch
-    prompt = ("\n----\n".join(zero_batch)
-              + f"\n\nТвой отчет:\n## {theme}")
+    prompt = ("\n----\n".join(zero_batch) + f"\n\nТвой отчет:\n## {theme}")
     try:
         output = asyncio.run(invoke_chute(prompt, model_name, instruction=instr1))
     except asyncio.exceptions.TimeoutError:
         time.sleep(20)
         output = asyncio.run(invoke_chute(prompt, model_name, instruction=instr1))
+
     
     # print(output)
     # print("не является важной" in output)
