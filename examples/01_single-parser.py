@@ -9,7 +9,7 @@ from src.get_info.core import MasterParserConfig
 
 if __name__ == "__main__":
     # yandex
-    global_config = MasterParserConfig(sort_type="Сначала положительные")
+    global_config = MasterParserConfig(sort_type="rating_ascending")
     local_config = YandexMapsConfig(1303073708)
     parser = YandexMapsParser(local_config)
     result = parser.parse(global_config)

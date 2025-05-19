@@ -373,7 +373,7 @@ def gen_report(theme: str,
     except asyncio.exceptions.TimeoutError:
         time.sleep(20)
         output = asyncio.run(invoke_chute(prompt, model_name, instruction=instr1))
-    
+
     if "Заданная тема не является важной" in output:
         print(output)
         return None
@@ -390,8 +390,7 @@ def gen_report(theme: str,
         
         time.sleep(10)
         try:
-            output = asyncio.run(
-                invoke_chute(prompt, model_name, instruction=instr2))
+            output = asyncio.run(invoke_chute(prompt, model_name, instruction=instr2))
         except asyncio.exceptions.TimeoutError:
             continue
         
