@@ -164,7 +164,7 @@ cython_debug/
 *.session-journal
 src/get_info/parsers/telegram/*.html
 tests/sentiment/
-test*.py
+test.py
 src/TO_REFACTOR/test_llm/*.txt
 src/get_clusters/*.txt
 channel_list.txt

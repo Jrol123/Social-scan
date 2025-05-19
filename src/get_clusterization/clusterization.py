@@ -50,7 +50,8 @@ def process_clustering_correction(output: str):
                 outliers = None
             else:
                 outliers = [
-                    outlier.split(". ", 1)[1] for outlier in outliers.split("\n")
+                    outlier.split(". ", 1)[1]
+                    for outlier in outliers.split("\n")
                 ]
         else:
             problems = other.split("Проблемы:\n")[1]
@@ -667,6 +668,7 @@ def clustering_correction(
                 process_clustering_correction(output)
             )
         except IndexError:
+            
             continue
 
         break
@@ -674,7 +676,9 @@ def clustering_correction(
     if delete_clusters is not None:
         embeds = embeddings[~df["cluster"].isin(delete_clusters)]
         df = df[~df["cluster"].isin(delete_clusters)].reset_index(drop=True)
-
+    else:
+        embeds = embeddings
+    
     new_labels = transform_cluster_labels(
         df["cluster"].to_numpy().copy(), embeds, divide_clusters, union_clusters
     )
