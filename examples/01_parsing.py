@@ -5,6 +5,7 @@
 import asyncio
 from datetime import datetime
 
+import pandas as pd
 from dotenv import dotenv_values
 from pandas import DataFrame
 
@@ -26,7 +27,8 @@ async def main():
     global_config = MasterParserConfig(
         # count_items=100, sort_type="Сначала отрицательные",
         max_date=datetime(2025, 5, 18), min_date=datetime(2024, 1, 1),
-        sort_type='rating_ascending'
+        sort_type='date_descending'
+
     )
 
     # В парсер идёт его конфигурация + необходимые параметры (такие как токен для vk)
@@ -57,7 +59,8 @@ async def main():
 
     # Парсинг
     master_parser = MasterParser(
-        tg_parser, vk_parser, otzovik_parser, yandex_parser, google_parser
+        # tg_parser, vk_parser, otzovik_parser,
+        yandex_parser, google_parser
     )
     results = await master_parser.async_parse(global_config)
 
@@ -68,10 +71,13 @@ if __name__ == "__main__":
     # Используем явное создание event loop
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    try:
-        result = DataFrame(loop.run_until_complete(main()))
-    finally:
-        loop.close()
-    
-    print(result.groupby('service_id').count())
+    # try:
+    result = DataFrame(loop.run_until_complete(main()))
+    # finally:
+    print(result)
     result.to_csv("test_parse.csv")
+    print(result.groupby('service_id').count())
+    loop.close()
+    
+    # print(result.groupby('service_id').count())
+    # result.to_csv("test_parse.csv")

@@ -165,8 +165,8 @@ cython_debug/
 src/get_info/parsers/telegram/*.html
 tests/sentiment/
 test*.py
-src/test_llm/*.txt
-src/clustering/*.txt
+src/TO_REFACTOR/test_llm/*.txt
+src/get_clusters/*.txt
 channel_list.txt
 
 !examples/*.csv

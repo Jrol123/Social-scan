@@ -26,6 +26,7 @@ DEFAULT_INSTRUCTION = (
     "\nn. суммаризация последнего отзыва"
 )
 
+
 # ---- ОТПРАВКА ЗАПРОСОВ К LLM ПО API
 
 async def invoke_chute(
@@ -33,16 +34,17 @@ async def invoke_chute(
 ):
     api_token = os.environ.get("CHUTES_API_TOKEN")
     if not api_token:
-        raise ValueError("CHUTES_API_TOKEN is missing. Please set it in the environment variables.")
-
+        raise ValueError(
+            "CHUTES_API_TOKEN is missing. Please set it in the environment variables.")
+    
     headers = {
         "Authorization": "Bearer " + api_token,
         "Content-Type": "application/json",
     }
-
+    
     if instruction is None:
         instruction = DEFAULT_INSTRUCTION
-
+    
     body = {
         "model": model,
         "messages": [
@@ -53,7 +55,7 @@ async def invoke_chute(
         "max_tokens": 32000,
         "temperature": 0.6
     }
-
+    
     output = ""
     async with aiohttp.ClientSession() as session:
         async with session.post(
@@ -69,25 +71,26 @@ async def invoke_chute(
                         chunk = data.strip()
                         if chunk == "None":
                             continue
-
+                        
                         chunk = json.loads(chunk)
                         if chunk["choices"][0]["delta"]["content"]:
                             output += chunk["choices"][0]["delta"]["content"]
                             # print(chunk['choices'][0]['delta']['content'], end='')
                     except Exception as e:
                         print(f"Error parsing chunk: {e}")
-
+    
     return output
+
 
 async def invoke_mistral(
     query, model="mistral-small-latest", role="user", instruction=None
 ):
     api_key = os.environ["MISTRAL_API_TOKEN"]
     client = Mistral(api_key=api_key)
-
+    
     if instruction is None:
         instruction = DEFAULT_INSTRUCTION
-
+    
     response = await client.chat.stream_async(
         model=model,
         messages=[
@@ -95,14 +98,15 @@ async def invoke_mistral(
             {"role": role, "content": query},
         ],
     )
-
+    
     output = ""
     async for chunk in response:
         if chunk.data.choices[0].delta.content is not None:
             output += chunk.data.choices[0].delta.content
             # print(chunk.data.choices[0].delta.content, end="")
-
+    
     return output
+
 
 # ---- ВСПОМАГАТЕЛНЫЕ ФУНКЦИИ ДЛЯ РЕШЕНИЯ ЗАДАЧ
 
@@ -117,9 +121,9 @@ def summarize_reviews(reviews: pd.DataFrame,
     
     i = 0
     outputs = []
-    while i*batch_size <= df.iloc[-1, -1]:
-        batch = df.loc[(i*batch_size < df['cumlen'])
-                       & (df['cumlen'] < (i + 1)*batch_size), "text"]
+    while i * batch_size <= df.iloc[-1, -1]:
+        batch = df.loc[(i * batch_size < df['cumlen'])
+                       & (df['cumlen'] < (i + 1) * batch_size), "text"]
         batch = [str(j + 1) + '. ' for j in range(len(batch))] + batch
         prompt = "\n----\n".join(batch)
         
@@ -128,7 +132,7 @@ def summarize_reviews(reviews: pd.DataFrame,
             outputs.append(output)
         else:
             continue
-            
+        
         i += 1
     
     output = "\n----\n".join(outputs)
@@ -137,8 +141,9 @@ def summarize_reviews(reviews: pd.DataFrame,
         output = [summary.split('. ', 1)[1] for summary in output]
     elif "1.\n" in output[0]:
         output = [summary.split('.\n', 1)[1] for summary in output]
-
+    
     return output
+
 
 def process_clustering_correction(output: str):
     output = output.split('\n\n', 1)[1]
@@ -178,7 +183,7 @@ def process_clustering_correction(output: str):
         })
     
     # print(cluster_problems)
-
+    
     results = [results[i].split(':', 1)[1].strip() for i in range(len(results))]
     
     divide_clusters = None
@@ -198,8 +203,9 @@ def process_clustering_correction(output: str):
     if results[1] != '-':
         results[1] = results[1].split('\n')
         if isinstance(results[1], list):
-            results[1] = [list(map(int, results[1][i].split(': ', 1)[1].split(', ')))
-                          for i in range(len(results[1]))]
+            results[1] = [
+                list(map(int, results[1][i].split(': ', 1)[1].split(', ')))
+                for i in range(len(results[1]))]
         elif isinstance(results[1], str):
             results[1] = [results[1].split(': ', 1)[1].split(', ')]
         
@@ -211,6 +217,7 @@ def process_clustering_correction(output: str):
     # print(delete_clusters)
     
     return cluster_problems, divide_clusters, union_clusters, delete_clusters
+
 
 def summary_comparison():
     parsers_path = "src/get_info/parsers/"
@@ -232,7 +239,6 @@ def summary_comparison():
     
     # output = asyncio.run(invoke_chute(prompt))
     # output = asyncio.run(invoke_mistral(prompt))
-    
     
     compare_models = [
         "deepseek-ai/DeepSeek-V3-0324",
@@ -297,7 +303,7 @@ def summary_comparison():
             else:
                 output = asyncio.run(invoke_mistral(prompt, model_name,
                                                     instruction=instr2))
-    
+        
         outputs.append([s.strip() for s in output.split("----")])
     
     for i in range(max_texts):
@@ -393,7 +399,7 @@ def gen_report(theme: str,
         
         prev_output = output
         i += 1
-        
+    
     print(output)
     return output
 
@@ -413,4 +419,3 @@ if __name__ == "__main__":
             str(clusters.loc[i, 'name']),
             summaries[summaries['new_cluster'] == clusters.loc[i, 'cluster']]
         ))
-    
