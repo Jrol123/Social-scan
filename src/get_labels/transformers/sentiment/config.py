@@ -64,3 +64,6 @@ class MasterSentimentConfig(Config):
             except AttributeError:
                 self.MAX_LENGTH = (self.tokenizer.model_max_length
                         if self.tokenizer.model_max_length <= 1<<30 else 512)
+            
+            # print(self.MAX_LENGTH)
+            

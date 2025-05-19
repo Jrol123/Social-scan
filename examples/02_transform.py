@@ -17,7 +17,7 @@ from src.get_labels.transformers.rating import (
 
 if __name__ == "__main__":
     results = read_csv(
-        "examples/example_parse.csv",
+        "example_parse.csv",
         index_col=0,
         dtype={
             "service_id": "int32",
