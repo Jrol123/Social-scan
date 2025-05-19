@@ -17,7 +17,7 @@ from src.get_labels.transformers.rating import (
 
 if __name__ == "__main__":
     results = read_csv(
-        "example_parse.csv",
+        "examples/example_parse.csv",
         index_col=0,
         dtype={
             "service_id": "int32",
@@ -30,20 +30,24 @@ if __name__ == "__main__":
             "label": "int32",
         },
     )
-
-    ratC = MasterRatingConfig(limit_bad=2.0, is_bad_soft=False, is_good_soft=True)
+    results = results.dropna(how='all')
+    results = results[~results['text'].isna()]
+    
+    ratC = MasterRatingConfig(limit_bad=3.0, is_bad_soft=True, is_good_soft=False)
     ratT = MasterRaitingTransformer(ratC)
-
+    
+    # sismetanin/sbert-ru-sentiment-rusentiment
+    # sismetanin/mbart_ru_sum_gazeta-ru-sentiment-rusentiment
     senC = MasterSentimentConfig(
-        modelPath="sismetanin/mbart_ru_sum_gazeta-ru-sentiment-rusentiment",
+        modelPath="seara/rubert-tiny2-russian-sentiment",
         batch_size=12,
         # cache_dir="D:/TRANSFORMERS_MODELS",
         device="cpu"
     )
     senT = MasterSentimentTransformer(senC)
-
+    
     mtf = MasterTransformerConfig(results)
     mts = MasterTransformer(mtf)
     resultT = mts.transform(ratT, senT)
     
-    resultT.to_csv("examples/example_transform.csv")
+    resultT.to_csv("examples/example_transform1.csv")
