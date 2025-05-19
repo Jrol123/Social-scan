@@ -5,12 +5,12 @@
 """
 from pandas import read_csv
 
-from src.sentiment_analysis.core import MasterTransformer, MasterTransformerConfig
-from src.sentiment_analysis.transformers.sentiment import (
+from src.get_labels.core import MasterTransformer, MasterTransformerConfig
+from src.get_labels.transformers.sentiment import (
     MasterSentimentTransformer,
     MasterSentimentConfig,
 )
-from src.sentiment_analysis.transformers.rating import (
+from src.get_labels.transformers.rating import (
     MasterRaitingTransformer,
     MasterRatingConfig,
 )
