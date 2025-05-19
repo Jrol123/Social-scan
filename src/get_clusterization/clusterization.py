@@ -704,7 +704,8 @@ def clustering_correction(
             cluster = cluster.sample(60)
 
         prompt = "\n----\n".join(cluster.to_list())
-        output = asyncio.run(invoke_chute(prompt, model_name, instruction=instr2))
+        output = asyncio.run(invoke_chute(prompt, instr2, model_token,
+                                          model=model_name))
         if "</think>" in output:
             _, output = output.split("</think>\n", 1)
 
