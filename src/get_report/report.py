@@ -148,6 +148,6 @@ def form_report(summaries, clusters, token, save_to="report.pdf"):
 
 {reports}
 """,
-        css_file_path="styles.css",  # Updated path
+        css_file_path="src/get_report/styles.css",  # Updated path
         base_url=".",
     )
