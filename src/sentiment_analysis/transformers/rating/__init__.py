@@ -1,2 +1,0 @@
-from .config import MasterRatingConfig
-from .master_raiting_transformer import MasterRaitingTransformer

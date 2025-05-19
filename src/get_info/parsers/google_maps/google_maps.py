@@ -13,8 +13,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
-from ...abstract import Parser, GlobalConfig
 from .config import GoogleMapsConfig
+from ...abstract import Parser
+from ...core import MasterParserConfig
 
 
 # Configure logging
@@ -22,11 +23,17 @@ from .config import GoogleMapsConfig
 # logger = logging.getLogger(__name__)
 
 
-SORT_TYPES = {'relevant': 'Самые релевантные',
-              'new': 'Сначала новые',
-              'ascending': 'По возрастанию рейтинга',
-              'descending': 'По убыванию рейтинга',
-              'Сначала положительные': 'По убыванию рейтинга'}
+SORT_DICT = {
+        "rating_ascending": "Сначала отрицательные",
+        "rating_descending": "Сначала положительные",
+        "date_descending": "По новизне",
+        "default": "По умолчанию",
+    }
+
+SORT_TYPES = {'default': 'Самые релевантные',
+              'date_descending': 'Сначала новые',
+              'rating_ascending': 'По возрастанию рейтинга',
+              'rating_descending': 'По убыванию рейтинга',}
 """
 Возможные виды сортировок.
 """
@@ -42,10 +49,10 @@ class GoogleMapsParser(Parser):
     
     def parse(
         self,
-        global_config: GlobalConfig
+        global_config: MasterParserConfig
     ) -> list[dict[str, str | int | float | None]]:
         sort_type = global_config.sort_type
-        assert sort_type in SORT_TYPES, "Нет такого вида сортировки"
+        assert sort_type in SORT_DICT, "Нет такого вида сортировки"
         
         count_items = global_config.count_items
         min_date = self._date_convert(global_config.min_date, datetime)
@@ -73,7 +80,7 @@ class GoogleMapsParser(Parser):
             time.sleep(3)
         
         # Choose sorting type
-        if sort_type != 'relevant':
+        if sort_type != 'default':
             self.__click_element(driver, By.XPATH,
                                  "//div[contains(text(), 'Самые релевантные')]")
             time.sleep(0.5)
@@ -95,7 +102,8 @@ class GoogleMapsParser(Parser):
             raise
         
         last_checked = 0
-        while True:
+        continue_parsing = True
+        while continue_parsing:
             self.__expand_reviews(driver)
             # self.__scroll_reviews(driver)
             # time.sleep(3)
@@ -151,9 +159,13 @@ class GoogleMapsParser(Parser):
                 
                 # Prepare data for output
                 date = self.text_to_date(date.lower(), now)
-                if ((min_date is not None and date < min_date)
-                   or (max_date is not None and date > max_date)):
-                   # or rating > 3):
+                if (sort_type == 'date_descending' and
+                   min_date is not None and date < min_date):
+                    continue_parsing = False
+                    break
+                elif (sort_type != 'date_descending'
+                      and ((min_date is not None and date < min_date)
+                           or (max_date is not None and date > max_date))):
                     continue
                 else:
                     date = int(date.timestamp())
@@ -193,6 +205,7 @@ class GoogleMapsParser(Parser):
                 })
                 
             if count_items != -1 and len(reviews) >= count_items:
+                continue_parsing = False
                 break
             # else:
             #     print(len(reviews))

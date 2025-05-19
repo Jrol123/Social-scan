@@ -1,23 +1,23 @@
 """
 Этот пример посвящён разметке, второму этапу в pipeline.
 
-Здесь мы определяем, в какую из двух (трёх) групп попадёт тот или иной отзыв.
+Здесь определяется, в какую из двух (трёх) групп попадёт тот или иной отзыв.
 """
 from pandas import read_csv
 
-from src.sentiment_analysis.core import MasterTransformer, MasterTransformerConfig
-from src.sentiment_analysis.transformers.sentiment import (
+from src.get_labels.core import MasterTransformer, MasterTransformerConfig
+from src.get_labels.transformers.sentiment import (
     MasterSentimentTransformer,
     MasterSentimentConfig,
 )
-from src.sentiment_analysis.transformers.rating import (
+from src.get_labels.transformers.rating import (
     MasterRaitingTransformer,
     MasterRatingConfig,
 )
 
 if __name__ == "__main__":
     results = read_csv(
-        "test_parse.csv",
+        "examples/example_parse.csv",
         index_col=0,
         dtype={
             "service_id": "int32",
@@ -30,19 +30,24 @@ if __name__ == "__main__":
             "label": "int32",
         },
     )
-
-    ratC = MasterRatingConfig(limit_bad=2.0, is_bad_soft=False, is_good_soft=True)
+    results = results.dropna(how='all')
+    results = results[~results['text'].isna()]
+    
+    ratC = MasterRatingConfig(limit_bad=3.0, is_bad_soft=True, is_good_soft=False)
     ratT = MasterRaitingTransformer(ratC)
-
+    
+    # sismetanin/sbert-ru-sentiment-rusentiment
+    # sismetanin/mbart_ru_sum_gazeta-ru-sentiment-rusentiment
     senC = MasterSentimentConfig(
-        modelPath="sismetanin/mbart_ru_sum_gazeta-ru-sentiment-rusentiment",
+        modelPath="seara/rubert-tiny2-russian-sentiment",
         batch_size=12,
-        cache_dir="D:/TRANSFORMERS_MODELS",
+        # cache_dir="D:/TRANSFORMERS_MODELS",
+        device="cpu"
     )
     senT = MasterSentimentTransformer(senC)
-
+    
     mtf = MasterTransformerConfig(results)
     mts = MasterTransformer(mtf)
     resultT = mts.transform(ratT, senT)
     
-    resultT.to_csv("test_transform.csv")
+    resultT.to_csv("examples/example_transform1.csv")

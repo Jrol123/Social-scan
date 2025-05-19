@@ -1,12 +1,14 @@
+import logging
 import time
+
 import undetected_chromedriver
-from .parser import Parser
-from .config import YandexMapsConfig
-from ....abstract import Parser as aParser
-from ....abstract import GlobalConfig
 from selenium.webdriver.common.by import By
 
-import logging
+from .config import YandexMapsConfig
+from .parser import Parser
+from ....abstract import Parser as aParser
+from ....core import MasterParserConfig
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -19,6 +21,13 @@ logging.basicConfig(
 
 # TODO: Добавить credits автору оригинального репозитория
 class YandexMapsParser(aParser):
+
+    SORT_DICT = {
+        "rating_ascending": "Сначала отрицательные",
+        "rating_descending": "Сначала положительные",
+        "date_descending": "По новизне",
+        "default": "По умолчанию",
+    }
 
     def __init__(self, local_config: YandexMapsConfig):
         super().__init__(1, local_config)  # TODO: Считывать id из .txt
@@ -55,7 +64,7 @@ class YandexMapsParser(aParser):
             # TODO: Почему-то периодически вылезает "неудалось кликнуть"
             logging.critical(f"Не удалось кликнуть на элемент: {value}", exc_info=True)
 
-    def parse(self, global_config: GlobalConfig) -> dict:
+    def parse(self, global_config: MasterParserConfig) -> dict:
         """
         Функция получения данных в виде
         @param type_parse: Тип данных, принимает значения:
@@ -70,12 +79,14 @@ class YandexMapsParser(aParser):
         min_date = self._date_convert(global_config.min_date, int)
         max_date = self._date_convert(global_config.max_date, int)
 
+        sort_type = self.SORT_DICT[global_config.sort_type]
+
         driver, page = self.__open_page(self.config.q)
 
         time.sleep(4)  # Задержка для полной загрузки страницы
 
         try:
-            logging.info(f"СОРТИРОВКА ПО '{global_config.sort_type}'")
+            logging.info(f"СОРТИРОВКА ПО '{sort_type}'")
             # Клик на первый div
             self.__click_element(driver, By.CLASS_NAME, "rating-ranking-view")
 
@@ -84,7 +95,7 @@ class YandexMapsParser(aParser):
                 driver,
                 By.CLASS_NAME,
                 "rating-ranking-view__popup-line",
-                global_config.sort_type,
+                sort_type,
             )
 
             logging.info("СОРТИРОВКА УСПЕШНА")

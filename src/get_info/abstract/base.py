@@ -24,7 +24,7 @@ class ParserConfig(Config):
 
 
 class Parser(ABC):
-    def __init__(self, service_id: int, config: ParserConfig = None):
+    def __init__(self, service_id: int, config: ParserConfig):
         """
         Парсер.
 

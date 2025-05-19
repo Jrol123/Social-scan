@@ -7,8 +7,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
-from ...abstract import Parser, GlobalConfig
 from .config import OtzovikConfig
+from ...abstract import Parser
+from ...core import MasterParserConfig
 
 
 class OtzovikParser(Parser):
@@ -16,7 +17,7 @@ class OtzovikParser(Parser):
         super().__init__(2, local_config)
 
     def parse(
-        self, global_config: GlobalConfig
+        self, global_config: MasterParserConfig
     ) -> list[dict[str, str | int | float | None]]:
         min_date = self._date_convert(global_config.min_date, datetime)
         max_date = self._date_convert(global_config.max_date, datetime)
@@ -25,7 +26,6 @@ class OtzovikParser(Parser):
         driver = self.__initialize_browser(self.config.q)
         review_links, review_dates = self.__collect_review_links(
             driver, min_date, max_date)
-        print(review_dates)
         
         official = driver.find_elements(
             By.CSS_SELECTOR, "div.otz_product_header_left > a.product-official"
@@ -41,7 +41,8 @@ class OtzovikParser(Parser):
             data.append(review)
             if count_items != -1 and len(data) >= count_items:
                 break
-
+        
+        driver.close()
         return data
 
     def __initialize_browser(self, url):
