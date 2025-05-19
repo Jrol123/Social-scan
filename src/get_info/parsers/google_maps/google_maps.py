@@ -102,7 +102,8 @@ class GoogleMapsParser(Parser):
             raise
         
         last_checked = 0
-        while True:
+        continue_parsing = True
+        while continue_parsing:
             self.__expand_reviews(driver)
             # self.__scroll_reviews(driver)
             # time.sleep(3)
@@ -162,6 +163,7 @@ class GoogleMapsParser(Parser):
                    or (max_date is not None and date > max_date)):
                    # or rating > 3):
                     if sort_type == 'date_descending':
+                        continue_parsing = False
                         break
                         
                     continue
@@ -203,6 +205,7 @@ class GoogleMapsParser(Parser):
                 })
                 
             if count_items != -1 and len(reviews) >= count_items:
+                continue_parsing = False
                 break
             # else:
             #     print(len(reviews))
