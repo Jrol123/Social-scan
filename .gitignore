@@ -168,6 +168,8 @@ test.py
 src/TO_REFACTOR/test_llm/*.txt
 src/get_clusters/*.txt
 channel_list.txt
+examples/*.session
 
-!examples/*
+!examples/*.csv
+!examples/*.pdf
 !examples/04_clusterization/*
