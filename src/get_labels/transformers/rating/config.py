@@ -68,5 +68,5 @@ class MasterRatingConfig(Config):
 
         self.service_params: dict[int, tuple[float, float]] = {}
         for name, rng in count_range.items():
-            self.service_params[SERVICE_DICT[name]] = rng
+            self.service_params[self.SERVICE_DICT[name]] = rng
             """Список размахов оценок для сервисов."""

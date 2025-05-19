@@ -540,10 +540,4 @@ if __name__ == "__main__":
     
     summaries = pd.read_csv("../get_clusters/clustered_summaries2.csv", index_col=0)
     clusters = pd.read_csv("../get_clusters/categories.csv", index_col=0)
-    subreports = []
-    for i in range(len(clusters)):
-        time.sleep(10)
-        subreports.append(gen_report(
-            str(clusters.loc[i, 'name']),
-            summaries[summaries['new_cluster'] == clusters.loc[i, 'cluster']]
-        ))
+    form_report(summaries, clusters, "report.pdf")

@@ -41,7 +41,7 @@ class MasterSentimentTransformer(Transformer):
             DataFrame: _description_
         """
         sdf = global_config.sDf.copy()
-        texts = sdf["text"].dropna().tolist()
+        texts = sdf["text"].tolist()
         dataset = _PredictionDataset(
             texts, self.config.tokenizer, self.config.MAX_LENGTH
         )
