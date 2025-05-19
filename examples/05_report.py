@@ -3,6 +3,7 @@ from pandas import read_csv
 from src.get_report import form_report
 
 if __name__ == "__main__":
+    # https://stackoverflow.com/a/78749746
     secrets = dotenv_values()
     
     summaries = read_csv("examples/04_clusterization/clustered_summaries2.csv", index_col=0)
