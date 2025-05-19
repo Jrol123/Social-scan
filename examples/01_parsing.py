@@ -26,7 +26,7 @@ async def main():
     global_config = MasterParserConfig(
         # count_items=100, sort_type="Сначала отрицательные",
         max_date=datetime(2024, 5, 18), min_date=datetime(2024, 1, 1),
-        sort_type='new'
+        sort_type='date_descending'
     )
 
     # В парсер идёт его конфигурация + необходимые параметры (такие как токен для vk)
