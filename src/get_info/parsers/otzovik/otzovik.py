@@ -26,7 +26,6 @@ class OtzovikParser(Parser):
         driver = self.__initialize_browser(self.config.q)
         review_links, review_dates = self.__collect_review_links(
             driver, min_date, max_date)
-        print(review_dates)
         
         official = driver.find_elements(
             By.CSS_SELECTOR, "div.otz_product_header_left > a.product-official"
@@ -42,7 +41,8 @@ class OtzovikParser(Parser):
             data.append(review)
             if count_items != -1 and len(data) >= count_items:
                 break
-
+        
+        driver.close()
         return data
 
     def __initialize_browser(self, url):
