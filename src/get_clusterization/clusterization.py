@@ -670,20 +670,28 @@ def clustering_correction(
     )
     for k in labels:
         prompt += f"Кластер {k}:\n"
-        cluster = df.loc[df["cluster"] == k, "summary"]
-        if cluster.size > 30:
-            cluster = cluster.sample(30)
+        cluster = df.loc[df["cluster"] == k, ["summary"]]
+        # cluster['len'] = cluster['summary'].str.len()
+        cluster['cumlen'] = cluster['summary'].str.len().cumsum()
+        cluster = cluster[cluster['cumlen'] <= 3000 / len(labels)]
 
-        prompt += "\n----\n".join(cluster.to_list())
+        prompt += "\n----\n".join(cluster['summary'].to_list())
         prompt += "\n\n"
 
     # print(prompt)
     while True:
-        output = asyncio.run(
-            invoke_chute(
-                prompt, token=model_token, model=model_name, instruction=instr1
+        try:
+            output = asyncio.run(
+                invoke_chute(
+                    prompt, token=model_token, model=model_name, instruction=instr1
+                )
             )
-        )
+        except asyncio.exceptions.TimeoutError:
+            continue
+        
+        if not output:
+            continue
+        
         if "</think>" in output:
             _, output = output.split("</think>\n", 1)
         
@@ -725,20 +733,28 @@ def clustering_correction(
     categories = []
     for k in labels:
         cluster = df.loc[df["new_cluster"] == k, "summary"]
-        if cluster.size > 60:
-            cluster = cluster.sample(60)
+        cluster['cumlen'] = cluster['summary'].str.len().cumsum()
+        cluster = cluster[cluster['cumlen'] < 30000]
 
         prompt = "\n----\n".join(cluster.to_list())
-        output = asyncio.run(
-            invoke_chute(prompt, instr2, model_token, model=model_name)
-        )
+        try:
+            output = asyncio.run(
+                invoke_chute(prompt, instr2, model_token, model=model_name)
+            )
+        except asyncio.exceptions.TimeoutError:
+            continue
+        
+        if not output:
+            continue
+
         if "</think>" in output:
             _, output = output.split("</think>\n", 1)
 
-        # print(output, end='\n\n')
+        print(output, end='\n\n')
         name, reasoning = output.split("\n", 1)
         name = (
-            name.split(": ", 1)[1].replace("**", "").replace("[", "").replace("]", "")
+            name.split(": ", 1)[1].replace("**", "")
+                .replace("[", "").replace("]", "")
         )
         reasoning = reasoning.split(": ", 1)[1]
         categories.append({"cluster": k, "name": name, "reasoning": reasoning})
