@@ -319,7 +319,8 @@ def get_param_distributions(algorithm_name, X):
         raise ValueError(f"Алгоритм {algorithm_name} не поддерживается.")
 
 
-def cluster_with_algorithm(X, algorithm_name, params, distance_matrix=None):
+def cluster_with_algorithm(X, algorithm_name, params, metric="euclidean",
+                           distance_matrix=None):
     """
     Запускает кластеризацию с заданными параметрами.
 
@@ -339,35 +340,42 @@ def cluster_with_algorithm(X, algorithm_name, params, distance_matrix=None):
     np.ndarray
         Метки кластеров.
     """
+
     if algorithm_name == "kmeans":
-        model = KMeans(**params, random_state=42)
+        model = KMeans(**params)
     elif algorithm_name == "dbscan":
         model = DBSCAN(
             **params,
-            metric="precomputed" if distance_matrix is not None else "euclidean",
+            metric="precomputed" if distance_matrix is not None else metric,
+            n_jobs=-1
         )
     elif algorithm_name == "agg":
-        model = AgglomerativeClustering(**params)
+        model = AgglomerativeClustering(
+            **params,
+            metric="precomputed"
+            if distance_matrix is not None and params['linkage'] != 'ward'
+            else 'euclidean'
+        )
     elif algorithm_name == "hdbscan":
         model = HDBSCAN(
             **params,
-            metric="precomputed" if distance_matrix is not None else "euclidean",
+            metric="precomputed" if distance_matrix is not None else metric,
+            n_jobs=-1
         )
     elif algorithm_name == "optics":
         model = OPTICS(
             **params,
-            metric="precomputed" if distance_matrix is not None else "euclidean",
+            metric="precomputed" if distance_matrix is not None else metric,
             n_jobs=-1,
         )
     else:
         raise ValueError(f"Алгоритм {algorithm_name} не поддерживается.")
 
-    if distance_matrix is not None and algorithm_name in [
-        "dbscan",
-        "hdbscan",
-        "optics",
-    ]:
-        labels = model.fit_predict(distance_matrix)
+    if distance_matrix is not None and algorithm_name not in ["kmeans"]:
+        try:
+            labels = model.fit_predict(distance_matrix)
+        except ValueError:
+            labels = model.fit_predict(X)
     else:
         X_pos = X - X.min() if algorithm_name == "optics" else X.copy()
         labels = model.fit_predict(X_pos)
@@ -379,6 +387,7 @@ def objective(
     trial: optuna.trial.Trial,
     X: np.ndarray,
     algorithm_name: str,
+    metric="euclidean",
     distance_matrix: np.ndarray = None,
     use_silhouette: bool = True,
 ):
@@ -414,7 +423,7 @@ def objective(
         else:
             raise ValueError(f"Неизвестный тип распределения: {type(distribution)}")
 
-    labels = cluster_with_algorithm(X, algorithm_name, params, distance_matrix)
+    labels = cluster_with_algorithm(X, algorithm_name, params, metric, distance_matrix)
 
     if len(np.unique(labels)) < 3:
         return -1.0 if use_silhouette else 0.0
@@ -423,7 +432,7 @@ def objective(
         if distance_matrix is not None:
             return silhouette_score(distance_matrix, labels, metric="precomputed")
         else:
-            return silhouette_score(X, labels)
+            return silhouette_score(X, labels, metric=metric)
     else:
         return calinski_harabasz_score(X, labels)
 
@@ -471,6 +480,7 @@ def optimize_clustering(
         objective,
         X=X,
         algorithm_name=algorithm_name,
+        metric=metric,
         distance_matrix=distance_matrix,
         use_silhouette=use_silhouette,
     )
@@ -479,7 +489,7 @@ def optimize_clustering(
 
     best_params = study.best_params
     best_labels = cluster_with_algorithm(
-        X, algorithm_name, best_params, distance_matrix
+        X, algorithm_name, best_params, metric, distance_matrix
     )
 
     return best_params, best_labels, study.best_value
@@ -492,20 +502,32 @@ def clustering_selection(
     *,
     embeddings_model: str = "ai-forever/FRIDA",
     cache_dir=None,
+    normalize=False,
     task="paraphrase",
     large_data_thr=1,
+    metric="euclidean",
     use_silhouette=True,
     n_jobs=-1,
+    exclude_algorithms: list[str] = None
 ):
-    embeds = gen_embeddings(data, embeddings_model, task=task, cache_dir=cache_dir)
+    embeds = gen_embeddings(data, embeddings_model, task=task, cache_dir=cache_dir,
+                            normalize=normalize)
 
     is_large_data.mem_threshold_gb = large_data_thr
     best_results = {}
     best_score = -1 if use_silhouette else 0
     best_alg = None
-    for alg in CLUSTERING_ALGORITHMS:
+    
+    if exclude_algorithms is not None:
+        alg_list = [alg for alg in CLUSTERING_ALGORITHMS
+                    if alg not in exclude_algorithms]
+    else:
+        alg_list = CLUSTERING_ALGORITHMS
+        
+    for alg in alg_list:
         params, labels, score = optimize_clustering(
-            embeds, alg, use_silhouette=use_silhouette, n_trials=n_trials, n_jobs=n_jobs
+            embeds, alg, use_silhouette=use_silhouette, n_trials=n_trials,
+            n_jobs=n_jobs, metric=metric
         )
         best_results[alg] = {"params": params, "labels": labels, "score": score}
         if score > best_score:
@@ -664,16 +686,16 @@ def clustering_correction(
         )
         if "</think>" in output:
             _, output = output.split("</think>\n", 1)
-
+        
         print(output)
         try:
             _, divide_clusters, union_clusters, delete_clusters = (
                 process_clustering_correction(output)
             )
         except IndexError:
-
+            time.sleep(10)
             continue
-
+        
         break
 
     if delete_clusters is not None:

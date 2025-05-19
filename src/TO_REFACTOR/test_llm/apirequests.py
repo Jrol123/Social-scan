@@ -6,6 +6,7 @@ import time
 import aiohttp
 import pandas as pd
 from dotenv import load_dotenv
+from md2pdf.core import md2pdf
 from mistralai import Mistral
 
 load_dotenv()
@@ -219,6 +220,80 @@ def process_clustering_correction(output: str):
     return cluster_problems, divide_clusters, union_clusters, delete_clusters
 
 
+def multilabel_classification(reviews: pd.DataFrame,
+                              categories: list,
+                              model_name="deepseek-ai/DeepSeek-V3-0324",
+                              batch_size=24000):
+    df = reviews[['text']].reset_index(drop=True)
+    df = df.dropna(how="all")
+    df["len"] = df["text"].str.len()
+    df["cumlen"] = df["len"].cumsum()
+    df["cumlen"] = df["cumlen"] + [6 * i for i in range(len(df))]
+    
+    # столовая, номер, мероприятия, персонал
+    instr = (
+        "Ты - опытный помощник по выявлению проблем бизнеса, на которые жалуются "
+        "клиенты в своих отзывах. Твоя задача - максимально точно перечислить "
+        "все конкретные проблемы и жалобы, упоминаемые пользователем, связанные "
+        "с бизнесом, не теряя уточняющие детали. "
+        "Каждую упоминаемую проблему отнеси к одному из предложенных классов: "
+        f"{', '.join(categories)}, остальные - если нет проблем, "
+        'которые относятся к классу, ставь символ "-", '
+        "и если проблема не относится ни к одному классу, "
+        'относи её к классу "остальные".'
+        "Соблюдай шаблон ввода:\n1. текст отзыва\n----\n"
+        "2. текст отзыва\n----\n... (все оставшиеся отзывы)\n----\n"
+        "n. текст отзыва\n\nШаблон вывода:\n\n1.\n"
+    )
+    
+    instr += "\n".join(
+        [k + f': проблема1; проблема2, связанных с "{k}" в отзыве 1\n'
+         for k in categories]
+    )
+    instr += (
+        "\nостальные: перечисление проблем в первом отзыве, не относящихся "
+        "ни к одному из классов выше\n----\n"
+        "... (все остальные отзывы)\n----\nn.\n"
+    )
+    instr += "\n".join(
+        [k + f': перечисление проблем, связанных с "{k}" ' f"в отзыве n\n"
+         for k in categories]
+    )
+    instr += (
+        "\nостальные: перечисление проблем в последнем отзыве, не относящихся "
+        "ни к одному из классов выше"
+    )
+    
+    i = 0
+    outputs = []
+    while i * batch_size <= df.iloc[-1, -1]:
+        batch = df.loc[(i * batch_size < df['cumlen'])
+                       & (df['cumlen'] < (i + 1) * batch_size), "text"]
+        batch = [str(j + 1) + '. ' for j in range(len(batch))] + batch
+        prompt = "\n----\n".join(batch)
+        # print(instr)
+        # print(prompt)
+        
+        time.sleep(10)
+        try:
+            output = asyncio.run(
+                invoke_chute(prompt, model_name, instruction=instr))
+        except asyncio.exceptions.TimeoutError:
+            continue
+        
+        if not output:
+            continue
+        
+        outputs.append(output)
+        i += 1
+    
+    outputs = [s.strip().split('.\n', 1)[1] if '.\n' in s
+               else s.split('. ', 1)[1]
+               for part in outputs for s in part.split('\n----\n')]
+    
+    return outputs
+
+
 def summary_comparison():
     parsers_path = "src/get_info/parsers/"
     
@@ -331,8 +406,11 @@ def gen_report(theme: str,
                batch_size=32000):
     instr1 = ("Ты помощник в составлении отчетов. Твоя задача - написать "
               "детализированный и аргументированный отчёт на заданную тему "
-              "(проблему), если она является важной, иначе верни "
+              "(проблему) по отзывам пользователей, если она является важной "
+              "и обоснованной, иначе, если это а не субъективное мнение, "
+              "не подкреплённое конкретными примерами проблемы, верни "
               "\"Заданная тема не является важной в контексте проблем бизнеса.\"."
+              "\nНе добавляй в конце отчёта свои комментарии."
               "\n\n**Цель:** Подготовить структурированный "
               "и детализированный подотчет на тему {theme}\n\n"
               "### Формат отчета и требования:\n- **Формат:** Markdown\n"
@@ -345,8 +423,10 @@ def gen_report(theme: str,
               "Твой отчет:\n## {theme}"
               )
     instr2 = ("Ты помощник в составлении отчетов. Твоя задача - дополнить отчёт "
-              "на заданную тему (проблему).\n\n**Цель:** Дополнить "
-              "структурированный и детализированный подотчет на тему {theme}\n\n"
+              "на заданную тему (проблему) из дополнительных отзывов пользователей."
+              "\nНе добавляй в конце отчёта свои комментарии.\n\n"
+              "**Цель:** Дополнить структурированный и детализированный "
+              "подотчет на тему {theme}\n\n"
               "### Формат отчета и требования:\n- **Формат:** Markdown\n"
               "- **Заголовки:** Используй заголовки с уровня 2 (##).\n"
               "- **Анализ:** Выдели основные проблемы и предложения, "
@@ -368,11 +448,16 @@ def gen_report(theme: str,
     zero_batch = df.loc[df['cumlen'] <= batch_size, "summary"]
     zero_batch = [str(j + 1) + '. ' for j in range(len(zero_batch))] + zero_batch
     prompt = ("\n----\n".join(zero_batch) + f"\n\nТвой отчет:\n## {theme}")
-    try:
-        output = asyncio.run(invoke_chute(prompt, model_name, instruction=instr1))
-    except asyncio.exceptions.TimeoutError:
-        time.sleep(20)
-        output = asyncio.run(invoke_chute(prompt, model_name, instruction=instr1))
+    
+    output = ""
+    while not output:
+        try:
+            time.sleep(10)
+            output = asyncio.run(invoke_chute(prompt, model_name, instruction=instr1))
+        except asyncio.exceptions.TimeoutError:
+            continue
+            # time.sleep(10)
+            # output = asyncio.run(invoke_chute(prompt, model_name, instruction=instr1))
 
     if "Заданная тема не является важной" in output:
         print(output)
@@ -401,7 +486,50 @@ def gen_report(theme: str,
         i += 1
     
     print(output)
+    
+    
+    if '```' in output:
+        output = output.replace('```markdown', '').replace('```', '')
+    
+    if output.startswith('## '):
+        output = output.split('\n\n', 1)[1]
+    
+    if '\n\n---\n' in output:
+        output = output.rsplit('\n\n---\n', 1)[0]
+    
     return output
+
+
+def form_report(summaries, clusters, save_to="report.pdf"):
+    subreports = []
+    for i in range(len(clusters)):
+        time.sleep(10)
+        subreports.append(gen_report(
+            str(clusters.loc[i, 'name']),
+            summaries[summaries['new_cluster'] == clusters.loc[i, 'cluster']]
+        ))
+    
+    reports = ""
+    for i, line in clusters.iterrows():
+        if subreports[i] is None:
+            continue
+            
+        reports += f"""
+
+## {line['name']}
+
+{subreports[i]}
+
+"""
+    md2pdf(
+        save_to,
+        md_content=f"""# Отчет по сообщениям
+
+{reports}
+""",
+        css_file_path="styles.css",  # Updated path
+        base_url=".",
+    )
 
 
 if __name__ == "__main__":

@@ -37,7 +37,8 @@ if __name__ == "__main__":
     senC = MasterSentimentConfig(
         modelPath="sismetanin/mbart_ru_sum_gazeta-ru-sentiment-rusentiment",
         batch_size=12,
-        cache_dir="D:/TRANSFORMERS_MODELS",
+        # cache_dir="D:/TRANSFORMERS_MODELS",
+        device="cpu"
     )
     senT = MasterSentimentTransformer(senC)
 
