@@ -93,6 +93,10 @@ class Parser:
         except NoSuchElementException:
             logging.warning(f"{index}. Не найден блок с текстом отзыва", exc_info=True)
             text = None
+            
+        if text is None or "":
+            return 1
+        
         try:
             rating = elem.find_element(By.XPATH, ".//meta[@itemprop='ratingValue']").get_attribute('content')
         except NoSuchElementException:

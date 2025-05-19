@@ -75,7 +75,7 @@ if __name__ == "__main__":
     result = DataFrame(loop.run_until_complete(main()))
     # finally:
     print(result)
-    result.to_csv("example_parse.csv")
+    result.to_csv("examples/example_parse.csv")
     print(result.groupby('service_id').count())
     loop.close()
     
