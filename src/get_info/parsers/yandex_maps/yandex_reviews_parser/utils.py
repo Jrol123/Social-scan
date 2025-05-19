@@ -1,12 +1,14 @@
+import logging
 import time
+
 import undetected_chromedriver
-from .parser import Parser
-from .config import YandexMapsConfig
-from ....abstract import Parser as aParser
-from ....core import MasterParserConfig
 from selenium.webdriver.common.by import By
 
-import logging
+from .config import YandexMapsConfig
+from .parser import Parser
+from ....abstract import Parser as aParser
+from ....core import MasterParserConfig
+
 
 logging.basicConfig(
     level=logging.INFO,
