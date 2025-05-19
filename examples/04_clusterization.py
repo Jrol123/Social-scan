@@ -13,7 +13,7 @@ if __name__ == "__main__":
 
     secrets = dotenv_values()
 
-    MasterClusterization(
+    categories = MasterClusterization(
         data,
         secrets["CHUTES_API_TOKEN"],
         100,
@@ -24,3 +24,4 @@ if __name__ == "__main__":
         use_silhouette=True,
         n_jobs=-1,
     )
+    categories.to_csv("examples/04_clusterization/example_categories.csv")

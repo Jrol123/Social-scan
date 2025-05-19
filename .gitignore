@@ -169,4 +169,5 @@ src/TO_REFACTOR/test_llm/*.txt
 src/get_clusters/*.txt
 channel_list.txt
 
-!examples/*.csv
+!examples/*
+!examples/04_clusterization/*
