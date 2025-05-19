@@ -17,6 +17,7 @@ def gen_report(
     model_name="deepseek-ai/DeepSeek-V3-0324",
     batch_size=32000,
 ):
+    """Генерирует отчёт по теме (проблеме), если она является важной (не ошибочной)"""
     instr1 = (
         "Ты помощник в составлении отчетов. Твоя задача - написать "
         "детализированный и аргументированный отчёт на заданную тему "
@@ -117,6 +118,7 @@ def gen_report(
 
 
 def form_report(summaries, clusters, token, save_to="report.pdf"):
+    """Формирует отчёт из подотчётов по каждому кластеру и конвертирует в pdf"""
     subreports = []
     for i in range(len(clusters)):
         time.sleep(10)
@@ -146,6 +148,6 @@ def form_report(summaries, clusters, token, save_to="report.pdf"):
 
 {reports}
 """,
-        css_file_path="styles.css",  # Updated path
+        css_file_path="src/get_report/styles.css",  # Updated path
         base_url=".",
     )
