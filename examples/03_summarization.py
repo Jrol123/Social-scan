@@ -27,7 +27,7 @@ DEFAULT_INSTRUCTION = (
 if __name__ == "__main__":
     secrets = dotenv_values()
 
-    reviews = read_csv("./filtered_data.csv", index_col=0)
+    reviews = read_csv("examples/example_filtered_data.csv", index_col=0)
     summaries = summarize_reviews(
         reviews,
         model_name="mistral",
@@ -35,4 +35,4 @@ if __name__ == "__main__":
         instr=DEFAULT_INSTRUCTION,
     )
     reviews["summary"] = summaries
-    reviews[["text", "summary"]].to_csv("summarized_data.csv")
+    reviews[["text", "summary"]].to_csv("examples/summarized_data.csv")
