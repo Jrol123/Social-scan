@@ -18,3 +18,4 @@ mistralai==1.7.0
 scikit-learn==1.6.1
 optuna==4.3.0
 psutil==7.0.0
+md2pdf==1.0.1
