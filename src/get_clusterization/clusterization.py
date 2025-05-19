@@ -673,7 +673,7 @@ def clustering_correction(
         cluster = df.loc[df["cluster"] == k, ["summary"]]
         # cluster['len'] = cluster['summary'].str.len()
         cluster['cumlen'] = cluster['summary'].str.len().cumsum()
-        cluster = cluster[cluster['cumlen'] <= 3000 / len(labels)]
+        cluster = cluster[cluster['cumlen'] <= 30000 / len(labels)]
 
         prompt += "\n----\n".join(cluster['summary'].to_list())
         prompt += "\n\n"
@@ -732,24 +732,23 @@ def clustering_correction(
     labels.sort()
     categories = []
     for k in labels:
-        cluster = df.loc[df["new_cluster"] == k, "summary"]
+        cluster = df.loc[df["new_cluster"] == k, ["summary"]]
         cluster['cumlen'] = cluster['summary'].str.len().cumsum()
         cluster = cluster[cluster['cumlen'] < 30000]
 
-        prompt = "\n----\n".join(cluster.to_list())
-        try:
-            output = asyncio.run(
-                invoke_chute(prompt, instr2, model_token, model=model_name)
-            )
-        except asyncio.exceptions.TimeoutError:
-            continue
-        
-        if not output:
-            continue
-
-        if "</think>" in output:
-            _, output = output.split("</think>\n", 1)
-
+        prompt = "\n----\n".join(cluster['summary'].to_list())
+        output = ""
+        while not output:
+            try:
+                output = asyncio.run(
+                    invoke_chute(prompt, instr2, model_token, model=model_name)
+                )
+            except asyncio.exceptions.TimeoutError:
+                continue
+             
+            if "</think>" in output:
+                _, output = output.split("</think>\n", 1)
+            
         print(output, end='\n\n')
         name, reasoning = output.split("\n", 1)
         name = (
