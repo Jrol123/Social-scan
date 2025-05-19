@@ -37,19 +37,10 @@ class TelegramParser(AsyncParser):
         self.phone = phone
         self.password = password
         # self.client.start(phone=phone, password=password)
-        # assert self.client.connect()
-        # if not self.client.is_user_authorized():
-        print("ssSSss")
 
     async def parse(
         self, global_conifg: MasterParserConfig
     ) -> list[dict[str, str | int | float | None]]:
-        print("ssSSss")
-        # assert await self.client.connect()
-        # if not self.client.is_user_authorized():
-        #     await self.client.send_code_request(self.phone)
-        #     await self.client.sign_in(self.phone, input("Enter code: "))
-            
         await self.client.start(phone=self.phone, password=self.password)
         q = self.config.q
         channels_list = self.config.channels_list

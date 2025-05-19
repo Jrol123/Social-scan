@@ -25,7 +25,8 @@ async def main():
     
     global_config = MasterParserConfig(
         # count_items=100, sort_type="Сначала отрицательные",
-        min_date = datetime(2024, 1,1)
+        max_date=datetime(2024, 5, 18), min_date=datetime(2024, 1, 1),
+        sort_type='new'
     )
 
     # В парсер идёт его конфигурация + необходимые параметры (такие как токен для vk)
@@ -42,7 +43,7 @@ async def main():
     )
     otzovik_parser = OtzovikParser(otzovik_config)
 
-    vk_config = VKConfig(q="Мрия -купить") # Mriya Resort (Крым | Ялта) -купить
+    vk_config = VKConfig(q="МРИЯ -купить") # Mriya Resort (Крым | Ялта) -купить
     vk_parser = VKParser(secrets["VK_TOKEN"], vk_config)
 
     tg_config = TelegramConfig("МРИЯ", ["t.me/mriyaresortchat"]) # МРИЯ

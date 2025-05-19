@@ -325,7 +325,9 @@ def gen_report(theme: str,
                batch_size=32000):
     instr1 = ("Ты помощник в составлении отчетов. Твоя задача - написать "
               "детализированный и аргументированный отчёт на заданную тему "
-              "(проблему).\n\n**Цель:** Подготовить структурированный "
+              "(проблему), если она является важной, иначе верни "
+              "\"Заданная тема не является важной в контексте проблем бизнеса.\"."
+              "\n\n**Цель:** Подготовить структурированный "
               "и детализированный подотчет на тему {theme}\n\n"
               "### Формат отчета и требования:\n- **Формат:** Markdown\n"
               "- **Заголовки:** Используй заголовки с уровня 2 (##).\n"
@@ -361,8 +363,18 @@ def gen_report(theme: str,
     zero_batch = [str(j + 1) + '. ' for j in range(len(zero_batch))] + zero_batch
     prompt = ("\n----\n".join(zero_batch)
               + f"\n\nТвой отчет:\n## {theme}")
-    output = asyncio.run(invoke_chute(prompt, model_name, instruction=instr1))
+    try:
+        output = asyncio.run(invoke_chute(prompt, model_name, instruction=instr1))
+    except asyncio.exceptions.TimeoutError:
+        time.sleep(20)
+        output = asyncio.run(invoke_chute(prompt, model_name, instruction=instr1))
     
+    # print(output)
+    # print("не является важной" in output)
+    if "Заданная тема не является важной" in output:
+        return None
+    
+    prev_output = output
     i = 1
     start_index = len(zero_batch)
     while i * batch_size <= df.iloc[-1, -1]:
@@ -370,12 +382,18 @@ def gen_report(theme: str,
                        & (df['cumlen'] <= (i + 1) * batch_size), "summary"]
         batch = [str(j + start_index) + '. ' for j in range(len(batch))] + batch
         start_index = len(batch)
+        prompt = prev_output + "\n\n--------\n\n" + "\n----\n".join(batch)
         
-        prompt = output + "\n\n--------\n\n" + "\n----\n".join(batch)
-        output = asyncio.run(invoke_chute(prompt, model_name, instruction=instr2))
+        time.sleep(10)
+        try:
+            output = asyncio.run(invoke_chute(prompt, model_name, instruction=instr2))
+        except asyncio.exceptions.TimeoutError:
+            continue
+        
         if not output:
             continue
         
+        prev_output = output
         i += 1
         
     print(output)
@@ -387,10 +405,12 @@ if __name__ == "__main__":
     # summaries = summarize_reviews(reviews, instr=DEFAULT_INSTRUCTION)
     # reviews['summary'] = summaries
     # reviews[['text', 'summary']].to_csv("summarized_data.csv")
+    
     summaries = pd.read_csv("../get_clusters/clustered_summaries2.csv", index_col=0)
     clusters = pd.read_csv("../get_clusters/categories.csv", index_col=0)
     subreports = []
     for i in range(len(clusters)):
+        time.sleep(10)
         subreports.append(gen_report(
             str(clusters.loc[i, 'name']),
             summaries[summaries['new_cluster'] == clusters.loc[i, 'cluster']]
