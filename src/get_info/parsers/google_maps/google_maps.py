@@ -13,9 +13,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
+from .config import GoogleMapsConfig
 from ...abstract import Parser
 from ...core import MasterParserConfig
-from .config import GoogleMapsConfig
 
 
 # Configure logging
@@ -159,13 +159,13 @@ class GoogleMapsParser(Parser):
                 
                 # Prepare data for output
                 date = self.text_to_date(date.lower(), now)
-                if ((min_date is not None and date < min_date)
-                   or (max_date is not None and date > max_date)):
-                   # or rating > 3):
-                    if sort_type == 'date_descending':
-                        continue_parsing = False
-                        break
-                        
+                if (sort_type == 'date_descending' and
+                   min_date is not None and date < min_date):
+                    continue_parsing = False
+                    break
+                elif (sort_type != 'date_descending'
+                      and ((min_date is not None and date < min_date)
+                           or (max_date is not None and date > max_date))):
                     continue
                 else:
                     date = int(date.timestamp())
