@@ -487,7 +487,6 @@ def gen_report(theme: str,
     
     print(output)
     
-    
     if '```' in output:
         output = output.replace('```markdown', '').replace('```', '')
     
