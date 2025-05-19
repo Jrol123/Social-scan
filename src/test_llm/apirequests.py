@@ -368,10 +368,8 @@ def gen_report(theme: str,
         time.sleep(20)
         output = asyncio.run(invoke_chute(prompt, model_name, instruction=instr1))
 
-    
-    # print(output)
-    # print("не является важной" in output)
     if "Заданная тема не является важной" in output:
+        print(output)
         return None
     
     prev_output = output
