@@ -6,7 +6,9 @@ from ..abstract import GlobalConfig
 
 @dataclass
 class MasterParserConfig(GlobalConfig):
-    
+
+    SORT_TYPES = ["rating_ascending", "rating_descending", "date_descending", "default"]
+
     GET_ALL_ITEMS = -1
 
     def __init__(
@@ -30,6 +32,7 @@ class MasterParserConfig(GlobalConfig):
         """Время самого раннего сообщения в формате datetime или timestamp."""
         self.max_date = self._check_data(max_date)
         """Время самого позднего сообщения в формате datetime или timestamp."""
+        assert sort_type in self.SORT_TYPES
         self.sort_type = sort_type
         """Вид сортировки."""
         self.count_items = count_items

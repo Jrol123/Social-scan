@@ -3,7 +3,7 @@
 """
 
 from ..abstract import Parser, AsyncParser
-from .config import GlobalConfig
+from .config import MasterParserConfig
 from asyncio import run
 from dataclasses import asdict
 
@@ -16,12 +16,14 @@ class MasterParser:
         self.parsers = parsers
 
     async def async_parse(
-        self, global_params: GlobalConfig
+        self, global_params: MasterParserConfig
     ) -> list[dict[str, str | int | float | None]]:
         """
         Параметры такие же, как и в parse у Parser.
         """
         results = []
+
+        #! TODO: Сделать сохранение промежуточных результатов в папке tmp. После полного парсинга собирать файлы и удалять эту папку вместе с содержимым.
 
         for parser in self.parsers:
             if isinstance(parser, AsyncParser):
@@ -29,13 +31,13 @@ class MasterParser:
                 results += await parser.parse(global_params)
                 # results += await parser.parse(global_params)
                 continue
-                
+
             results += parser.parse(global_params)
 
         return results
 
     def sync_parse(
-        self, global_params: GlobalConfig
+        self, global_params: MasterParserConfig
     ) -> list[dict[str, str | int | float | None]]:
         """
         Синхронная обёртка для совместимости.
