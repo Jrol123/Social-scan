@@ -16,5 +16,4 @@ class MasterTransformerConfig(GlobalConfig):
         self.rDf = df[df["service_id"].isin(self.RATING_SERVICE)]
         self.sDf = df[~df["service_id"].isin(self.RATING_SERVICE)]
 
-    # TODO: Разделять df на семантический и несемантический
     # Возможно, надо будет добавить доп. инфу в конфиг (.txt).

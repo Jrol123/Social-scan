@@ -10,5 +10,6 @@ class MasterTransformer:
     def transform(self, *transformers: Transformer):
         res = []
         for transformer in transformers:
+            print(transformer.__class__.__name__)
             res.append(transformer.transform(self.config))
         return concat(res)

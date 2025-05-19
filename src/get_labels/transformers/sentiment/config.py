@@ -11,7 +11,6 @@ class MasterSentimentConfig(Config):
     def __init__(
         self,
         modelPath: str,
-        max_length: int,
         batch_size: int,
         label_scheme: str = "ternary",
         cache_dir: str | None = None,
@@ -36,7 +35,6 @@ class MasterSentimentConfig(Config):
         ), f"Неправильная схема меток! Получено: {label_scheme}. Доступные: {AVAILABLE_LABEL_SCHEME}"
         self.DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.BATCH_SIZE = batch_size
-        self.MAX_LENGTH = max_length
 
         self.label_scheme = label_scheme
         """
@@ -54,3 +52,9 @@ class MasterSentimentConfig(Config):
             modelPath, cache_dir=cache_dir
         ).to(self.DEVICE)
         """Модель"""
+        
+        try:
+            self.MAX_LENGTH = self.model.config.max_position_embeddings
+        except AttributeError:
+            self.MAX_LENGTH = (self.tokenizer.model_max_length
+                    if self.tokenizer.model_max_length <= 2**20 else 512)

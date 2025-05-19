@@ -50,8 +50,7 @@ def process_clustering_correction(output: str):
                 outliers = None
             else:
                 outliers = [
-                    outlier.split(". ", 1)[1]
-                    for outlier in outliers.split("\n")
+                    outlier.split(". ", 1)[1] for outlier in outliers.split("\n")
                 ]
         else:
             problems = other.split("Проблемы:\n")[1]
@@ -658,7 +657,11 @@ def clustering_correction(
 
     # print(prompt)
     while True:
-        output = asyncio.run(invoke_chute(prompt, token=model_token,model=model_name, instruction=instr1))
+        output = asyncio.run(
+            invoke_chute(
+                prompt, token=model_token, model=model_name, instruction=instr1
+            )
+        )
         if "</think>" in output:
             _, output = output.split("</think>\n", 1)
 
@@ -668,7 +671,7 @@ def clustering_correction(
                 process_clustering_correction(output)
             )
         except IndexError:
-            
+
             continue
 
         break
@@ -678,7 +681,7 @@ def clustering_correction(
         df = df[~df["cluster"].isin(delete_clusters)].reset_index(drop=True)
     else:
         embeds = embeddings
-    
+
     new_labels = transform_cluster_labels(
         df["cluster"].to_numpy().copy(), embeds, divide_clusters, union_clusters
     )
@@ -704,8 +707,9 @@ def clustering_correction(
             cluster = cluster.sample(60)
 
         prompt = "\n----\n".join(cluster.to_list())
-        output = asyncio.run(invoke_chute(prompt, instr2, model_token,
-                                          model=model_name))
+        output = asyncio.run(
+            invoke_chute(prompt, instr2, model_token, model=model_name)
+        )
         if "</think>" in output:
             _, output = output.split("</think>\n", 1)
 
@@ -721,3 +725,30 @@ def clustering_correction(
     categories = pd.DataFrame(categories)
     categories.to_csv(clusters_folder + "categories.csv")
     return categories
+
+
+def MasterClusterization(
+    data,
+    chutes_token,
+    n_trials=200,
+    save_folder="",
+    embeddings_model="ai-forever/FRIDA",
+    cache_dir=None,
+    large_data_thr=1,
+    use_silhouette=True,
+    n_jobs=-1,
+) -> pd.DataFrame:
+    embeds, best_alg = clustering_selection(
+        data["summary"].to_list().copy(),
+        n_trials,
+        save_folder,
+        embeddings_model=embeddings_model,
+        cache_dir=cache_dir,
+        large_data_thr=large_data_thr,
+        use_silhouette=use_silhouette,
+        n_jobs=n_jobs,
+    )
+    res = clustering_correction(
+        save_folder, embeds, model_token=chutes_token, best_alg=best_alg
+    )
+    return res

@@ -17,7 +17,7 @@ from src.get_labels.transformers.rating import (
 
 if __name__ == "__main__":
     results = read_csv(
-        "test_parse.csv",
+        "examples/example_parse.csv",
         index_col=0,
         dtype={
             "service_id": "int32",
@@ -45,4 +45,4 @@ if __name__ == "__main__":
     mts = MasterTransformer(mtf)
     resultT = mts.transform(ratT, senT)
     
-    resultT.to_csv("test_transform.csv")
+    resultT.to_csv("examples/example_transform.csv")

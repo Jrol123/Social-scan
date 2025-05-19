@@ -15,28 +15,27 @@ class MasterRaitingTransformer(Transformer):
         # 1 - Негативные отзывы
 
         rdf = global_config.rDf.copy()
-
-        fin_ratings = []
-        labels = []
+        
+        rdf["label"] = None
 
         for id in self.config.SERVICE_DICT.values():
-            ratings = rdf[rdf["service_id"] == id]["rating"].tolist()
+            mask = rdf["service_id"] == id
+            subRdf = rdf.loc[mask]
+            ratings = subRdf["rating"].tolist()
 
             scale = self.config.service_params.get(id, None)
 
             if scale == self.config.default_range or scale is None:
-                fin_ratings.extend(ratings)
-                continue
+                labels = [self.__labeler(r) for r in ratings]
+            else:
+                scaled_ratings = [
+                    self.__scale(r, scale, self.config.default_range) 
+                    for r in ratings
+                ]
+                labels = [self.__labeler(r) for r in scaled_ratings]
 
-            for index, rating in enumerate(ratings):
-                ratings[index] = self.__scale(rating, scale, self.config.default_range)
-
-            fin_ratings.extend(ratings)
-
-        for rating in fin_ratings:
-            labels.append(self.__labeler(rating))
-
-        rdf["label"] = labels
+            # Используем .loc для безопасного присваивания
+            rdf.loc[mask, "label"] = labels
 
         return rdf
 
