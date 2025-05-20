@@ -13,8 +13,8 @@ from sklearn.cluster import KMeans, DBSCAN, AgglomerativeClustering, HDBSCAN, OP
 from sklearn.metrics import silhouette_score, calinski_harabasz_score
 from sklearn.metrics.pairwise import pairwise_distances
 from torch import Tensor
-from transformers.models.auto.tokenization_auto import AutoTokenizer
 from transformers.models.auto.modeling_auto import AutoModel
+from transformers.models.auto.tokenization_auto import AutoTokenizer
 from transformers.models.t5 import T5EncoderModel
 
 from ..apirequests import invoke_chute
@@ -567,6 +567,108 @@ def clusterization(
 # ---- ПРИМЕНЕНИЕ LLM ДЛЯ УЛУЧШЕНИЯ КЛАСТЕРИЗАЦИИ
 
 
+def multilabel_classification(
+    reviews: pd.DataFrame,
+    categories: list,
+    api_token: str,
+    metadata: dict,
+    model_name="deepseek-ai/DeepSeek-V3-0324",
+    batch_size=24000
+) -> list[dict[str, str | None]]:
+    """Распределение проблем, упоминаемых в отзывах, на заданные категории и остальные"""
+    df = reviews[['text']].reset_index(drop=True)
+    df = df.dropna(how="all")
+    df["len"] = df["text"].str.len()
+    df["cumlen"] = df["len"].cumsum()
+    df["cumlen"] = df["cumlen"] + [6 * i for i in range(len(df))]
+    
+    instr = (
+        "Ты - опытный помощник по выявлению проблем компании "
+        f"\"{metadata['company']}\", на которые жалуются клиенты в своих отзывах. "
+        f"Вот краткое описание компании: {metadata['description']}.\n\n"
+        "Твоя задача - максимально точно перечислить "
+        "все конкретные проблемы и жалобы, упоминаемые пользователем, связанные "
+        "с бизнесом, не теряя уточняющие детали. "
+        "Каждую упоминаемую проблему отнеси к одному из предложенных классов: "
+        f"{', '.join(categories)}, остальные - если нет проблем, "
+        'которые относятся к классу, ставь символ "-", '
+        "и если проблема не относится ни к одному классу, "
+        'относи её к классу "остальные".'
+        "Соблюдай шаблон ввода:\n1. текст отзыва\n----\n"
+        "2. текст отзыва\n----\n... (все оставшиеся отзывы)\n----\n"
+        "n. текст отзыва\n\nШаблон вывода:\n\n1.\n"
+    )
+    
+    instr += "\n".join(
+        [k + f': проблема1; проблема2, связанных с "{k}" в отзыве 1\n'
+         for k in categories]
+    )
+    instr += (
+        "\nостальные: перечисление проблем в первом отзыве, не относящихся "
+        "ни к одному из классов выше\n\n"
+        "... (все остальные отзывы)\n\nn.\n"
+    )
+    instr += "\n".join(
+        [k + f': перечисление проблем, связанных с "{k}" ' f"в отзыве n\n"
+         for k in categories]
+    )
+    instr += (
+        "\nостальные: перечисление проблем в последнем отзыве, не относящихся "
+        "ни к одному из классов выше"
+    )
+    
+    i = 0
+    outputs = []
+    while i * batch_size <= df.iloc[-1, -1]:
+        batch = df.loc[(i * batch_size < df['cumlen'])
+                       & (df['cumlen'] < (i + 1) * batch_size), "text"]
+        batch = [str(j + 1) + '. ' for j in range(len(batch))] + batch
+        prompt = "\n----\n".join(batch)
+        # print(instr)
+        # print(prompt)
+        
+        time.sleep(10)
+        try:
+            if 'mistral' not in model_name:
+                output = asyncio.run(
+                    invoke_chute(prompt, instr, api_token, model_name)
+                )
+                if '</think>' in output:
+                    output = output.split('</think>', 1)[1]
+            else:
+                output = asyncio.run(
+                    invoke_mistral(prompt, instr, api_token, model_name)
+                )
+        
+        except asyncio.exceptions.TimeoutError:
+            continue
+        
+        if not output:
+            continue
+        
+        outputs.append(output)
+        i += 1
+    
+    outputs = [s.strip().split('.\n', 1)[1] if '.\n' in s
+               else s.strip().split('. ', 1)[1]
+               for part in outputs for s in part.split('\n\n')]
+    
+    problems = []
+    for review in outputs:
+        review = review
+        review_categories = review.split('\n') if '\n' in review else [review]
+        review_cats = dict.fromkeys(categories + ['остальные'], None)
+        for category in review_categories:
+            name, enum_problems = category.split(': ', 1)
+            if name in review_cats:
+                review_cats[name] = (enum_problems if enum_problems.strip() != '-'
+                                     else None)
+        
+        problems.append(review_cats)
+    
+    return problems
+
+
 def transform_cluster_labels(
     labels: np.ndarray,
     embeddings: Tensor,
@@ -629,6 +731,7 @@ def clustering_correction(
     clusters_folder: str,
     embeddings: Tensor,
     model_token,
+    metadata: dict,
     model_name: str = "deepseek-ai/DeepSeek-V3-0324",
     best_alg: str = "kmeans",
     timeout=15,
@@ -639,8 +742,10 @@ def clustering_correction(
 
     instr1 = (
         "Ты — аналитик отзывов. Проанализируй суммаризации негативных отзывов "
-        "о компании, разбитые на кластеры, и выдели ключевые проблемы "
-        "в каждом.\nЗадача:\n1. Выдели **ключевые проблемы**, "
+        f"о компании \"{metadata['company']}\", разбитые на кластеры, "
+        "и выдели ключевые проблемы в каждом. "
+        f"Вот краткое описание компании: {metadata['description']}.\n\n"
+        "Задача:\n1. Выдели **ключевые проблемы**, "
         "которые чаще всего упоминаются в кластере.\n"
         "2. Укажи (если есть) выбросы (отзывы, не соответствующие общей "
         "теме кластера).\n"
@@ -729,9 +834,10 @@ def clustering_correction(
 
     instr2 = (
         "Ты помощник в составлении отчетов. Твоя задача из списка отзывов "
-        "ниже выявить одну общую категорию, к которой они относятся.\n\n"
-        "Формат входа - отзывы из одного кластера:\n\n"
-        "отзыв1\n----\nотзыв2\n----\n...\n\nФормат вывода:\n\n"
+        f"о компании \"{metadata['company']}\" ниже выявить одну общую категорию, "
+        "к которой они относятся. Вот краткое описание компании: "
+        f"{metadata['description']}.\n\nФормат входа - отзывы из одного кластера:"
+        "\n\nотзыв1\n----\nотзыв2\n----\n...\n\nФормат вывода:\n\n"
         "Название категории: [название общей категории сообщений из кластера]"
         "\nОбоснование: [рассуждения почему ты выбрал именно эту категорию]"
     )

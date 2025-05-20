@@ -1,9 +1,6 @@
 import asyncio
-import json
-import os
 import time
 
-import aiohttp
 import pandas as pd
 from dotenv import load_dotenv
 from md2pdf.core import md2pdf
@@ -14,16 +11,20 @@ def gen_report(
     theme: str,
     data: pd.DataFrame,
     token: str,
-    model_name="deepseek-ai/DeepSeek-V3-0324",
-    batch_size=32000,
+    metadata: dict,
+    model_name: str = "deepseek-ai/DeepSeek-V3-0324",
+    batch_size: int = 32000,
+    are_problems: bool = False
 ):
     """Генерирует отчёт по теме (проблеме), если она является важной (не ошибочной)"""
     instr1 = (
-        "Ты помощник в составлении отчетов. Твоя задача - написать "
-        "детализированный и аргументированный отчёт на заданную тему "
-        "(проблему) по отзывам пользователей, если она является важной "
-        "и обоснованной, иначе, если это а не субъективное мнение, "
-        "не подкреплённое конкретными примерами проблемы, верни "
+        "Ты помощник в составлении отчетов о компании \"{company}\". "
+        "Вот краткое описание компании: {desc}.\n\n"
+        "Твоя задача - написать детализированный и аргументированный отчёт "
+        "на заданную тему (проблему) по отзывам пользователей о компании, "
+        "если она является важной и обоснованной, иначе, "
+        "если это субъективное мнение, не подкреплённое конкретными примерами "
+        "проблемы, верни "
         '"Заданная тема не является важной в контексте проблем бизнеса.".'
         "\nНе добавляй в конце отчёта свои комментарии."
         "\n\n**Цель:** Подготовить структурированный "
@@ -38,9 +39,11 @@ def gen_report(
         "Твой отчет:\n## {theme}"
     )
     instr2 = (
-        "Ты помощник в составлении отчетов. Твоя задача - дополнить отчёт "
-        "на заданную тему (проблему) из дополнительных отзывов пользователей."
-        "\nНе добавляй в конце отчёта свои комментарии.\n\n"
+        "Ты помощник в составлении отчетово компании \"{company}\". "
+        "Вот краткое описание компании: {desc}.\n\n"
+        "Твоя задача - дополнить отчёт на заданную тему (проблему) "
+        "из дополнительных отзывов пользователей.\n"
+        "Не добавляй в конце отчёта свои комментарии.\n\n"
         "**Цель:** Дополнить структурированный и детализированный "
         "подотчет на тему {theme}\n\n"
         "### Формат отчета и требования:\n- **Формат:** Markdown\n"
@@ -52,9 +55,11 @@ def gen_report(
         "(n+2). текст отзыва\n----\n... (все оставшиеся отзывы)\n----\n"
         "(n+k). текст отзыва"
     )
-    instr1 = instr1.format(theme=theme)
-    instr2 = instr2.format(theme=theme)
-
+    instr1 = instr1.format(company=metadata['company'],
+                           desc=metadata['description'], theme=theme)
+    instr2 = instr2.format(company=metadata['company'],
+                           desc=metadata['description'], theme=theme)
+    
     df = data[["summary"]].reset_index(drop=True)
     df = df.dropna(how="all")
     df["len"] = df["summary"].str.len()
@@ -117,7 +122,9 @@ def gen_report(
     return output
 
 
-def form_report(summaries, clusters, token, save_to="report.pdf"):
+def form_report(summaries: pd.DataFrame, clusters: pd.DataFrame,
+                token: str, metadata: dict, save_to: str = "report.pdf",
+                are_problems=False):
     """Формирует отчёт из подотчётов по каждому кластеру и конвертирует в pdf"""
     subreports = []
     for i in range(len(clusters)):
@@ -126,7 +133,7 @@ def form_report(summaries, clusters, token, save_to="report.pdf"):
             gen_report(
                 str(clusters.loc[i, "name"]),
                 summaries[summaries["new_cluster"] == clusters.loc[i, "cluster"]],
-                token,
+                token, metadata, are_problems=are_problems
             )
         )
 
@@ -139,12 +146,14 @@ def form_report(summaries, clusters, token, save_to="report.pdf"):
 
 ## {line['name']}
 
+##### {(summaries["new_cluster"] == clusters.loc[i, "cluster"]).sum()} отзывов
+
 {subreports[i]}
 
 """
     md2pdf(
         save_to,
-        md_content=f"""# Отчет по сообщениям
+        md_content=f"""# Отчет по отзывам и сообщениям о компании "{company}"
 
 {reports}
 """,

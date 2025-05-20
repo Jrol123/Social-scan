@@ -1,15 +1,16 @@
 import asyncio
-import json
 import os
 import time
 
-import aiohttp
 import pandas as pd
 from dotenv import load_dotenv
-from md2pdf.core import md2pdf
-from mistralai import Mistral
+
+from ...apirequests import invoke_chute, invoke_mistral
 
 load_dotenv()
+
+chutes_token = os.environ.get("CHUTES_API_TOKEN")
+mistal_token = os.environ.get("MISTRAL_API_TOKEN")
 
 DEFAULT_INSTRUCTION = (
     "Ты - опытный помощник по выявлению проблем бизнеса, "
@@ -27,213 +28,28 @@ DEFAULT_INSTRUCTION = (
     "\nn. суммаризация последнего отзыва"
 )
 
-
-# ---- ОТПРАВКА ЗАПРОСОВ К LLM ПО API
-
-async def invoke_chute(
-    query, model="deepseek-ai/DeepSeek-V3-0324", role="user", instruction=None
-):
-    api_token = os.environ.get("CHUTES_API_TOKEN")
-    if not api_token:
-        raise ValueError(
-            "CHUTES_API_TOKEN is missing. Please set it in the environment variables.")
-    
-    headers = {
-        "Authorization": "Bearer " + api_token,
-        "Content-Type": "application/json",
-    }
-    
-    if instruction is None:
-        instruction = DEFAULT_INSTRUCTION
-    
-    body = {
-        "model": model,
-        "messages": [
-            {"role": "system", "content": instruction},
-            {"role": role, "content": query},
-        ],
-        "stream": True,
-        "max_tokens": 32000,
-        "temperature": 0.6
-    }
-    
-    output = ""
-    async with aiohttp.ClientSession() as session:
-        async with session.post(
-            "https://llm.chutes.ai/v1/chat/completions", headers=headers, json=body
-        ) as response:
-            async for line in response.content:
-                line = line.decode("utf-8").strip()
-                if line.startswith("data: "):
-                    data = line[6:]
-                    if data == "[DONE]":
-                        break
-                    try:
-                        chunk = data.strip()
-                        if chunk == "None":
-                            continue
-                        
-                        chunk = json.loads(chunk)
-                        if chunk["choices"][0]["delta"]["content"]:
-                            output += chunk["choices"][0]["delta"]["content"]
-                            # print(chunk['choices'][0]['delta']['content'], end='')
-                    except Exception as e:
-                        print(f"Error parsing chunk: {e}")
-    
-    return output
-
-
-async def invoke_mistral(
-    query, model="mistral-small-latest", role="user", instruction=None
-):
-    api_key = os.environ["MISTRAL_API_TOKEN"]
-    client = Mistral(api_key=api_key)
-    
-    if instruction is None:
-        instruction = DEFAULT_INSTRUCTION
-    
-    response = await client.chat.stream_async(
-        model=model,
-        messages=[
-            {"role": "system", "content": instruction},
-            {"role": role, "content": query},
-        ],
-    )
-    
-    output = ""
-    async for chunk in response:
-        if chunk.data.choices[0].delta.content is not None:
-            output += chunk.data.choices[0].delta.content
-            # print(chunk.data.choices[0].delta.content, end="")
-    
-    return output
-
-
 # ---- ВСПОМАГАТЕЛНЫЕ ФУНКЦИИ ДЛЯ РЕШЕНИЯ ЗАДАЧ
 
-def summarize_reviews(reviews: pd.DataFrame,
-                      batch_size: int = 32000,
-                      instr=DEFAULT_INSTRUCTION):
+
+def multilabel_classification(
+    reviews: pd.DataFrame,
+    categories: list,
+    api_token: str,
+    metadata: dict,
+    model_name="deepseek-ai/DeepSeek-V3-0324",
+    batch_size=24000
+) -> list[dict[str, str | None]]:
     df = reviews[['text']].reset_index(drop=True)
     df = df.dropna(how="all")
     df["len"] = df["text"].str.len()
     df["cumlen"] = df["len"].cumsum()
     df["cumlen"] = df["cumlen"] + [6 * i for i in range(len(df))]
     
-    i = 0
-    outputs = []
-    while i * batch_size <= df.iloc[-1, -1]:
-        batch = df.loc[(i * batch_size < df['cumlen'])
-                       & (df['cumlen'] < (i + 1) * batch_size), "text"]
-        batch = [str(j + 1) + '. ' for j in range(len(batch))] + batch
-        prompt = "\n----\n".join(batch)
-        
-        output = asyncio.run(invoke_mistral(prompt, instruction=instr))
-        if output:
-            outputs.append(output)
-        else:
-            continue
-        
-        i += 1
-    
-    output = "\n----\n".join(outputs)
-    output = output.split('\n----\n')
-    if "1. " in output[0]:
-        output = [summary.split('. ', 1)[1] for summary in output]
-    elif "1.\n" in output[0]:
-        output = [summary.split('.\n', 1)[1] for summary in output]
-    
-    return output
-
-
-def process_clustering_correction(output: str):
-    output = output.split('\n\n', 1)[1]
-    cluster_desc, *results = output.rsplit('\n\n', 3)
-    cluster_problems = []
-    for cluster in cluster_desc.split('Кластер ')[1:]:
-        k, other = cluster.split(': ', 1)
-        k = int(k)
-        theme, other = other.strip().split('\n', 1)
-        theme = theme.replace('[', '').replace(']', '')
-        outliers = None
-        if 'Выбросы:' in other:
-            problems, outliers = other.split('- Выбросы:')
-            problems = problems.strip().split('Проблемы:')[1]
-            
-            outliers = outliers.strip()
-            if outliers == '-':
-                outliers = None
-            else:
-                outliers = [outlier.split('. ', 1)[1]
-                            for outlier in outliers.split('\n')]
-        else:
-            problems = other.split('Проблемы:\n')[1]
-        
-        problems = problems.strip().split('\n')
-        if isinstance(problems, list):
-            problems = [problem.strip().split(' ', 1)[1]
-                        for problem in problems]
-        elif isinstance(problems, str):
-            problems = [problems.split(' ', 1)[1]]
-        
-        cluster_problems.append({
-            'cluster': k,
-            'theme': theme,
-            'problems': problems,
-            'outliers': outliers
-        })
-    
-    # print(cluster_problems)
-    
-    results = [results[i].split(':', 1)[1].strip() for i in range(len(results))]
-    
-    divide_clusters = None
-    if results[0] != '-':
-        results[0] = results[0].split('\n')
-        if isinstance(results[0], list):
-            results[0] = [[int(s) for s in results[0][i].split(' ') if s.isdigit()]
-                          for i in range(len(results[0]))]
-        else:
-            results[0] = [[int(s) for s in results[0].split(' ') if s.isdigit()]]
-        
-        divide_clusters = {results[0][i][0]: results[0][i][1]
-                           for i in range(len(results[0]))}
-        # print(divide_clusters)
-    
-    union_clusters = None
-    if results[1] != '-':
-        results[1] = results[1].split('\n')
-        if isinstance(results[1], list):
-            results[1] = [
-                list(map(int, results[1][i].split(': ', 1)[1].split(', ')))
-                for i in range(len(results[1]))]
-        elif isinstance(results[1], str):
-            results[1] = [results[1].split(': ', 1)[1].split(', ')]
-        
-        union_clusters = results[1][:]
-        # print(union_clusters)
-    
-    delete_clusters = (list(map(int, results[2].split(', ')))
-                       if results[2] != '-' else None)
-    # print(delete_clusters)
-    
-    return cluster_problems, divide_clusters, union_clusters, delete_clusters
-
-
-def multilabel_classification(reviews: pd.DataFrame,
-                              categories: list,
-                              model_name="deepseek-ai/DeepSeek-V3-0324",
-                              batch_size=24000):
-    df = reviews[['text']].reset_index(drop=True)
-    df = df.dropna(how="all")
-    df["len"] = df["text"].str.len()
-    df["cumlen"] = df["len"].cumsum()
-    df["cumlen"] = df["cumlen"] + [6 * i for i in range(len(df))]
-    
-    # столовая, номер, мероприятия, персонал
     instr = (
-        "Ты - опытный помощник по выявлению проблем бизнеса, на которые жалуются "
-        "клиенты в своих отзывах. Твоя задача - максимально точно перечислить "
+        "Ты - опытный помощник по выявлению проблем компании "
+        f"\"{metadata['company']}\", на которые жалуются клиенты в своих отзывах. "
+        f"Вот краткое описание компании: {metadata['description']}.\n\n"
+        "Твоя задача - максимально точно перечислить "
         "все конкретные проблемы и жалобы, упоминаемые пользователем, связанные "
         "с бизнесом, не теряя уточняющие детали. "
         "Каждую упоминаемую проблему отнеси к одному из предложенных классов: "
@@ -252,8 +68,8 @@ def multilabel_classification(reviews: pd.DataFrame,
     )
     instr += (
         "\nостальные: перечисление проблем в первом отзыве, не относящихся "
-        "ни к одному из классов выше\n----\n"
-        "... (все остальные отзывы)\n----\nn.\n"
+        "ни к одному из классов выше\n\n"
+        "... (все остальные отзывы)\n\nn.\n"
     )
     instr += "\n".join(
         [k + f': перечисление проблем, связанных с "{k}" ' f"в отзыве n\n"
@@ -276,8 +92,17 @@ def multilabel_classification(reviews: pd.DataFrame,
         
         time.sleep(10)
         try:
-            output = asyncio.run(
-                invoke_chute(prompt, model_name, instruction=instr))
+            if 'mistral' not in model_name:
+                output = asyncio.run(
+                    invoke_chute(prompt, instr, api_token, model_name)
+                )
+                if '</think>' in output:
+                    output = output.split('</think>', 1)[1]
+            else:
+                output = asyncio.run(
+                    invoke_mistral(prompt, instr, api_token, model_name)
+                )
+            
         except asyncio.exceptions.TimeoutError:
             continue
         
@@ -288,255 +113,24 @@ def multilabel_classification(reviews: pd.DataFrame,
         i += 1
     
     outputs = [s.strip().split('.\n', 1)[1] if '.\n' in s
-               else s.split('. ', 1)[1]
-               for part in outputs for s in part.split('\n----\n')]
+               else s.strip().split('. ', 1)[1]
+               for part in outputs for s in part.split('\n\n')]
     
-    return outputs
+    problems = []
+    for review in outputs:
+        review = review
+        review_categories = review.split('\n') if '\n' in review else [review]
+        review_cats = dict.fromkeys(categories + ['остальные'], None)
+        for category in review_categories:
+            name, enum_problems = category.split(': ', 1)
+            if name in review_cats:
+                review_cats[name] = (enum_problems if enum_problems.strip() != '-'
+                                     else None)
 
-
-def summary_comparison():
-    parsers_path = "src/get_info/parsers/"
-    
-    gm = pd.read_csv(parsers_path + "google_maps/google_reviews.csv")
-    ot = pd.read_csv(parsers_path + "otzovik/otzovik_reviews.csv")
-    tg = pd.read_csv(parsers_path + "telegram/mriya_messages.csv")
-    tg = tg[tg["rating"] == 2]
-    df = pd.concat([gm, ot, tg], ignore_index=True)
-    
-    df = df.dropna(how="all")
-    df["len"] = df["text"].str.len()
-    df["cumlen"] = df["len"].cumsum()
-    df["cumlen"] = df["cumlen"] + [8 * i for i in range(len(df))]
-    max_texts = len(df[df["cumlen"] < 100000])
-    df = df[:max_texts]
-    prompt = "\n\n----\n\n".join(df["text"])
-    # print(prompt)
-    
-    # output = asyncio.run(invoke_chute(prompt))
-    # output = asyncio.run(invoke_mistral(prompt))
-    
-    compare_models = [
-        "deepseek-ai/DeepSeek-V3-0324",
-        "Qwen/Qwen3-235B-A22B",
-        "mistral-small-latest",
-    ]
-    f = open("output_examples3.txt", "w", encoding="utf-8")
-    f.write(" | ".join(compare_models) + "\n\n")
-    
-    instr2 = (
-        "Ты - опытный помощник по выявлению проблем бизнеса, на которые жалуются "
-        "клиенты в своих отзывах. Твоя задача - максимально точно перечислить "
-        "все конкретные проблемы и жалобы, упоминаемые пользователем, связанные "
-        "с бизнесом, не теряя уточняющие детали. "
-        "Каждую упоминаемую проблему отнеси к одному из предложенных классов: "
-        "столовая, номер, мероприятия, персонал, остальные - если нет проблем, "
-        'которые относятся к классу, ставь символ "-", '
-        "и если проблема не относится ни к одному классу, "
-        'относи её к классу "остальные".'
-        "Соблюдай шаблон ввода:\n\n1. текст отзыва\n\n----\n\n"
-        "2. текст отзыва\n\n----\n\n... (все оставшиеся отзывы)\n\n----\n\n"
-        "n. текст отзыва\n\nШаблон вывода:\n\n1.\n"
-    )
-    
-    instr2 += "\n".join(
-        [
-            k + f': перечисление проблем с разделителем ";", '
-                f'связанных с "{k}" в отзыве 1\n'
-            for k in "столовая, номер, мероприятия, персонал".split(", ")
-        ]
-    )
-    instr2 += (
-        "\nостальные: перечисление проблем в первом отзыве, не относящихся "
-        "ни к одному из классов выше\n\n----\n\n"
-        "... (все остальные отзывы)\n\n----\n\nn.\n"
-    )
-    instr2 += "\n".join(
-        [
-            k + f': перечисление проблем, связанных с "{k}" ' f"в последнем отзыве\n"
-            for k in "столовая, номер, мероприятия, персонал".split(", ")
-        ]
-    )
-    instr2 += (
-        "\nостальные: перечисление проблем в последнем отзыве, не относящихся "
-        "ни к одному из классов выше"
-    )
-    
-    outputs = []
-    for model_name in compare_models:
-        output = ""
-        print(model_name)
-        i = 0
-        while len(output.split("----")) != max_texts:
-            time.sleep(15)
-            print(i := i + 1)
-            print(output)
-            if "mistral" not in model_name:
-                output = asyncio.run(invoke_chute(prompt, model_name,
-                                                  instruction=instr2))
-                if "</think>" in output:
-                    _, output = output.split("</think>\n", 1)
-            else:
-                output = asyncio.run(invoke_mistral(prompt, model_name,
-                                                    instruction=instr2))
+        problems.append(review_cats)
         
-        outputs.append([s.strip() for s in output.split("----")])
-    
-    for i in range(max_texts):
-        f.write("\n\n----\n\n".join([outputs[j][i] for j in range(len(outputs))]))
-        f.write("\n\n------------\n\n")
-    
-    f.close()
-    
-    # try:
-    #     df['summary'] = [s.strip() for s in output.split('----')]
-    #     for i, line in df[['text', 'summary']].iterrows():
-    #         print(line['text'], end="\n\n----\n\n")
-    #         print(line['summary'], end="\n\n----------\n\n")
-    # except Exception:
-    #     print(output)
-    #
-    # df = df.drop(['len', 'cumlen'], axis=1)
-    # df.to_csv("summarized_data.csv", index=False)
-    # print(df['summary'])
-
-
-def gen_report(theme: str,
-               data: pd.DataFrame,
-               model_name="deepseek-ai/DeepSeek-V3-0324",
-               batch_size=32000):
-    instr1 = ("Ты помощник в составлении отчетов. Твоя задача - написать "
-              "детализированный и аргументированный отчёт на заданную тему "
-              "(проблему) по отзывам пользователей, если она является важной "
-              "и обоснованной, иначе, если это а не субъективное мнение, "
-              "не подкреплённое конкретными примерами проблемы, верни "
-              "\"Заданная тема не является важной в контексте проблем бизнеса.\"."
-              "\nНе добавляй в конце отчёта свои комментарии."
-              "\n\n**Цель:** Подготовить структурированный "
-              "и детализированный подотчет на тему {theme}\n\n"
-              "### Формат отчета и требования:\n- **Формат:** Markdown\n"
-              "- **Заголовки:** Используй заголовки с уровня 2 (##).\n"
-              "- **Анализ:** Выдели основные проблемы и предложения, "
-              "которые пишут в своих отзывах пользователи.\n"
-              "- **Стиль:** Стремись к аналитическому и связному изложению;\n\n"
-              "Формат входа\n\n1. текст отзыва\n----\n2. текст отзыва\n----\n"
-              "... (все оставшиеся отзывы)\n----\nn. текст отзыва\n\n"
-              "Твой отчет:\n## {theme}"
-              )
-    instr2 = ("Ты помощник в составлении отчетов. Твоя задача - дополнить отчёт "
-              "на заданную тему (проблему) из дополнительных отзывов пользователей."
-              "\nНе добавляй в конце отчёта свои комментарии.\n\n"
-              "**Цель:** Дополнить структурированный и детализированный "
-              "подотчет на тему {theme}\n\n"
-              "### Формат отчета и требования:\n- **Формат:** Markdown\n"
-              "- **Заголовки:** Используй заголовки с уровня 2 (##).\n"
-              "- **Анализ:** Выдели основные проблемы и предложения, "
-              "которые пишут в своих отзывах пользователи.\n"
-              "- **Стиль:** Стремись к аналитическому и связному изложению;\n\n"
-              "Формат входа\n\nТекст подотчёта\n\n--------\n\n(n+1). текст отзыва\n----\n"
-              "(n+2). текст отзыва\n----\n... (все оставшиеся отзывы)\n----\n"
-              "(n+k). текст отзыва"
-              )
-    instr1 = instr1.format(theme=theme)
-    instr2 = instr2.format(theme=theme)
-    
-    df = data[['summary']].reset_index(drop=True)
-    df = df.dropna(how="all")
-    df["len"] = df["summary"].str.len()
-    df["cumlen"] = df["len"].cumsum()
-    df["cumlen"] = df["cumlen"] + [6 * i for i in range(len(df))]
-    
-    zero_batch = df.loc[df['cumlen'] <= batch_size, "summary"]
-    zero_batch = [str(j + 1) + '. ' for j in range(len(zero_batch))] + zero_batch
-    prompt = ("\n----\n".join(zero_batch) + f"\n\nТвой отчет:\n## {theme}")
-    
-    output = ""
-    while not output:
-        try:
-            time.sleep(10)
-            output = asyncio.run(invoke_chute(prompt, model_name, instruction=instr1))
-        except asyncio.exceptions.TimeoutError:
-            continue
-            # time.sleep(10)
-            # output = asyncio.run(invoke_chute(prompt, model_name, instruction=instr1))
-
-    if "Заданная тема не является важной" in output:
-        print(output)
-        return None
-    
-    prev_output = output
-    i = 1
-    start_index = len(zero_batch)
-    while i * batch_size <= df.iloc[-1, -1]:
-        batch = df.loc[(i * batch_size < df['cumlen'])
-                       & (df['cumlen'] <= (i + 1) * batch_size), "summary"]
-        batch = [str(j + start_index) + '. ' for j in range(len(batch))] + batch
-        start_index = len(batch)
-        prompt = prev_output + "\n\n--------\n\n" + "\n----\n".join(batch)
-        
-        time.sleep(10)
-        try:
-            output = asyncio.run(invoke_chute(prompt, model_name, instruction=instr2))
-        except asyncio.exceptions.TimeoutError:
-            continue
-        
-        if not output:
-            continue
-        
-        prev_output = output
-        i += 1
-    
-    print(output)
-    
-    if '```' in output:
-        output = output.replace('```markdown', '').replace('```', '')
-    
-    if output.startswith('## '):
-        output = output.split('\n\n', 1)[1]
-    
-    if '\n\n---\n' in output:
-        output = output.rsplit('\n\n---\n', 1)[0]
-    
-    return output
-
-
-def form_report(summaries, clusters, save_to="report.pdf"):
-    subreports = []
-    for i in range(len(clusters)):
-        time.sleep(10)
-        subreports.append(gen_report(
-            str(clusters.loc[i, 'name']),
-            summaries[summaries['new_cluster'] == clusters.loc[i, 'cluster']]
-        ))
-    
-    reports = ""
-    for i, line in clusters.iterrows():
-        if subreports[i] is None:
-            continue
-            
-        reports += f"""
-
-## {line['name']}
-
-{subreports[i]}
-
-"""
-    md2pdf(
-        save_to,
-        md_content=f"""# Отчет по сообщениям
-
-{reports}
-""",
-        css_file_path="styles.css",  # Updated path
-        base_url=".",
-    )
+    return problems
 
 
 if __name__ == "__main__":
-    # reviews = pd.read_csv("../../filtered_data.csv", index_col=0)
-    # summaries = summarize_reviews(reviews, instr=DEFAULT_INSTRUCTION)
-    # reviews['summary'] = summaries
-    # reviews[['text', 'summary']].to_csv("summarized_data.csv")
-    
-    summaries = pd.read_csv("../get_clusters/clustered_summaries2.csv", index_col=0)
-    clusters = pd.read_csv("../get_clusters/categories.csv", index_col=0)
-    form_report(summaries, clusters, "report.pdf")
+    ...
