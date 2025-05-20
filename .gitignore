@@ -173,3 +173,4 @@ examples/*.session
 !examples/*.csv
 !examples/*.pdf
 !examples/04_clusterization/*
+!src/get_labels/T_model_evaluation/*
