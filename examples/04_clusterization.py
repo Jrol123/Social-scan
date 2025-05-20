@@ -8,7 +8,7 @@ from pandas import read_csv
 from src.get_clusterization import MasterClusterization
 
 if __name__ == "__main__":
-    data = read_csv("examples/example_summarized_data.csv", index_col=0)
+    data = read_csv("examples/03_example_summarized_data.csv", index_col=0)
     # print(*data[:10], sep='\n\n')
 
     secrets = dotenv_values()
