@@ -1,0 +1,663 @@
+model,dataset,accuracy,f1,f1_weighted,f1_macro,classification_report,confusion_matrix
+blanchefort/rubert-base-cased-sentiment,tg_messages_mriya,0.4281437125748503,0.073394495412844036,0.4740880776498843,0.36000229334008327,"              precision    recall  f1-score   support
+
+           0       0.83      0.31      0.45       227
+           1       0.47      0.69      0.56       100
+           2       0.04      0.57      0.07         7
+
+    accuracy                           0.43       334
+   macro avg       0.45      0.52      0.36       334
+weighted avg       0.71      0.43      0.47       334
+","[[229, 98], [3, 4]]"
+blanchefort/rubert-base-cased-sentiment,sentiment_of_bank_reviews,0.18815629687834845,0.0,0.16168599044297072,0.10778296096243556,"              precision    recall  f1-score   support
+
+           0       0.00      0.00      0.00         0
+           1       0.28      0.38      0.32      7000
+           2       0.00      0.00      0.00      6999
+
+    accuracy                           0.19     13999
+   macro avg       0.09      0.13      0.11     13999
+weighted avg       0.14      0.19      0.16     13999
+","[[7000, 0], [6999, 0]]"
+blanchefort/rubert-base-cased-sentiment,rutweetcorp,0.004434961249195447,0.0,0.004475820134077199,0.0029450855714227165,"              precision    recall  f1-score   support
+
+           0       0.00      0.00      0.00         0
+           1       0.01      0.01      0.01    114911
+           2       0.00      0.00      0.00    111923
+
+    accuracy                           0.00    226834
+   macro avg       0.00      0.00      0.00    226834
+weighted avg       0.00      0.00      0.00    226834
+","[[114911, 0], [111923, 0]]"
+blanchefort/rubert-base-cased-sentiment,rureviews,0.7646,0.7584980343319685,0.764956151775636016,0.7584980343319684,"              precision    recall  f1-score   support
+
+           0       0.74      0.54      0.62     20000
+           1       0.90      0.88      0.89     20000
+           2       0.68      0.88      0.76     20000
+
+    accuracy                           0.76     60000
+   macro avg       0.77      0.76      0.76     60000
+weighted avg       0.77      0.76      0.76     60000
+","[[31552, 8448], [2380, 17620]]"
+blanchefort/rubert-base-cased-sentiment,rusentiment,0.6521725188391855,0.57771592893711402,0.6672909795733531,0.6259025797844731,"              precision    recall  f1-score   support
+
+           0       0.92      0.58      0.71     20627
+           1       0.48      0.77      0.59      6646
+           2       0.44      0.85      0.58      3912
+
+    accuracy                           0.65     31185
+   macro avg       0.61      0.73      0.63     31185
+weighted avg       0.76      0.65      0.67     31185
+","[[23009, 4264], [591, 3321]]"
+blanchefort/rubert-base-cased-sentiment,ru_sentiment_monohime,0.6092166666666666,0.591161473087818696,0.5818094746798939,0.5413672987330722,"              precision    recall  f1-score   support
+
+           0       0.52      0.22      0.31     15608
+           1       0.67      0.79      0.73     28663
+           2       0.53      0.66      0.59     15729
+
+    accuracy                           0.61     60000
+   macro avg       0.57      0.56      0.54     60000
+weighted avg       0.59      0.61      0.58     60000
+","[[34684, 9137], [5295 10434]]"
+seara/rubert-tiny2-russian-sentiment,tg_messages_mriya,0.6107784431137725,0.3333333333333333,0.6177167595128832,0.5197504416131092,"              precision    recall  f1-score   support
+
+           0       0.86      0.51      0.64       227
+           1       0.44      0.86      0.59       100
+           2       0.40      0.29      0.33         7
+
+    accuracy                           0.61       334
+   macro avg       0.57      0.55      0.52       334
+weighted avg       0.73      0.61      0.62       334
+","[[324, 3], [5, 2]]"
+seara/rubert-tiny2-russian-sentiment,sentiment_of_bank_reviews,0.8154153868133438,0.836662452591656131,0.8122365270787335,0.8122382717876987,"              precision    recall  f1-score   support
+
+           0       0.93      0.69      0.79      7000
+           1       0.75      0.95      0.84      6999
+
+    accuracy                           0.82     13999
+   macro avg       0.84      0.82      0.81     13999
+weighted avg       0.84      0.82      0.81     13999
+","[[4797, 2203], [381, 6618]]"
+seara/rubert-tiny2-russian-sentiment,rutweetcorp,0.8081666666666667,0.819784555646019916,0.8072025797489402,0.8073660895525048,"              precision    recall  f1-score   support
+
+           0       0.87      0.73      0.79     30395
+           1       0.76      0.88      0.82     29605
+
+    accuracy                           0.81     60000
+   macro avg       0.82      0.81      0.81     60000
+weighted avg       0.82      0.81      0.81     60000
+","[[22311, 8084], [3426, 26179]]"
+seara/rubert-tiny2-russian-sentiment,rureviews,0.7902833333333333,0.762741010943199583,0.7926101575915719,0.7926101575915719,"              precision    recall  f1-score   support
+
+           0       0.67      0.76      0.71     20000
+           1       0.93      0.88      0.90     20000
+           2       0.80      0.73      0.76     20000
+
+    accuracy                           0.79     60000
+   macro avg       0.80      0.79      0.79     60000
+weighted avg       0.80      0.79      0.79     60000
+","[[36257, 3743], [5363, 14637]]"
+seara/rubert-tiny2-russian-sentiment,rusentiment,0.6914542247875581,0.584466759883055802,0.7006457128889788,0.6507672568539155,"              precision    recall  f1-score   support
+
+           0       0.85      0.67      0.75     20627
+           1       0.50      0.82      0.62      6646
+           2       0.58      0.59      0.58      3912
+
+    accuracy                           0.69     31185
+   macro avg       0.64      0.69      0.65     31185
+weighted avg       0.74      0.69      0.70     31185
+","[[25617, 1656], [1613, 2299]]"
+seara/rubert-tiny2-russian-sentiment,ru_sentiment_monohime,0.6045666666666667,0.561447153315800696,0.6058567150645415,0.5741356888358937,"              precision    recall  f1-score   support
+
+           0       0.41      0.48      0.44     15608
+           1       0.71      0.73      0.72     28663
+           2       0.64      0.50      0.56     15729
+
+    accuracy                           0.60     60000
+   macro avg       0.59      0.57      0.57     60000
+weighted avg       0.61      0.60      0.61     60000
+","[[39761, 4510], [7830, 7899]]"
+cointegrated/rubert-tiny-sentiment-balanced,tg_messages_mriya,0.1317365269461078,0.0,0.14855291494286044,0.10758436043022666,"              precision    recall  f1-score   support
+
+           0       0.77      0.07      0.14       227
+           1       0.14      0.27      0.19       100
+           2       0.00      0.00      0.00         7
+
+    accuracy                           0.13       334
+   macro avg       0.30      0.11      0.11       334
+weighted avg       0.57      0.13      0.15       334
+","[[205, 122], [7, 0]]"
+cointegrated/rubert-tiny-sentiment-balanced,sentiment_of_bank_reviews,0.3365240374312451,0.054752696926521473,0.27183385293940565,0.27181834714254755,"              precision    recall  f1-score   support
+
+           0       0.40      0.63      0.49      7000
+           1       0.10      0.04      0.05      6999
+
+    accuracy                           0.34     13999
+   macro avg       0.25      0.34      0.27     13999
+weighted avg       0.25      0.34      0.27     13999
+","[[4442, 2558], [6730, 269]]"
+cointegrated/rubert-tiny-sentiment-balanced,rutweetcorp,0.08916666666666667,0.15002488490730372,0.08361006574084662,0.08447316340726381,"              precision    recall  f1-score   support
+
+           0       0.02      0.02      0.02     30395
+           1       0.14      0.16      0.15     29605
+
+    accuracy                           0.09     60000
+   macro avg       0.08      0.09      0.08     60000
+weighted avg       0.08      0.09      0.08     60000
+","[[527, 29868], [24782, 4823]]"
+cointegrated/rubert-tiny-sentiment-balanced,rureviews,0.14493333333333333,0.016783360790774299,0.1422079584497986,0.1422079584497986,"              precision    recall  f1-score   support
+
+           0       0.27      0.28      0.27     20000
+           1       0.14      0.13      0.14     20000
+           2       0.02      0.02      0.02     20000
+
+    accuracy                           0.14     60000
+   macro avg       0.14      0.14      0.14     60000
+weighted avg       0.14      0.14      0.14     60000
+","[[21478, 18522] [191674, 326]]"
+cointegrated/rubert-tiny-sentiment-balanced,rusentiment,0.15266955266955268,0.026761819803746654,0.19930263593086062,0.12453919207881738,"              precision    recall  f1-score   support
+
+           0       0.50      0.19      0.27     20627
+           1       0.06      0.10      0.07      6646
+           2       0.02      0.05      0.03      3912
+
+    accuracy                           0.15     31185
+   macro avg       0.19      0.11      0.12     31185
+weighted avg       0.34      0.15      0.20     31185
+","[[15701, 11672], [3702, 210]]"
+cointegrated/rubert-tiny-sentiment-balanced,ru_sentiment_monohime,0.21156666666666665,0.15970969681353603,0.22176138387652852,0.2167102275787438,"              precision    recall  f1-score   support
+
+           0       0.25      0.25      0.25     15608
+           1       0.37      0.18      0.24     28663
+           2       0.12      0.24      0.16     15729
+
+    accuracy                           0.21     60000
+   macro avg       0.25      0.22      0.22     60000
+weighted avg       0.27      0.21      0.22     60000
+","[[17147, 27124], [12010, 3719]]"
+MonoHime/rubert_conversational_cased_sentiment,tg_messages_mriya,0.8383233532934131,0.03571428571428571,0.8934043677351179,0.4737394957983193,"              precision    recall  f1-score   support
+
+           0       0.98      0.85      0.91       327
+           1       0.02      0.14      0.04         7
+
+    accuracy                           0.84       334
+   macro avg       0.50      0.50      0.47       334
+weighted avg       0.96      0.84      0.89       334
+","[[279, 48], [6, 1]]"
+MonoHime/rubert_conversational_cased_sentiment,sentiment_of_bank_reviews,0.5001071505107507,0.0062482249360976995,0.3361787917448943,0.3361552252758366,"              precision    recall  f1-score   support
+
+           0       0.50      1.00      0.67      7000
+           1       0.51      0.00      0.01      6999
+
+    accuracy                           0.50     13999
+   macro avg       0.51      0.50      0.34     13999
+weighted avg       0.51      0.50      0.34     13999
+","[[6979, 21], [6977, 22]]"
+MonoHime/rubert_conversational_cased_sentiment,rutweetcorp,0.47686666666666666,0.5140725144750287,0.4732512408174767,0.473781736066522,"              precision    recall  f1-score   support
+
+           0       0.48      0.40      0.43     30395
+           1       0.47      0.56      0.51     29605
+
+    accuracy                           0.48     60000
+   macro avg       0.48      0.48      0.47     60000
+weighted avg       0.48      0.48      0.47     60000
+","[[12009, 18386], [13002, 16603]]"
+MonoHime/rubert_conversational_cased_sentiment,rureviews,0.4135333333333333,0.44519424823410697,0.4004248549920628,0.41161720330257384,"              precision    recall  f1-score   support
+
+           0       0.65      0.27      0.38     40000
+           1       0.33      0.71      0.45     20000
+
+    accuracy                           0.41     60000
+   macro avg       0.49      0.49      0.41     60000
+weighted avg       0.54      0.41      0.40     60000
+","[[10694, 29306], [5882, 14118]]"
+MonoHime/rubert_conversational_cased_sentiment,rusentiment,0.13551386884720218,0.22377702916702658,0.049588297924755095,0.1241899726681039,"              precision    recall  f1-score   support
+
+           0       0.93      0.01      0.02     27273
+           1       0.13      0.99      0.22      3912
+
+    accuracy                           0.14     31185
+   macro avg       0.53      0.50      0.12     31185
+weighted avg       0.83      0.14      0.05     31185
+","[[340, 26933], [26, 3886]]"
+MonoHime/rubert_conversational_cased_sentiment,ru_sentiment_monohime,0.28535,0.4204992364142554,0.16040004084421167,0.24424444508129903,"              precision    recall  f1-score   support
+
+           0       0.90      0.04      0.07     44271
+           1       0.27      0.99      0.42     15729
+
+    accuracy                           0.29     60000
+   macro avg       0.58      0.51      0.24     60000
+weighted avg       0.73      0.29      0.16     60000
+","[[1564, 42707], [172, 15557]]"
+sismetanin/rubert-ru-sentiment-rureviews,tg_messages_mriya,0.2245508982035928,0.007662835249042145,0.35617584058632995,0.1856495994427029,"              precision    recall  f1-score   support
+
+           0       0.93      0.23      0.36       327
+           1       0.00      0.14      0.01         7
+
+    accuracy                           0.22       334
+   macro avg       0.46      0.18      0.19       334
+weighted avg       0.91      0.22      0.36       334
+","[[74, 253], [6, 1]]"
+sismetanin/rubert-ru-sentiment-rureviews,sentiment_of_bank_reviews,0.2863775983998857,0.010107015457788348,0.22611216240235232,0.22609673346328488,"              precision    recall  f1-score   support
+
+           0       0.36      0.57      0.44      7000
+           1       0.02      0.01      0.01      6999
+
+    accuracy                           0.29     13999
+   macro avg       0.19      0.29      0.23     13999
+weighted avg       0.19      0.29      0.23     13999
+","[[3958, 3042], [6948, 51]]"
+sismetanin/rubert-ru-sentiment-rureviews,rutweetcorp,0.2775166666666667,0.12470469459868753,0.25651653967867977,0.2548035711375843,"              precision    recall  f1-score   support
+
+           0       0.34      0.45      0.38     30395
+           1       0.16      0.10      0.12     29605
+
+    accuracy                           0.28     60000
+   macro avg       0.25      0.28      0.25     60000
+weighted avg       0.25      0.28      0.26     60000
+","[[13563, 16832], [26517, 3088]]"
+sismetanin/rubert-ru-sentiment-rureviews,rureviews,0.31983333333333336,0.007924931933099962,0.3243262317913201,0.24522590682676504,"              precision    recall  f1-score   support
+
+           0       0.49      0.48      0.48     40000
+           1       0.01      0.01      0.01     20000
+
+    accuracy                           0.32     60000
+   macro avg       0.25      0.24      0.25     60000
+weighted avg       0.33      0.32      0.32     60000
+","[[19027, 20973], [19837, 163]]"
+sismetanin/rubert-ru-sentiment-rureviews,rusentiment,0.4546095879429213,0.05469097376611828,0.5462399558943777,0.33571900529308213,"              precision    recall  f1-score   support
+
+           0       0.80      0.50      0.62     27273
+           1       0.03      0.13      0.05      3912
+
+    accuracy                           0.45     31185
+   macro avg       0.42      0.31      0.34     31185
+weighted avg       0.70      0.45      0.55     31185
+","[[13685, 13588], [3420, 492]]"
+sismetanin/rubert-ru-sentiment-rureviews,ru_sentiment_monohime,0.33635,0.1340118744698897,0.37605003103356965,0.29802770191698597,"              precision    recall  f1-score   support
+
+           0       0.57      0.39      0.46     44271
+           1       0.10      0.20      0.13     15729
+
+    accuracy                           0.34     60000
+   macro avg       0.34      0.29      0.30     60000
+weighted avg       0.45      0.34      0.38     60000
+","[[17100, 27171], [12648, 3081]]"
+blanchefort/rubert-base-cased-sentiment-rurewiews,tg_messages_mriya,0.7964071856287425,0.12820512820512822,0.8688901206713041,0.5064754454584963,"              precision    recall  f1-score   support
+
+           0       0.99      0.80      0.88       327
+           1       0.07      0.71      0.13         7
+
+    accuracy                           0.80       334
+   macro avg       0.53      0.76      0.51       334
+weighted avg       0.97      0.80      0.87       334
+","[[261, 66], [2, 5]]"
+blanchefort/rubert-base-cased-sentiment-rurewiews,sentiment_of_bank_reviews,0.6997642688763483,0.7686464468541861,0.6705536290645686,0.6705606356944107,"              precision    recall  f1-score   support
+
+           0       0.99      0.40      0.57      7000
+           1       0.63      1.00      0.77      6999
+
+    accuracy                           0.70     13999
+   macro avg       0.81      0.70      0.67     13999
+weighted avg       0.81      0.70      0.67     13999
+","[[2814, 4186], [17, 6982]]"
+blanchefort/rubert-base-cased-sentiment-rurewiews,rutweetcorp,0.73985,0.7651757909464278,0.7364146552698163,0.7367884222904533,"              precision    recall  f1-score   support
+
+           0       0.82      0.62      0.71     30395
+           1       0.69      0.86      0.77     29605
+
+    accuracy                           0.74     60000
+   macro avg       0.75      0.74      0.74     60000
+weighted avg       0.76      0.74      0.74     60000
+","[[18960, 11435], [4174, 25431]]"
+blanchefort/rubert-base-cased-sentiment-rurewiews,rureviews,0.78525,0.7472686974089402,0.791294143419123,0.7802877819165772,"              precision    recall  f1-score   support
+
+           0       0.97      0.70      0.81     40000
+           1       0.61      0.95      0.75     20000
+
+    accuracy                           0.79     60000
+   macro avg       0.79      0.83      0.78     60000
+weighted avg       0.85      0.79      0.79     60000
+","[[28066, 11934], [951, 19049]]"
+blanchefort/rubert-base-cased-sentiment-rurewiews,rusentiment,0.6285714285714286,0.36935808787499314,0.6906782451739902,0.5530630177574634,"              precision    recall  f1-score   support
+
+           0       0.97      0.59      0.74     27273
+           1       0.23      0.87      0.37      3912
+
+    accuracy                           0.63     31185
+   macro avg       0.60      0.73      0.55     31185
+weighted avg       0.88      0.63      0.69     31185
+","[[16210, 11063], [520, 3392]]"
+blanchefort/rubert-base-cased-sentiment-rurewiews,ru_sentiment_monohime,0.7268166666666667,0.5975594785042598,0.7419337131458793,0.6953938856612834,"              precision    recall  f1-score   support
+
+           0       0.90      0.71      0.79     44271
+           1       0.49      0.77      0.60     15729
+
+    accuracy                           0.73     60000
+   macro avg       0.69      0.74      0.70     60000
+weighted avg       0.79      0.73      0.74     60000
+","[[31440, 12831], [3560, 12169]]"
+rajora/distilbert-multilingual-sentiment,tg_messages_mriya,0.7724550898203593,0.025641025641025637,0.8534654289855752,0.4484137331594959,"              precision    recall  f1-score   support
+
+           0       0.98      0.79      0.87       327
+           1       0.01      0.14      0.03         7
+
+    accuracy                           0.77       334
+   macro avg       0.50      0.46      0.45       334
+weighted avg       0.96      0.77      0.85       334
+","[[257, 70], [6, 1]]"
+rajora/distilbert-multilingual-sentiment,sentiment_of_bank_reviews,0.47796271162225873,0.023255813953488372,0.3335451767611889,0.3335230132352741,"              precision    recall  f1-score   support
+
+           0       0.49      0.94      0.64      7000
+           1       0.18      0.01      0.02      6999
+
+    accuracy                           0.48     13999
+   macro avg       0.33      0.48      0.33     13999
+weighted avg       0.33      0.48      0.33     13999
+","[[6604, 396], [6912, 87]]"
+rajora/distilbert-multilingual-sentiment,rutweetcorp,0.4295833333333333,0.2315723298682054,0.39108636891678844,0.3890133948939495,"              precision    recall  f1-score   support
+
+           0       0.46      0.68      0.55     30395
+           1       0.35      0.17      0.23     29605
+
+    accuracy                           0.43     60000
+   macro avg       0.40      0.43      0.39     60000
+weighted avg       0.40      0.43      0.39     60000
+","[[20618, 9777], [24448, 5157]]"
+rajora/distilbert-multilingual-sentiment,rureviews,0.5338,0.12015601409159538,0.49530927539071073,0.4015209600659319,"              precision    recall  f1-score   support
+
+           0       0.62      0.75      0.68     40000
+           1       0.16      0.10      0.12     20000
+
+    accuracy                           0.53     60000
+   macro avg       0.39      0.42      0.40     60000
+weighted avg       0.47      0.53      0.50     60000
+","[[30118, 9882], [18090, 1910]]"
+rajora/distilbert-multilingual-sentiment,rusentiment,0.5682860349527016,0.12287445436184768,0.6395674229271423,0.4182777877815066,"              precision    recall  f1-score   support
+
+           0       0.85      0.62      0.71     27273
+           1       0.08      0.24      0.12      3912
+
+    accuracy                           0.57     31185
+   macro avg       0.47      0.43      0.42     31185
+weighted avg       0.75      0.57      0.64     31185
+","[[16779, 10494], [2969, 943]]"
+rajora/distilbert-multilingual-sentiment,ru_sentiment_monohime,0.66705,0.12177429990768013,0.6182093819881731,0.45818080670478867,"              precision    recall  f1-score   support
+
+           0       0.73      0.87      0.79     44271
+           1       0.20      0.09      0.12     15729
+
+    accuracy                           0.67     60000
+   macro avg       0.46      0.48      0.46     60000
+weighted avg       0.59      0.67      0.62     60000
+","[[38638, 5633], [14344, 1385]]"
+sismetanin/mbart_ru_sum_gazeta-ru-sentiment-rusentiment,tg_messages_mriya,0.9760479041916168,0.42857142857142855,0.9760479041916168,0.7081695063346439,"              precision    recall  f1-score   support
+
+           0       0.99      0.99      0.99       327
+           1       0.43      0.43      0.43         7
+
+    accuracy                           0.98       334
+   macro avg       0.71      0.71      0.71       334
+weighted avg       0.98      0.98      0.98       334
+","[[323, 4], [4, 3]]"
+sismetanin/mbart_ru_sum_gazeta-ru-sentiment-rusentiment,sentiment_of_bank_reviews,0.6888349167797699,0.5859315589353612,0.6683578668551302,0.6683519792617074,"              precision    recall  f1-score   support
+
+           0       0.63      0.94      0.75      7000
+           1       0.88      0.44      0.59      6999
+
+    accuracy                           0.69     13999
+   macro avg       0.75      0.69      0.67     13999
+weighted avg       0.75      0.69      0.67     13999
+","[[6561, 439], [3917, 3082]]"
+sismetanin/mbart_ru_sum_gazeta-ru-sentiment-rusentiment,rutweetcorp,0.8361666666666666,0.8114401902861965,0.8335879255836678,0.8333001033944096,"              precision    recall  f1-score   support
+
+           0       0.77      0.95      0.86     30395
+           1       0.94      0.71      0.81     29605
+
+    accuracy                           0.84     60000
+   macro avg       0.86      0.83      0.83     60000
+weighted avg       0.86      0.84      0.83     60000
+","[[29019, 1376], [8454, 21151]]"
+sismetanin/mbart_ru_sum_gazeta-ru-sentiment-rusentiment,rureviews,0.7519166666666667,0.6317143776133805,0.7525465041261142,0.7223384724979307,"              precision    recall  f1-score   support
+
+           0       0.82      0.81      0.81     40000
+           1       0.63      0.64      0.63     20000
+
+    accuracy                           0.75     60000
+   macro avg       0.72      0.72      0.72     60000
+weighted avg       0.75      0.75      0.75     60000
+","[[32349, 7651], [7234, 12766]]"
+sismetanin/mbart_ru_sum_gazeta-ru-sentiment-rusentiment,rusentiment,0.9701459034792368,0.8840453356582388,0.9704707156174622,0.9334563919048634,"              precision    recall  f1-score   support
+
+           0       0.99      0.98      0.98     27273
+           1       0.86      0.91      0.88      3912
+
+    accuracy                           0.97     31185
+   macro avg       0.92      0.94      0.93     31185
+weighted avg       0.97      0.97      0.97     31185
+","[[26705, 568], [363, 3549]]"
+sismetanin/mbart_ru_sum_gazeta-ru-sentiment-rusentiment,ru_sentiment_monohime,0.8081333333333334,0.633515853813829,0.8080426618647608,0.7517829867344306,"              precision    recall  f1-score   support
+
+           0       0.87      0.87      0.87     44271
+           1       0.63      0.63      0.63     15729
+
+    accuracy                           0.81     60000
+   macro avg       0.75      0.75      0.75     60000
+weighted avg       0.81      0.81      0.81     60000
+","[[38538, 5733], [5779, 9950]]"
+sismetanin/mbart_ru_sum_gazeta-ru-sentiment-rureviews,tg_messages_mriya,0.19461077844311378,0.014652014652014652,0.3126090564732269,0.1668196782120833,"              precision    recall  f1-score   support
+
+           0       0.93      0.19      0.32       327
+           1       0.01      0.29      0.01         7
+
+    accuracy                           0.19       334
+   macro avg       0.47      0.24      0.17       334
+weighted avg       0.91      0.19      0.31       334
+","[[63, 264], [5, 2]]"
+sismetanin/mbart_ru_sum_gazeta-ru-sentiment-rureviews,sentiment_of_bank_reviews,0.1595113936709765,0.010428931875525653,0.14000147130539356,0.1399922161240057,"              precision    recall  f1-score   support
+
+           0       0.24      0.31      0.27      7000
+           1       0.01      0.01      0.01      6999
+
+    accuracy                           0.16     13999
+   macro avg       0.13      0.16      0.14     13999
+weighted avg       0.13      0.16      0.14     13999
+","[[2171, 4829], [6937, 62]]"
+sismetanin/mbart_ru_sum_gazeta-ru-sentiment-rureviews,rutweetcorp,0.28523333333333334,0.07349637054960248,0.24811502107628736,0.24584575419166688,"              precision    recall  f1-score   support
+
+           0       0.36      0.51      0.42     30395
+           1       0.10      0.06      0.07     29605
+
+    accuracy                           0.29     60000
+   macro avg       0.23      0.28      0.25     60000
+weighted avg       0.23      0.29      0.25     60000
+","[[15413, 14982], [27904, 1701]]"
+sismetanin/mbart_ru_sum_gazeta-ru-sentiment-rureviews,rureviews,0.34353333333333336,0.005303298146371029,0.3418422252247644,0.257707493455166,"              precision    recall  f1-score   support
+
+           0       0.51      0.51      0.51     40000
+           1       0.01      0.01      0.01     20000
+
+    accuracy                           0.34     60000
+   macro avg       0.26      0.26      0.26     60000
+weighted avg       0.34      0.34      0.34     60000
+","[[20507, 19493], [19895, 105]]"
+sismetanin/mbart_ru_sum_gazeta-ru-sentiment-rureviews,rusentiment,0.4618887285553952,0.037731521302827,0.5526561619028266,0.33212386752639955,"              precision    recall  f1-score   support
+
+           0       0.80      0.52      0.63     27273
+           1       0.02      0.08      0.04      3912
+
+    accuracy                           0.46     31185
+   macro avg       0.41      0.30      0.33     31185
+weighted avg       0.70      0.46      0.55     31185
+","[[14075, 13198], [3583, 329]]"
+sismetanin/mbart_ru_sum_gazeta-ru-sentiment-rureviews,ru_sentiment_monohime,0.3007,0.12986312733305683,0.34059367037675264,0.27266352242941505,"              precision    recall  f1-score   support
+
+           0       0.54      0.34      0.42     44271
+           1       0.10      0.20      0.13     15729
+
+    accuracy                           0.30     60000
+   macro avg       0.32      0.27      0.27     60000
+weighted avg       0.43      0.30      0.34     60000
+","[[14911, 29360], [12598, 3131]]"
+kartashoffv/vashkontrol-sentiment-rubert,tg_messages_mriya,0.9161676646706587,0.2222222222222222,0.9403239933634839,0.5889592123769338,"              precision    recall  f1-score   support
+
+           0       0.99      0.92      0.96       327
+           1       0.14      0.57      0.22         7
+
+    accuracy                           0.92       334
+   macro avg       0.56      0.75      0.59       334
+weighted avg       0.97      0.92      0.94       334
+","[[302, 25], [3, 4]]"
+kartashoffv/vashkontrol-sentiment-rubert,sentiment_of_bank_reviews,0.7686263304521752,0.7919583788297258,0.7656772075942516,0.7656790848207684,"              precision    recall  f1-score   support
+
+           0       0.85      0.66      0.74      7000
+           1       0.72      0.88      0.79      6999
+
+    accuracy                           0.77     13999
+   macro avg       0.78      0.77      0.77     13999
+weighted avg       0.78      0.77      0.77     13999
+","[[4595, 2405], [834, 6165]]"
+kartashoffv/vashkontrol-sentiment-rubert,rutweetcorp,0.6007333333333333,0.43965194610778446,0.5664142898505495,0.5647669423993769,"              precision    recall  f1-score   support
+
+           0       0.57      0.88      0.69     30395
+           1       0.71      0.32      0.44     29605
+
+    accuracy                           0.60     60000
+   macro avg       0.64      0.60      0.56     60000
+weighted avg       0.64      0.60      0.57     60000
+","[[26646, 3749], [20207, 9398]]"
+kartashoffv/vashkontrol-sentiment-rubert,rureviews,0.7478666666666667,0.6289246467817896,0.7490195780064232,0.7189958452002647,"              precision    recall  f1-score   support
+
+           0       0.82      0.80      0.81     40000
+           1       0.62      0.64      0.63     20000
+
+    accuracy                           0.75     60000
+   macro avg       0.72      0.72      0.72     60000
+weighted avg       0.75      0.75      0.75     60000
+","[[32052, 7948], [7180, 12820]]"
+kartashoffv/vashkontrol-sentiment-rubert,rusentiment,0.8217732884399551,0.3207039843559032,0.8250836673220341,0.6090675749638083,"              precision    recall  f1-score   support
+
+           0       0.90      0.89      0.90     27273
+           1       0.31      0.34      0.32      3912
+
+    accuracy                           0.82     31185
+   macro avg       0.61      0.61      0.61     31185
+weighted avg       0.83      0.82      0.83     31185
+","[[24315, 2958], [2600, 1312]]"
+kartashoffv/vashkontrol-sentiment-rubert,ru_sentiment_monohime,0.7119833333333333,0.5462279757372056,0.7253887222522922,0.667635271607021,"              precision    recall  f1-score   support
+
+           0       0.86      0.73      0.79     44271
+           1       0.47      0.66      0.55     15729
+
+    accuracy                           0.71     60000
+   macro avg       0.66      0.70      0.67     60000
+weighted avg       0.76      0.71      0.73     60000
+","[[32318, 11953], [5328, 10401]]"
+tabularisai/multilingual-sentiment-analysis,tg_messages_mriya,0.8532934131736527,0.14035087719298248,0.9034677651330126,0.5300772389238235,"              precision    recall  f1-score   support
+
+           0       0.99      0.86      0.92       327
+           1       0.08      0.57      0.14         7
+
+    accuracy                           0.85       334
+   macro avg       0.53      0.72      0.53       334
+weighted avg       0.97      0.85      0.90       334
+","[[281, 46], [3, 4]]"
+tabularisai/multilingual-sentiment-analysis,sentiment_of_bank_reviews,0.709622115865419,0.7317008778298462,0.7076405783434305,0.707642296936251,"              precision    recall  f1-score   support
+
+           0       0.75      0.63      0.68      7000
+           1       0.68      0.79      0.73      6999
+
+    accuracy                           0.71     13999
+   macro avg       0.72      0.71      0.71     13999
+weighted avg       0.72      0.71      0.71     13999
+","[[4391, 2609], [1456, 5543]]"
+tabularisai/multilingual-sentiment-analysis,rutweetcorp,0.5848333333333333,0.5160099479288102,0.5770584157794634,0.5762650568453951,"              precision    recall  f1-score   support
+
+           0       0.57      0.72      0.64     30395
+           1       0.61      0.45      0.52     29605
+
+    accuracy                           0.58     60000
+   macro avg       0.59      0.58      0.58     60000
+weighted avg       0.59      0.58      0.58     60000
+","[[21811, 8584], [16326, 13279]]"
+tabularisai/multilingual-sentiment-analysis,rureviews,0.7442333333333333,0.6258168340973373,0.7457504941327817,0.7157670791239206,"              precision    recall  f1-score   support
+
+           0       0.82      0.80      0.81     40000
+           1       0.61      0.64      0.63     20000
+
+    accuracy                           0.74     60000
+   macro avg       0.71      0.72      0.72     60000
+weighted avg       0.75      0.74      0.75     60000
+","[[31821, 8179], [7167, 12833]]"
+tabularisai/multilingual-sentiment-analysis,rusentiment,0.680647747314414,0.29603449494592493,0.7310782388791437,0.5447573922171716,"              precision    recall  f1-score   support
+
+           0       0.91      0.70      0.79     27273
+           1       0.20      0.54      0.30      3912
+
+    accuracy                           0.68     31185
+   macro avg       0.56      0.62      0.54     31185
+weighted avg       0.82      0.68      0.73     31185
+","[[19132, 8141], [1818, 2094]]"
+tabularisai/multilingual-sentiment-analysis,ru_sentiment_monohime,0.7388666666666667,0.5390408943807002,0.7447492251532155,0.6784380149150333,"              precision    recall  f1-score   support
+
+           0       0.84      0.79      0.82     44271
+           1       0.50      0.58      0.54     15729
+
+    accuracy                           0.74     60000
+   macro avg       0.67      0.69      0.68     60000
+weighted avg       0.75      0.74      0.74     60000
+","[[35171, 9100], [6568, 9161]]"
+sismetanin/sbert-ru-sentiment-rusentiment,tg_messages_mriya,0.9790419161676647,0.5333333333333333,0.979724471424685,0.7613067891781521,"              precision    recall  f1-score   support
+
+           0       0.99      0.99      0.99       327
+           1       0.50      0.57      0.53         7
+
+    accuracy                           0.98       334
+   macro avg       0.75      0.78      0.76       334
+weighted avg       0.98      0.98      0.98       334
+","[[323, 4], [3, 4]]"
+sismetanin/sbert-ru-sentiment-rusentiment,sentiment_of_bank_reviews,0.7621258661332952,0.7059342988343341,0.7531144560962663,0.7531110860850332,"              precision    recall  f1-score   support
+
+           0       0.69      0.95      0.80      7000
+           1       0.92      0.57      0.71      6999
+
+    accuracy                           0.76     13999
+   macro avg       0.81      0.76      0.75     13999
+weighted avg       0.81      0.76      0.75     13999
+","[[6672, 328], [3002, 3997]]"
+sismetanin/sbert-ru-sentiment-rusentiment,rutweetcorp,0.8540666666666666,0.8370188370188371,0.8526555315129459,0.8524523239352138,"              precision    recall  f1-score   support
+
+           0       0.80      0.95      0.87     30395
+           1       0.93      0.76      0.84     29605
+
+    accuracy                           0.85     60000
+   macro avg       0.87      0.85      0.85     60000
+weighted avg       0.87      0.85      0.85     60000
+","[[28760, 1635], [7121, 22484]]"
+sismetanin/sbert-ru-sentiment-rusentiment,rureviews,0.7632,0.6156676044146288,0.7578127008452784,0.7222764267376159,"              precision    recall  f1-score   support
+
+           0       0.80      0.86      0.83     40000
+           1       0.67      0.57      0.62     20000
+
+    accuracy                           0.76     60000
+   macro avg       0.74      0.71      0.72     60000
+weighted avg       0.76      0.76      0.76     60000
+","[[34412, 5588], [8620, 11380]]"
+sismetanin/sbert-ru-sentiment-rusentiment,rusentiment,0.9791566458233125,0.9183211862276953,0.9793064648262129,0.9531876459698354,"              precision    recall  f1-score   support
+
+           0       0.99      0.99      0.99     27273
+           1       0.90      0.93      0.92      3912
+
+    accuracy                           0.98     31185
+   macro avg       0.95      0.96      0.95     31185
+weighted avg       0.98      0.98      0.98     31185
+","[[26881, 392], [258, 3654]]"
+sismetanin/sbert-ru-sentiment-rusentiment,ru_sentiment_monohime,0.8095333333333333,0.619269722814499,0.8064843454425065,0.7461346835978611,"              precision    recall  f1-score   support
+
+           0       0.86      0.89      0.87     44271
+           1       0.65      0.59      0.62     15729
+
+    accuracy                           0.81     60000
+   macro avg       0.75      0.74      0.75     60000
+weighted avg       0.80      0.81      0.81     60000
+","[[39278, 4993], [6435, 9294]]"

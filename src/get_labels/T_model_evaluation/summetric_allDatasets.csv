@@ -1,0 +1,7 @@
+dataset,model,summetric
+ru_sentiment_monohime,sismetanin/mbart_ru_sum_gazeta-ru-sentiment-rusentiment,0.7503687089365885
+rureviews,seara/rubert-tiny2-russian-sentiment,0.7845611648649192
+rusentiment,sismetanin/sbert-ru-sentiment-rusentiment,0.957492985711764
+rutweetcorp,sismetanin/sbert-ru-sentiment-rusentiment,0.8490483397834159
+sentiment_of_bank_reviews,seara/rubert-tiny2-russian-sentiment,0.8191381595678581
+tg_messages_mriya,sismetanin/sbert-ru-sentiment-rusentiment,0.8133516275259588
