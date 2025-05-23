@@ -17,7 +17,7 @@ from transformers.models.auto.modeling_auto import AutoModel
 from transformers.models.auto.tokenization_auto import AutoTokenizer
 from transformers.models.t5 import T5EncoderModel
 
-from ..apirequests import invoke_chute
+from ..apirequests import invoke_chute, invoke_mistral
 
 warnings.filterwarnings("ignore")
 
