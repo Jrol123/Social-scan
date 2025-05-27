@@ -220,21 +220,16 @@ def gen_embeddings(
 # ---- КЛАСТЕРИЗАЦИЯ
 
 
-def is_large_data(X):
+def is_large_data(X: np.ndarray | pd.DataFrame):
     """
     Определяет, считаются ли данные "большими" на основе доступной памяти.
 
-    Параметры:
-    ----------
-    X : np.ndarray или pd.DataFrame
-        Входные данные.
-    mem_threshold_gb : float
-        Порог (в ГБ), после которого данные считаются большими.
+    Args:
+        X (np.ndarray | pd.DataFrame): Входные данные.
+        mem_threshold_gb (float): Порог (в ГБ), после которого данные считаются большими.
 
-    Возвращает:
-    -----------
-    bool
-        True, если данные большие, иначе False.
+    Returns:
+        bool : True, если данные большие, иначе False.
     """
     # is_large_data.mem_threshold_gb = 2
     available_mem_gb = psutil.virtual_memory().available / (1024**3)
@@ -323,8 +318,9 @@ def get_param_distributions(algorithm_name, X):
         raise ValueError(f"Алгоритм {algorithm_name} не поддерживается.")
 
 
-def cluster_with_algorithm(X, algorithm_name, params, metric="euclidean",
-                           distance_matrix=None):
+def cluster_with_algorithm(
+    X, algorithm_name, params, metric="euclidean", distance_matrix=None
+):
     """
     Запускает кластеризацию с заданными параметрами.
 
@@ -351,20 +347,22 @@ def cluster_with_algorithm(X, algorithm_name, params, metric="euclidean",
         model = DBSCAN(
             **params,
             metric="precomputed" if distance_matrix is not None else metric,
-            n_jobs=-1
+            n_jobs=-1,
         )
     elif algorithm_name == "agg":
         model = AgglomerativeClustering(
             **params,
-            metric="precomputed"
-            if distance_matrix is not None and params['linkage'] != 'ward'
-            else 'euclidean'
+            metric=(
+                "precomputed"
+                if distance_matrix is not None and params["linkage"] != "ward"
+                else "euclidean"
+            ),
         )
     elif algorithm_name == "hdbscan":
         model = HDBSCAN(
             **params,
             metric="precomputed" if distance_matrix is not None else metric,
-            n_jobs=-1
+            n_jobs=-1,
         )
     elif algorithm_name == "optics":
         model = OPTICS(
@@ -512,27 +510,33 @@ def clustering_selection(
     metric="euclidean",
     use_silhouette=True,
     n_jobs=-1,
-    exclude_algorithms: list[str] = None
+    exclude_algorithms: list[str] = None,
 ):
     """Подбирает наилучший алгоритм кластеризации по метрике"""
-    embeds = gen_embeddings(data, embeddings_model, task=task, cache_dir=cache_dir,
-                            normalize=normalize)
+    embeds = gen_embeddings(
+        data, embeddings_model, task=task, cache_dir=cache_dir, normalize=normalize
+    )
 
     is_large_data.mem_threshold_gb = large_data_thr
     best_results = {}
     best_score = -1 if use_silhouette else 0
     best_alg = None
-    
+
     if exclude_algorithms is not None:
-        alg_list = [alg for alg in CLUSTERING_ALGORITHMS
-                    if alg not in exclude_algorithms]
+        alg_list = [
+            alg for alg in CLUSTERING_ALGORITHMS if alg not in exclude_algorithms
+        ]
     else:
         alg_list = CLUSTERING_ALGORITHMS
-        
+
     for alg in alg_list:
         params, labels, score = optimize_clustering(
-            embeds, alg, use_silhouette=use_silhouette, n_trials=n_trials,
-            n_jobs=n_jobs, metric=metric
+            embeds,
+            alg,
+            use_silhouette=use_silhouette,
+            n_trials=n_trials,
+            n_jobs=n_jobs,
+            metric=metric,
         )
         best_results[alg] = {"params": params, "labels": labels, "score": score}
         if score > best_score:
@@ -565,108 +569,6 @@ def clusterization(
 
 
 # ---- ПРИМЕНЕНИЕ LLM ДЛЯ УЛУЧШЕНИЯ КЛАСТЕРИЗАЦИИ
-
-
-def multilabel_classification(
-    reviews: pd.DataFrame,
-    categories: list,
-    api_token: str,
-    metadata: dict,
-    model_name="deepseek-ai/DeepSeek-V3-0324",
-    batch_size=24000
-) -> list[dict[str, str | None]]:
-    """Распределение проблем, упоминаемых в отзывах, на заданные категории и остальные"""
-    df = reviews[['text']].reset_index(drop=True)
-    df = df.dropna(how="all")
-    df["len"] = df["text"].str.len()
-    df["cumlen"] = df["len"].cumsum()
-    df["cumlen"] = df["cumlen"] + [6 * i for i in range(len(df))]
-    
-    instr = (
-        "Ты - опытный помощник по выявлению проблем компании "
-        f"\"{metadata['company']}\", на которые жалуются клиенты в своих отзывах. "
-        f"Вот краткое описание компании: {metadata['description']}.\n\n"
-        "Твоя задача - максимально точно перечислить "
-        "все конкретные проблемы и жалобы, упоминаемые пользователем, связанные "
-        "с бизнесом, не теряя уточняющие детали. "
-        "Каждую упоминаемую проблему отнеси к одному из предложенных классов: "
-        f"{', '.join(categories)}, остальные - если нет проблем, "
-        'которые относятся к классу, ставь символ "-", '
-        "и если проблема не относится ни к одному классу, "
-        'относи её к классу "остальные".'
-        "Соблюдай шаблон ввода:\n1. текст отзыва\n----\n"
-        "2. текст отзыва\n----\n... (все оставшиеся отзывы)\n----\n"
-        "n. текст отзыва\n\nШаблон вывода:\n\n1.\n"
-    )
-    
-    instr += "\n".join(
-        [k + f': проблема1; проблема2, связанных с "{k}" в отзыве 1\n'
-         for k in categories]
-    )
-    instr += (
-        "\nостальные: перечисление проблем в первом отзыве, не относящихся "
-        "ни к одному из классов выше\n\n"
-        "... (все остальные отзывы)\n\nn.\n"
-    )
-    instr += "\n".join(
-        [k + f': перечисление проблем, связанных с "{k}" ' f"в отзыве n\n"
-         for k in categories]
-    )
-    instr += (
-        "\nостальные: перечисление проблем в последнем отзыве, не относящихся "
-        "ни к одному из классов выше"
-    )
-    
-    i = 0
-    outputs = []
-    while i * batch_size <= df.iloc[-1, -1]:
-        batch = df.loc[(i * batch_size < df['cumlen'])
-                       & (df['cumlen'] < (i + 1) * batch_size), "text"]
-        batch = [str(j + 1) + '. ' for j in range(len(batch))] + batch
-        prompt = "\n----\n".join(batch)
-        # print(instr)
-        # print(prompt)
-        
-        time.sleep(10)
-        try:
-            if 'mistral' not in model_name:
-                output = asyncio.run(
-                    invoke_chute(prompt, instr, api_token, model_name)
-                )
-                if '</think>' in output:
-                    output = output.split('</think>', 1)[1]
-            else:
-                output = asyncio.run(
-                    invoke_mistral(prompt, instr, api_token, model_name)
-                )
-        
-        except asyncio.exceptions.TimeoutError:
-            continue
-        
-        if not output:
-            continue
-        
-        outputs.append(output)
-        i += 1
-    
-    outputs = [s.strip().split('.\n', 1)[1] if '.\n' in s
-               else s.strip().split('. ', 1)[1]
-               for part in outputs for s in part.split('\n\n')]
-    
-    problems = []
-    for review in outputs:
-        review = review
-        review_categories = review.split('\n') if '\n' in review else [review]
-        review_cats = dict.fromkeys(categories + ['остальные'], None)
-        for category in review_categories:
-            name, enum_problems = category.split(': ', 1)
-            if name in review_cats:
-                review_cats[name] = (enum_problems if enum_problems.strip() != '-'
-                                     else None)
-        
-        problems.append(review_cats)
-    
-    return problems
 
 
 def transform_cluster_labels(
@@ -737,7 +639,7 @@ def clustering_correction(
     timeout=15,
 ):
     """Отправляет запросы к LLM для улучшения кластеризации
-       и формирует их названия и обоснование"""
+    и формирует их названия и обоснование"""
     assert best_alg in CLUSTERING_ALGORITHMS
 
     instr1 = (
@@ -785,10 +687,10 @@ def clustering_correction(
         prompt += f"Кластер {k}:\n"
         cluster = df.loc[df["cluster"] == k, ["summary"]]
         # cluster['len'] = cluster['summary'].str.len()
-        cluster['cumlen'] = cluster['summary'].str.len().cumsum()
-        cluster = cluster[cluster['cumlen'] <= 30000 / len(labels)]
+        cluster["cumlen"] = cluster["summary"].str.len().cumsum()
+        cluster = cluster[cluster["cumlen"] <= 30000 / len(labels)]
 
-        prompt += "\n----\n".join(cluster['summary'].to_list())
+        prompt += "\n----\n".join(cluster["summary"].to_list())
         prompt += "\n\n"
 
     # print(prompt)
@@ -801,13 +703,13 @@ def clustering_correction(
             )
         except asyncio.exceptions.TimeoutError:
             continue
-        
+
         if not output:
             continue
-        
+
         if "</think>" in output:
             _, output = output.split("</think>\n", 1)
-        
+
         print(output)
         try:
             _, divide_clusters, union_clusters, delete_clusters = (
@@ -816,7 +718,7 @@ def clustering_correction(
         except IndexError:
             time.sleep(10)
             continue
-        
+
         break
 
     if delete_clusters is not None:
@@ -847,10 +749,10 @@ def clustering_correction(
     categories = []
     for k in labels:
         cluster = df.loc[df["new_cluster"] == k, ["summary"]]
-        cluster['cumlen'] = cluster['summary'].str.len().cumsum()
-        cluster = cluster[cluster['cumlen'] < 30000]
+        cluster["cumlen"] = cluster["summary"].str.len().cumsum()
+        cluster = cluster[cluster["cumlen"] < 30000]
 
-        prompt = "\n----\n".join(cluster['summary'].to_list())
+        prompt = "\n----\n".join(cluster["summary"].to_list())
         output = ""
         while not output:
             try:
@@ -859,15 +761,14 @@ def clustering_correction(
                 )
             except asyncio.exceptions.TimeoutError:
                 continue
-             
+
             if "</think>" in output:
                 _, output = output.split("</think>\n", 1)
-            
-        print(output, end='\n\n')
+
+        print(output, end="\n\n")
         name, reasoning = output.split("\n", 1)
         name = (
-            name.split(": ", 1)[1].replace("**", "")
-                .replace("[", "").replace("]", "")
+            name.split(": ", 1)[1].replace("**", "").replace("[", "").replace("]", "")
         )
         reasoning = reasoning.split(": ", 1)[1]
         categories.append({"cluster": k, "name": name, "reasoning": reasoning})
