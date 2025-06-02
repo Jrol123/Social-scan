@@ -2,13 +2,13 @@
 Пайплайн парсинга.
 """
 
-from ..abstract import Parser, AsyncParser
+from ..abstract import AbstractParser, AbstractAsyncParser
 from .config import MasterParserConfig
 from asyncio import run
 
 
 class MasterParser:
-    def __init__(self, *parsers: Parser) -> None:
+    def __init__(self, *parsers: AbstractParser) -> None:
         """
         Сервисы передаются экземплярами!
         """
@@ -26,7 +26,7 @@ class MasterParser:
 
         for parser in self.parsers:
             print(parser.__class__.__name__)
-            if isinstance(parser, AsyncParser):
+            if isinstance(parser, AbstractAsyncParser):
                 # async with parser.client:
                 results += await parser.parse(global_params)
                 # results += await parser.parse(global_params)

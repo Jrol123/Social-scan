@@ -692,6 +692,9 @@ def clustering_correction(
 
         prompt += "\n----\n".join(cluster["summary"].to_list())
         prompt += "\n\n"
+        
+    # TODO: Разобраться с loop closed
+    # TODO: Выводить .csv в нормальный return.
 
     # print(prompt)
     while True:

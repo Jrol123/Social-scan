@@ -31,10 +31,10 @@ DEFAULT_INSTRUCTION = (
 )
 
 
-def summarize_reviews(
+def gen_summarization(
     reviews: DataFrame,
-    model_name: str,
     token: str,
+    model_name: str = "mistral",
     instr=DEFAULT_INSTRUCTION,
     batch_size: int = 32000,
 ) -> list[str]:
@@ -100,8 +100,8 @@ def summarize_reviews(
 
 def gen_categories(
     reviews: DataFrame,
-    model_name: str,
     token: str,
+    model_name: str,
     metadata: dict,
     batch_size: int = 32000,
 ) -> list[str]:
@@ -211,12 +211,12 @@ def gen_categories(
     return output
 
 
-def multilabel_classification(
-    reviews: pd.DataFrame,
+def gen_multilabel_summarization(
+    reviews: DataFrame,
     categories: list,
-    api_token: str,
     metadata: dict,
-    model_name="deepseek-ai/DeepSeek-V3-0324",
+    token: str,
+    model_name="deepseek",
     batch_size=24000,
 ) -> list[dict[str, str | None]]:
     """Распределение проблем, упоминаемых в отзывах, на заданные категории и остальные"""
@@ -279,14 +279,20 @@ def multilabel_classification(
 
         time.sleep(10)
         try:
-            if "mistral" not in model_name:
-                output = asyncio.run(invoke_chute(prompt, instr, api_token, model_name))
-                if "</think>" in output:
-                    output = output.split("</think>", 1)[1]
-            else:
+            if model_name in NNAME.keys():
                 output = asyncio.run(
-                    invoke_mistral(prompt, instr, api_token, model_name)
+                    NNAME[model_name][0](
+                        query=prompt,
+                        instruction=instr,
+                        token=token,
+                        model=NNAME[model_name][1],
+                    )
                 )
+                if model_name in ["chute", "deepseek"]:
+                    if "</think>" in output:
+                        output = output.split("</think>", 1)[1]
+            else:
+                raise ValueError("Неправильное имя модели!")
 
         except asyncio.exceptions.TimeoutError:
             continue

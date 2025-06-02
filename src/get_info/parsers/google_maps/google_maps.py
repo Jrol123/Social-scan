@@ -14,7 +14,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
 from .config import GoogleMapsConfig
-from ...abstract import Parser
+from ...abstract import AbstractParser
 from ...core import MasterParserConfig
 
 
@@ -39,7 +39,7 @@ SORT_TYPES = {'default': 'Самые релевантные',
 """
 
 
-class GoogleMapsParser(Parser):
+class GoogleMapsParser(AbstractParser):
     def __init__(self, config: GoogleMapsConfig):
         super().__init__(0, config)
         

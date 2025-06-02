@@ -6,12 +6,12 @@ import pandas as pd
 from dotenv import load_dotenv
 from telethon import TelegramClient
 
-from ...abstract import AsyncParser
+from ...abstract import AbstractAsyncParser
 from ...core import MasterParserConfig
 from .config import TelegramConfig
 
 
-class TelegramParser(AsyncParser):
+class TelegramParser(AbstractAsyncParser):
     def __init__(
         self,
         local_config: TelegramConfig,

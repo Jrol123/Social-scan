@@ -1,1 +1,1 @@
-from .base import Transformer
+from .base import AbstractTransformer
