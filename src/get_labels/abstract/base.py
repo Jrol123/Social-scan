@@ -3,7 +3,7 @@ from pandas import DataFrame
 from ...abstract import Config
 
 
-class Transformer(ABC):
+class AbstractTransformer(ABC):
     def __init__(self, config: Config) -> None:
         self.config = config
 

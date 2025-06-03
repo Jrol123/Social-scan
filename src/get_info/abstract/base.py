@@ -23,7 +23,7 @@ class ParserConfig(Config):
         self.q = q
 
 
-class Parser(ABC):
+class AbstractParser(ABC):
     def __init__(self, service_id: int, config: ParserConfig):
         """
         Парсер.
@@ -122,7 +122,7 @@ class Parser(ABC):
         self.local_config = config
 
 
-class AsyncParser(Parser):
+class AbstractAsyncParser(AbstractParser):
     """
     Абстрактный парсер.
     """

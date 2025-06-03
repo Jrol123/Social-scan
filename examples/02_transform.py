@@ -3,6 +3,7 @@
 
 Здесь определяется, в какую из двух (трёх) групп попадёт тот или иной отзыв.
 """
+
 from pandas import read_csv
 
 from src.get_labels.core import MasterTransformer, MasterTransformerConfig
@@ -30,24 +31,23 @@ if __name__ == "__main__":
             "label": "int32",
         },
     )
-    results = results.dropna(how='all')
-    results = results[~results['text'].isna()]
-    
+    results = results.dropna(how="all")  # На всякий случай
+    results = results[~results["text"].isna()]
+
     ratC = MasterRatingConfig(limit_bad=3.0, is_bad_soft=True, is_good_soft=False)
     ratT = MasterRaitingTransformer(ratC)
-    
+
     # sismetanin/sbert-ru-sentiment-rusentiment
     # sismetanin/mbart_ru_sum_gazeta-ru-sentiment-rusentiment
     senC = MasterSentimentConfig(
-        modelPath="seara/rubert-tiny2-russian-sentiment",
+        modelPath="sismetanin/mbart_ru_sum_gazeta-ru-sentiment-rusentiment",
         batch_size=12,
         # cache_dir="D:/TRANSFORMERS_MODELS",
-        device="cpu"
     )
     senT = MasterSentimentTransformer(senC)
-    
+
     mtf = MasterTransformerConfig(results)
     mts = MasterTransformer(mtf)
     resultT = mts.transform(ratT, senT)
-    
+
     resultT.to_csv("examples/02_example_transform.csv")

@@ -6,7 +6,7 @@ from selenium.webdriver.common.by import By
 
 from .config import YandexMapsConfig
 from .parser import Parser
-from ....abstract import Parser as aParser
+from ....abstract import AbstractParser as aParser
 from ....core import MasterParserConfig
 
 

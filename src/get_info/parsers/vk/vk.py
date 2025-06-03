@@ -1,7 +1,7 @@
 import vk_api
 from datetime import datetime
 from time import sleep
-from ...abstract import Parser
+from ...abstract import AbstractParser
 from ...core import MasterParserConfig
 from .config import VKConfig
 
@@ -9,7 +9,7 @@ SERVICE_INDEX = 3
 MAX_COUNT = 200
 
 
-class VKParser(Parser):
+class VKParser(AbstractParser):
     def __init__(self, vk_token: str | tuple[str, str], local_config: VKConfig):
         super().__init__(SERVICE_INDEX, local_config)
         if isinstance(vk_token, str):

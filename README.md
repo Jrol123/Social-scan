@@ -159,7 +159,7 @@ Social Scan — система анализа пользовательских �
 
 Mistral - Предоставляет большое количество запросов и даёт приемлемое качество, по сравнению с более мощными LLM.
 
-DeepSeek - Mistral значительно хуже справляется с задачей суммаризации по-категориям, потому необходимо применять более мощную LLM. (**В ПРОЦЕССЕ ТЕСТИРОВАНИЯ**)
+DeepSeek - Mistral значительно хуже справляется с задачей суммаризации по-категориям, потому необходимо применять более мощную LLM.
 
 ### Кластеризация
 
@@ -174,12 +174,23 @@ DeepSeek — Использует markdown в ответах + высокое к
 
 Можно кластеризировать отзывы по проблемам, указанным в суммаризации. [#102](https://github.com/Jrol123/Social-scan/issues/102)
 
-Сохранять промежуточные результаты парсинга для продолжения в случае ошибок.
+Сохранять промежуточные результаты парсинга для продолжения в случае ошибок. [#110](https://github.com/Jrol123/Social-scan/issues/110)
 
 Автоподбор параметров для парсинга (частично реализовано в модуле [`get_url`](src/get_url), где подбираются локальные параметры (реализовано ещё до конфигураций)).
-
-Сделать Мастер-Обработчик, который объединит работу всех модулей внутри себя. [#110](https://github.com/Jrol123/Social-scan/issues/110)
 
 ## Credits
 
 [`yandex_reviews_parser`](https://github.com/useless-apple/yandex_reviews-parser) — `yandex parser` был сделан на основе этого репозитория
+
+## License
+
+[![CC BY-NC-SA 4.0][cc-by-nc-sa-shield]][cc-by-nc-sa]
+
+This work is licensed under a
+[Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License][cc-by-nc-sa].
+
+[![CC BY-NC-SA 4.0][cc-by-nc-sa-image]][cc-by-nc-sa]
+
+[cc-by-nc-sa]: http://creativecommons.org/licenses/by-nc-sa/4.0/
+[cc-by-nc-sa-image]: https://licensebuttons.net/l/by-nc-sa/4.0/88x31.png
+[cc-by-nc-sa-shield]: https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg

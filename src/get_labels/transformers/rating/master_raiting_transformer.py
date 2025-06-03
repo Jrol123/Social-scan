@@ -1,10 +1,10 @@
 import pandas as pd
 from .config import MasterRatingConfig
 from ...core import MasterTransformerConfig
-from ...abstract import Transformer
+from ...abstract import AbstractTransformer
 
 
-class MasterRaitingTransformer(Transformer):
+class MasterRaitingTransformer(AbstractTransformer):
     def __init__(self, config: MasterRatingConfig) -> None:
         self.config = config
 
@@ -15,6 +15,8 @@ class MasterRaitingTransformer(Transformer):
         # 1 - Негативные отзывы
 
         rdf = global_config.rDf.copy()
+        if rdf.count(axis=0)["service_id"] == 0:
+            return None
         
         rdf["label"] = None
 
