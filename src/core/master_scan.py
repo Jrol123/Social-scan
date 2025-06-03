@@ -1,4 +1,5 @@
 import os
+import shutil
 from pandas import DataFrame, read_csv
 
 from ..get_labels.core import MasterTransformer, MasterTransformerConfig
@@ -139,4 +140,4 @@ class MasterScan:
         print("REPORT")
         form_report(summaries, clusters, deepseekKey, self.config.metadata, output_name)
 
-        os.rmdir(TMP_FOLDER)
+        shutil.rmtree(TMP_FOLDER)

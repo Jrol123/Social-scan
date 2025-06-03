@@ -15,8 +15,6 @@ if __name__ == "__main__":
 
     cache_dir = "D:/TRANSFORMERS_MODELS"
 
-    
-
     global_config = MasterParserConfig(sort_type="rating_ascending", count_items=10)
     local_config = YandexMapsConfig(1303073708)
     yp = YandexMapsParser(local_config)
