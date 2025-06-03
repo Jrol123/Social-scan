@@ -46,4 +46,4 @@ if __name__ == "__main__":
         model_name="deepseek",
     )
     problems = pd.DataFrame(problems)
-    problems.to_csv.to_csv("examples/03_1_summarized_data_categories.csv")
+    problems.to_csv("examples/03_1_summarized_data_categories.csv")
