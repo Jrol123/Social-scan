@@ -660,8 +660,17 @@ if any, to sign a "copyright disclaimer" for the program, if necessary.
 For more information on this, and how to apply and follow the GNU AGPL, see
 <https://www.gnu.org/licenses/>.
 
-=== EXCEPTION FOR ORIGINAL AUTHOR(S) ===
+=== ADDITIONAL PERMISSION FOR ORIGINAL AUTHOR(S) ===
 
-Notwithstanding the terms of the GNU Affero General Public License, 
-Artemii Popovkin (angap4@gmail.com) and Sergey Glushenko (@Tyferse) retains the perpetual right 
-to use this software for any commercial purpose without limitation.
+Pursuant to Section 7 of the GNU AGPLv3, the following additional permission is granted:
+
+Notwithstanding any terms in the GNU Affero General Public License:
+1. Artemii Popovkin (angap4@gmail.com)
+2. Sergey Glushenko (contact@email.com) 
+
+(retain/receive) a perpetual, worldwide, royalty-free, non-exclusive right to:
+- Use, modify, and distribute the software commercially
+- Grant commercial sublicenses to third parties
+- Offer paid support and SaaS services
+
+This exception applies only to the original copyright holders listed above.
