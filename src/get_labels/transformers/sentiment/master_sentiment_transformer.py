@@ -3,7 +3,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from .config import MasterSentimentConfig
 from ...core import MasterTransformerConfig
-from ...abstract import Transformer
+from ...abstract import AbstractTransformer
 
 
 class _PredictionDataset(Dataset):
@@ -26,7 +26,7 @@ class _PredictionDataset(Dataset):
         return len(self.encodings["input_ids"])
 
 
-class MasterSentimentTransformer(Transformer):
+class MasterSentimentTransformer(AbstractTransformer):
     def __init__(self, config: MasterSentimentConfig):
         """
         Класс для семантического анализа сообщений.
@@ -41,6 +41,9 @@ class MasterSentimentTransformer(Transformer):
             DataFrame: _description_
         """
         sdf = global_config.sDf.copy()
+        if sdf.count(axis=0)["service_id"] == 0:
+            return None
+        
         texts = sdf["text"].tolist()
         dataset = _PredictionDataset(
             texts, self.config.tokenizer, self.config.MAX_LENGTH

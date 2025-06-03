@@ -1,4 +1,4 @@
 """
 Суммаризация отзывов.
 """
-from .summarization import summarize_reviews
+from .summarization import gen_summarization, gen_multilabel_summarization, gen_categories

@@ -6,7 +6,7 @@
 
 from pandas import read_csv
 from dotenv import dotenv_values
-from src.get_summarization import summarize_reviews
+from src.get_summarization import gen_summarization
 
 DEFAULT_INSTRUCTION = (
     "Ты - опытный помощник по выявлению проблем бизнеса, "
@@ -28,11 +28,11 @@ if __name__ == "__main__":
     secrets = dotenv_values()
 
     reviews = read_csv("examples/02a_example_filtered_data.csv", index_col=0)
-    summaries = summarize_reviews(
+    summaries = gen_summarization(
         reviews,
         model_name="mistral",
         token=secrets["MISTRAL_API_TOKEN"],
         instr=DEFAULT_INSTRUCTION,
     )
     reviews["summary"] = summaries
-    reviews[["text", "summary"]].to_csv("examples/03_summarized_data.csv")
+    reviews[["text", "summary"]].to_csv("examples/03_1_summarized_data_regular.csv")

@@ -8,11 +8,11 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
 from .config import OtzovikConfig
-from ...abstract import Parser
+from ...abstract import AbstractParser
 from ...core import MasterParserConfig
 
 
-class OtzovikParser(Parser):
+class OtzovikParser(AbstractParser):
     def __init__(self, local_config: OtzovikConfig):
         super().__init__(2, local_config)
 
