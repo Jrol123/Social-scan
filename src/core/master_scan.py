@@ -127,6 +127,9 @@ class MasterScan:
 
         print("CLUSTERIZATION")
         TMP_FOLDER = "SOCIAL_SCAN_TMP/"
+        
+        if os.path.isdir(TMP_FOLDER):
+            shutil.rmtree(TMP_FOLDER)
 
         os.mkdir(TMP_FOLDER)
 
