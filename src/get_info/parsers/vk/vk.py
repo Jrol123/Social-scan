@@ -20,6 +20,9 @@ class VKParser(AbstractParser):
         else:
             raise TypeError("vk_token must be a str or a tuple of (login, password)")
 
+    def __str__(self):
+        return "ВКонтакте"
+
     def parse(
         self, global_config: MasterParserConfig
     ) -> list[dict[str, list[dict[str, str | int]]]] | int:

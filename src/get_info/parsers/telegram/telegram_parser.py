@@ -38,6 +38,9 @@ class TelegramParser(AbstractAsyncParser):
         self.password = password
         # self.client.start(phone=phone, password=password)
 
+    def __str__(self):
+        return "Telegram"
+
     async def parse(
         self, global_conifg: MasterParserConfig
     ) -> list[dict[str, str | int | float | None]]:

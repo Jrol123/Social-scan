@@ -15,11 +15,11 @@ class ParserConfig(Config):
     На вход подаются параметры, которые индивидуальны для каждого парсера.
 
     Args:
-        q (str | list[str]): Информация, необходимая для поиска объекта в сервисе.
+        q (str | list[str] | int): Информация, необходимая для поиска объекта в сервисе.
 
     """
 
-    def __init__(self, q: str | list[str]) -> None:
+    def __init__(self, q: str | list[str] | int) -> None:
         self.q = q
 
 

@@ -42,7 +42,9 @@ SORT_TYPES = {'default': 'Самые релевантные',
 class GoogleMapsParser(AbstractParser):
     def __init__(self, config: GoogleMapsConfig):
         super().__init__(0, config)
-        
+    
+    def __str__(self):
+        return "Google maps"
     
     time_units = {'вчера': timedelta(days=1), 'день': timedelta(days=1),
                   'дн': timedelta(days=1), 'недел': timedelta(weeks=1)}
@@ -272,6 +274,8 @@ class GoogleMapsParser(AbstractParser):
         opts.add_argument('headless')
         opts.add_argument('--disable-gpu')
         driver = undetected_chromedriver.Chrome(options=opts)
+        
+        driver.set_page_load_timeout(120)
         driver.get(url if url.startswith('https')
                    else "https://www.google.com/maps/place/" + url)
         # time.sleep(2)

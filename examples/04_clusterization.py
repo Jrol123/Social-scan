@@ -25,3 +25,4 @@ if __name__ == "__main__":
         n_jobs=-1,
     )
     categories.to_csv("examples/04_clusterization/example_categories.csv")
+    

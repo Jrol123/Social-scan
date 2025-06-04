@@ -16,6 +16,9 @@ class OtzovikParser(AbstractParser):
     def __init__(self, local_config: OtzovikConfig):
         super().__init__(2, local_config)
 
+    def __str__(self):
+        return "Отзовик"
+
     def parse(
         self, global_config: MasterParserConfig
     ) -> list[dict[str, str | int | float | None]]:

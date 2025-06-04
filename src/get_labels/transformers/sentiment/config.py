@@ -13,7 +13,7 @@ class MasterSentimentConfig(Config):
         batch_size: int = 12,
         modelPath: str = "sismetanin/mbart_ru_sum_gazeta-ru-sentiment-rusentiment",
         max_length: int | None = None,
-        label_scheme: str = "ternary",
+        label_scheme: str = "binary",
         cache_dir: str | None = None,
         device: str | None = None,
     ) -> None:
