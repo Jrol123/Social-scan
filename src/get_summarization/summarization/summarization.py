@@ -133,13 +133,15 @@ def gen_categories(
     )
 
     # TODO: metadata сразу вставлять в инструкцию в Config
-
+    
     df = reviews[["text"]].reset_index(drop=True)
     df = df.dropna(how="all")
     df["len"] = df["text"].str.len()
     df["cumlen"] = df["len"].cumsum()
     df["cumlen"] = df["cumlen"] + [6 * i for i in range(len(df))]
-
+    
+    print()
+    
     i = 0
     outputs = []
     while i * batch_size <= df.iloc[-1, -1]:
@@ -201,13 +203,21 @@ def gen_categories(
         else:
             raise ValueError("Неправильное имя модели!")
 
-        if not output:
+        if not output or '\n\n' in output:
             continue
 
         break
 
+    output = output.strip()
     print(output)
-    output = [cat.split(". ")[1] for cat in output.split("\n")]
+    try:
+        output = [
+            cat.split(". ", 1)[1]
+            for cat in (output.split("\n") if '\n' in output else [output])
+        ]
+    except Exception:
+        return gen_categories(reviews, token, model_name, metadata, batch_size)
+    
     return output
 
 
@@ -297,30 +307,39 @@ def gen_multilabel_summarization(
         except asyncio.exceptions.TimeoutError:
             continue
 
-        if not output:
+        if (not output or not ('.\n' in output or '. ' in output)
+           or '\n\n' not in output or '----' in output
+           or output.strip().count('\n\n') != len(batch) - 1):
             continue
-
-        outputs.append(output)
+        
+        try:
+            outputs.extend([
+                s.strip().split(".\n", 1)[1]
+                if ".\n" in s else s.strip().split(". ", 1)[1]
+                for s in output.split("\n\n")
+            ] if '\n\n' in output else [output])
+        except Exception:
+            continue
+            
         i += 1
-
-    outputs = [
-        s.strip().split(".\n", 1)[1] if ".\n" in s else s.strip().split(". ", 1)[1]
-        for part in outputs
-        for s in part.split("\n\n")
-    ]
-
+    
     problems = []
     for review in outputs:
         review = review
         review_categories = review.split("\n") if "\n" in review else [review]
+        review_categories = [r.strip() for r in review_categories if r.strip()]
         review_cats = dict.fromkeys(categories + ["остальные"], None)
+        print(review_categories)
         for category in review_categories:
+            if ': ' not in category:
+                continue
+                
             name, enum_problems = category.split(": ", 1)
             if name in review_cats:
                 review_cats[name] = (
                     enum_problems if enum_problems.strip() != "-" else None
                 )
-
+                
         problems.append(review_cats)
 
     return problems
