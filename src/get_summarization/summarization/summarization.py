@@ -203,21 +203,21 @@ def gen_categories(
         else:
             raise ValueError("Неправильное имя модели!")
 
-        if not output:
+        if not output or '\n\n' in output:
             continue
 
         break
 
     output = output.strip()
-    if '\n\n' in output or not output[0].isdigit():
-        output = output.split('\n', 1)[1].strip()
-    
-    if not output.split('\n')[-1][0].isdigit():
-        output = output.rsplit('\n', 1)[0].strip()
-    
     print(output)
-    output = [cat.split(". ", 1)[1]
-              for cat in (output.split("\n") if '\n' in output else [output])]
+    try:
+        output = [
+            cat.split(". ", 1)[1]
+            for cat in (output.split("\n") if '\n' in output else [output])
+        ]
+    except Exception:
+        return gen_categories(reviews, token, model_name, metadata, batch_size)
+    
     return output
 
 
@@ -313,22 +313,16 @@ def gen_multilabel_summarization(
             continue
         
         try:
-            outputs.append(
+            outputs.extend([
                 s.strip().split(".\n", 1)[1]
                 if ".\n" in s else s.strip().split(". ", 1)[1]
                 for s in output.split("\n\n")
-            )
+            ] if '\n\n' in output else [output])
         except Exception:
             continue
             
         i += 1
     
-    outputs = [
-        s.strip().split(".\n", 1)[1] if ".\n" in s else s.strip().split(". ", 1)[1]
-        for part in outputs
-        for s in (part.split("\n\n") if '\n\n' in part else [part])
-    ]
-
     problems = []
     for review in outputs:
         review = review
@@ -337,12 +331,15 @@ def gen_multilabel_summarization(
         review_cats = dict.fromkeys(categories + ["остальные"], None)
         print(review_categories)
         for category in review_categories:
+            if ': ' not in category:
+                continue
+                
             name, enum_problems = category.split(": ", 1)
             if name in review_cats:
                 review_cats[name] = (
                     enum_problems if enum_problems.strip() != "-" else None
                 )
-
+                
         problems.append(review_cats)
 
     return problems

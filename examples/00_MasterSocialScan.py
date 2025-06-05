@@ -7,8 +7,7 @@ from dotenv import dotenv_values
 # os.add_dll_directory(ddl_path)
 
 from src.core import MasterScan, MasterScanConfig
-from src.get_info.parsers.google_maps import GoogleMapsParser, GoogleMapsParser, \
-    GoogleMapsConfig
+from src.get_info.parsers.google_maps import GoogleMapsParser, GoogleMapsConfig
 from src.get_info.parsers.otzovik import OtzovikParser, OtzovikConfig
 from src.get_info.parsers.vk import VKParser, VKConfig
 from src.get_info.parsers.telegram import TelegramParser, TelegramConfig
@@ -22,8 +21,8 @@ if __name__ == "__main__":
     cache_dir = None # "D:/TRANSFORMERS_MODELS"
 
     global_config = MasterParserConfig(
-        sort_type="date_descending", min_date=datetime(2025, 1, 1),
-        count_items=1000,
+        sort_type="date_descending", min_date= datetime(2024, 1, 1),
+        max_date=datetime(2025, 5, 18), count_items=2000,
     )  # sort_type="rating_ascending", count_items=10)
     
     local_gm_config = GoogleMapsConfig(
@@ -32,8 +31,8 @@ if __name__ == "__main__":
     local_ov_config = OtzovikConfig(
         "https://otzovik.com/reviews/sanatoriy_mriya_resort_spa_russia_yalta/"
     )
-    local_vk_config = VKConfig(q="Мрия -купить")
-    local_tg_config = TelegramConfig("Мрия", ["t.me/mriyaresortchat"])
+    local_vk_config = VKConfig(q="МРИЯ -купить")
+    local_tg_config = TelegramConfig("МРИЯ", ["t.me/mriyaresortchat"])
     local_ym_config = YandexMapsConfig(1303073708)
     
     gmp = GoogleMapsParser(local_gm_config)
@@ -65,5 +64,5 @@ if __name__ == "__main__":
     scan = MasterScan(scanConfig)
 
     scan.generate_report(
-        "report2.pdf", secrets["MISTRAL_API_TOKEN"], secrets["CHUTES_API_TOKEN"]
+        "report3.pdf", secrets["MISTRAL_API_TOKEN"], secrets["CHUTES_API_TOKEN"]
     )

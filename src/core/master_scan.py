@@ -1,5 +1,6 @@
 import os
 import shutil
+from datetime import datetime
 
 import pandas as pd
 from pandas import DataFrame, read_csv
@@ -77,7 +78,7 @@ class MasterScan:
         #         ("label", "int32"),
         #     ],
 
-        data = data.dropna(how="all")  # На всякий случай
+        data = data.dropna(how="all")
         data = data[~data["text"].isna()]
 
         print()
@@ -89,12 +90,21 @@ class MasterScan:
         mtf = MasterTransformerConfig(data)
         mts = MasterTransformer(mtf)
         result = mts.transform(ratT, senT)
+
+        TMP_FOLDER = "SOCIAL_SCAN_TMP/"
+        if os.path.isdir(TMP_FOLDER):
+            shutil.rmtree(TMP_FOLDER)
+
+        os.mkdir(TMP_FOLDER)
+
+        result.to_csv(TMP_FOLDER + "parsed_data.csv")
+        # result = pd.read_csv(TMP_FOLDER + "parsed_data.csv", index_col=0)
         
         print()
 
         print("SUMMARIZATION")
         is_ternary = self.config.masterSentimentConfig.label_scheme == "ternary"
-        
+
         df = result[result["label"] == 1 + is_ternary]
 
         if is_multilabel:
@@ -111,7 +121,7 @@ class MasterScan:
                 token=deepseekKey,
                 model_name="deepseek",
             )
-            
+
             df = pd.concat([df, pd.DataFrame(summaries)], axis=1)
 
         else:
@@ -123,30 +133,28 @@ class MasterScan:
 
             df["summary"] = summaries
 
+        df.to_csv(TMP_FOLDER + "sum_data.csv")
+        # df = pd.read_csv(TMP_FOLDER + "sum_data.csv", index_col=0).dropna(how='all').reset_index(drop=True)
+        
         print()
 
         print("CLUSTERIZATION")
-        TMP_FOLDER = "SOCIAL_SCAN_TMP/"
-        
-        if os.path.isdir(TMP_FOLDER):
-            shutil.rmtree(TMP_FOLDER)
-
-        os.mkdir(TMP_FOLDER)
-
         summaries, clusters = MasterClusterization(
             df, deepseekKey, self.config.metadata, 100, TMP_FOLDER,
             cache_dir=self.config.cache_dir
         )
-
+        
         # summaries = read_csv(
         #     os.path.join(TMP_FOLDER, "clustered_summaries2.csv"), index_col=0
-        # )
-        # clusters = read_csv(os.path.join(TMP_FOLDER, "categories.csv"), index_col=0)
+        # ).dropna(how='all')
+        # clusters = read_csv(os.path.join(TMP_FOLDER, "categories.csv"),
+        #                     index_col=0).dropna(how='all')
 
         print()
         
         print("REPORT")
-        form_report(summaries.merge(df[['service_id', 'date']], how='left',
+        form_report(summaries.merge(df[['service_id', 'date']],
+                                    how='left',
                                     left_on='review_idx', right_index=True),
                     clusters, deepseekKey, self.config.metadata, output_name)
 

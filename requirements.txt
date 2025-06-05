@@ -19,3 +19,8 @@ scikit-learn==1.6.1
 optuna==4.3.0
 psutil==7.0.0
 md2pdf==1.0.1
+dotenv==0.9.9
+vk==3.0
+bs4==0.0.1
+numpy==1.26.4
+sklearn==0.0

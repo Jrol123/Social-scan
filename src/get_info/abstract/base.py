@@ -52,7 +52,7 @@ class AbstractParser(ABC):
         if final_type not in (int, datetime):
             raise ValueError("Доступна конвертация только в int и `datetime`")
         if isinstance(date_datetime, final_type):
-            return date_datetime
+            return date_datetime.replace(tzinfo=None)
         if isinstance(date_datetime, datetime):
             return int(date_datetime.timestamp())
         return datetime.fromtimestamp(date_datetime)

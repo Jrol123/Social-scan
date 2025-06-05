@@ -136,12 +136,10 @@ def form_report(summaries: pd.DataFrame, clusters: pd.DataFrame,
             )
         )
 
-    reports = f"""# Отчёт по отзывам о компании \"{metadata['company']}\"
-
-"""
+    reports = ""
     for i in sorted(summaries['service_id'].unique().tolist()):
         reports += metadata['idx_to_service'][i] + ": "
-        reports += str(summaries[summaries['service_id'] == i].count())
+        reports += str(summaries.loc[summaries['service_id'] == i, 'service_id'].count())
         reports += " отзывов за период "
         
         min_date = summaries.loc[summaries['service_id'] == i, 'date'].min()
@@ -149,7 +147,7 @@ def form_report(summaries: pd.DataFrame, clusters: pd.DataFrame,
         min_date = datetime.fromtimestamp(min_date).date().strftime("%d-%m-%Y")
         max_date = datetime.fromtimestamp(max_date).date().strftime("%d-%m-%Y")
         reports += min_date
-        reports += " - " + max_date + "\n" if max_date != min_date else "\n"
+        reports += " - " + max_date + "\n\n" if max_date != min_date else "\n\n"
         
     for i, line in clusters.iterrows():
         if subreports[i] is None:
@@ -166,7 +164,7 @@ def form_report(summaries: pd.DataFrame, clusters: pd.DataFrame,
 """
     md2pdf(
         save_to,
-        md_content=f"""# Отчет по отзывам и сообщениям о компании "{metadata['company']}"
+        md_content=f"""# Отчёт по отзывам о компании \"{metadata['company']}\""
 
 {reports}
 """,

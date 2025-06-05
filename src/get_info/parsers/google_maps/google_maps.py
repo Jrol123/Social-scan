@@ -237,6 +237,9 @@ class GoogleMapsParser(AbstractParser):
     
     def text_to_date(self, text, now):
         date = text.rsplit(' ', 1)[0]
+        if date.startswith('изменено'):
+            date = date.split(' ', 1)[1]
+        
         if date[0].isdigit():
             try:
                 num, unit = date.split(' ')

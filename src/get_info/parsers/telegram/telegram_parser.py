@@ -155,8 +155,15 @@ class TelegramParser(AbstractAsyncParser):
                 if min_date is not None and data and data[-1]["date"] < min_date:
                     break
         
+        delids = []
         for i in range(len(data)):
+            if min_date is not None and data and data[-1]["date"] < min_date:
+                delids.append(i)
+                
             data[i]["date"] = int(data[i]["date"].timestamp())
+        
+        if delids:
+            data = [data[i] for i in range(len(data)) if i not in delids]
         
         return data
 
