@@ -15,7 +15,7 @@ class MasterScanConfig(Config):
     def __init__(
         self,
         masterParser: MasterParser,
-        metadata: dict[str, str],
+        metadata: dict[str, str | dict],
         cache_dir: str | None,
         masterParserConfig: MasterParserConfig = None,
         masterSentimentConfig: MasterSentimentConfig = None,
@@ -28,9 +28,11 @@ class MasterScanConfig(Config):
         self.masterSentimentConfig = masterSentimentConfig if masterSentimentConfig is not None else MasterSentimentConfig(cache_dir=cache_dir)
         self.masterRatingConfig = masterRatingConfig if masterRatingConfig is not None else MasterRatingConfig()
 
+        metadata["idx_to_service"] = {
+            service.service_id: str(service) for service in masterParser.parsers
+        }
+
         self.metadata = metadata
         self.cache_dir = cache_dir
-
-        
 
         # resultT.to_csv("examples/02_example_transform.csv")

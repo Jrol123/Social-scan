@@ -50,11 +50,9 @@ if __name__ == "__main__":
     
     parser = MasterParser(gmp, ovp, tgp, ymp)
     
-    metadata = {
+    metadata: dict[str, str | dict] = {
         "company": "Манжерок",
-        "description": "Горнолыжный комплекс, место для семейного отдыха.",
-        "idx_to_service": {service.service_id: str(service)
-                           for service in parser.parsers}
+        "description": "Горнолыжный комплекс, место для семейного отдыха."
     }
     
     scanConfig = MasterScanConfig(

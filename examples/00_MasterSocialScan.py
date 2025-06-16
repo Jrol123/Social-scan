@@ -24,7 +24,7 @@ if __name__ == "__main__":
         sort_type="date_descending", min_date= datetime(2024, 1, 1),
         max_date=datetime(2025, 5, 18), count_items=2000,
     )  # sort_type="rating_ascending", count_items=10)
-    
+
     local_gm_config = GoogleMapsConfig(
         r"https://www.google.com/maps/place/?q=place_id:ChIJ7WjSWynClEARUUiva4PiDzI"
     )
@@ -35,7 +35,7 @@ if __name__ == "__main__":
 
     local_tg_config = TelegramConfig("МРИЯ", ["t.me/mriyaresortchat"])
     local_ym_config = YandexMapsConfig(1303073708)
-    
+
     gmp = GoogleMapsParser(local_gm_config)
     ovp = OtzovikParser(local_ov_config)
     vkp = VKParser(secrets["VK_TOKEN"], local_vk_config)
@@ -47,14 +47,12 @@ if __name__ == "__main__":
         secrets.get("PASSWORD"),
     )
     ymp = YandexMapsParser(local_ym_config)
-    
+
     parser = MasterParser(gmp, ovp, tgp, vkp, ymp)
 
-    metadata = {
+    metadata: dict[str, str | dict] = {
         "company": "МРИЯ",
         "description": "курорт премиум-класса на южном берегу Крыма",
-        "idx_to_service": {service.service_id: str(service)
-                           for service in parser.parsers}
     }
 
     scanConfig = MasterScanConfig(

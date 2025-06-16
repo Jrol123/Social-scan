@@ -39,6 +39,113 @@ Social Scan — система анализа пользовательских �
 
 - **ML-инженеры:** Готовый пайплайн для экспериментов с NLP и кластеризацией.
 
+## Взаимодействие с программой
+
+[После установки зависимостей](#Используемые-библиотеки-и-модели), есть два варианта взаимодействия с программой: последовательное и через мастер-обработчик.
+
+### Последовательное
+
+Последовательное заключается в том, чтобы последовательно исполнить все этапы работы.
+
+### MasterScan
+
+Мастер-обработчик позволяет, при задавании начальных параметров, провести все этапы работы самостоятельно.
+
+Для минимального запуска потребуется:
+
+**1. Подготовить парсеры**
+
+На данном этапе работы невозможно автоматически получить все параметры для парсинга. Даже для относительно простых Google, Yandex и Отзовик. (см. возможные улучшения), поэтому необходимо создать их экземпляры и конфигурации:
+
+Конфигурации, в которые идут ссылки на отызвы, поисковые запросы и т. д.
+```python
+local_gm_config = GoogleMapsConfig(
+    r"https://www.google.com/maps/place/?q=place_id:ChIJ7WjSWynClEARUUiva4PiDzI"
+)
+local_ov_config = OtzovikConfig(
+    "https://otzovik.com/reviews/sanatoriy_mriya_resort_spa_russia_yalta/"
+)
+local_vk_config = VKConfig(q="МРИЯ -купить")
+local_tg_config = TelegramConfig("МРИЯ", ["t.me/mriyaresortchat"])
+local_ym_config = YandexMapsConfig(1303073708)
+```
+
+Экземпляры классов, использующие конфигурации.
+```python
+gmp = GoogleMapsParser(local_gm_config)
+ovp = OtzovikParser(local_ov_config)
+vkp = VKParser(secrets["VK_TOKEN"], local_vk_config)
+tgp = TelegramParser(
+    local_tg_config,
+    int(secrets["TG_ID"]),
+    secrets["TG_HASH"],
+    secrets["PHONE"],
+    secrets.get("PASSWORD"),
+)
+ymp = YandexMapsParser(local_ym_config)
+```
+
+Затем экземпляры парсеров передаются в `MasterParser`.
+```python
+parser = MasterParser(gmp, ovp, tgp, vkp, ymp)
+```
+
+При необходимости специальной сортировки комментариев, взятия нужного количества отзывов из источника и т. д. можно использовать `MasterParserConfig`.
+```python
+global_config = MasterParserConfig(
+    sort_type="date_descending", min_date= datetime(2024, 1, 1),
+    max_date=datetime(2025, 5, 18), count_items=2000,
+)
+```
+Подробнее о параметрах можно прочесть в документации.
+
+**2. Подготовить метаданные компании**
+
+Для улучшения работы мультиклассовой суммаризации, кластеризации и генерации отчёта, необходимо передавать метаданные, состоящие из названия компании и краткого её описания.
+
+```python
+metadata: dict[str, str | dict] = {
+    "company": "МРИЯ",
+    "description": "курорт премиум-класса на южном берегу Крыма",
+}
+```
+
+**3. Запуск**
+
+Остаётся только инициализировать `MasterScan` и запустить!
+
+Для этого создадим конфиг и с его помощью создадим экземпляр класса `MasterScan`.
+
+```python
+scanConfig = MasterScanConfig(
+        parser, metadata, cache_dir, global_config
+    )
+
+scan = MasterScan(scanConfig)
+```
+
+Остаётся только передать нужные секреты и запустить.
+
+```python
+scan.generate_report(
+        "report3.pdf", secrets["MISTRAL_API_TOKEN"], secrets["CHUTES_API_TOKEN"]
+    )
+```
+
+Готово!
+
+**4. Дополнительные параметры**
+Для всех из описанных ниже этапов были созданы собственные конфиги. Эти самые конфиги можно легко передать в MasterScanConfig для того, чтобы кастомизировать работу программы.
+
+```python
+scanConfig = MasterScanConfig(
+    parser, metadata, cache_dir, global_config,
+    MasterSentimentConfig(
+        modelPath="sismetanin/rubert-ru-sentiment-rusentiment"))
+```
+
+Здесь в качестве примера был задан кастомный MasterSentimentConfig, с выбранной пользователем моделью.
+
 ## Процесс работы
 
 Везде используется подход через `Master_*`, где работа подмодуля делится на несколько отдельных частей, которые можно одновременно использовать в мастер-обработчике.
