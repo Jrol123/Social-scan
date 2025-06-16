@@ -84,7 +84,6 @@ pip install -r requirements.txt
 ### Сниппет запуска
 
 ```python
-from datetime import datetime
 from dotenv import dotenv_values
 
 from src.core import MasterScan, MasterScanConfig
