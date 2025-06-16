@@ -129,7 +129,7 @@ class MasterScan:
 
         print()
 
-        print("CLUSTERIZATION")s
+        print("CLUSTERIZATION")
         summaries, clusters = MasterClusterization(
             df, deepseekKey, self.config.metadata, 120, TMP_FOLDER,
             cache_dir=self.config.cache_dir
