@@ -46,8 +46,9 @@ class GoogleMapsParser(AbstractParser):
     def __str__(self):
         return "Google maps"
     
-    time_units = {'вчера': timedelta(days=1), 'день': timedelta(days=1),
-                  'дн': timedelta(days=1), 'недел': timedelta(weeks=1)}
+    time_units = {'час': timedelta(hours=1), 'вчера': timedelta(days=1),
+                  'день': timedelta(days=1), 'дн': timedelta(days=1),
+                  'недел': timedelta(weeks=1)}
     
     def parse(
         self,

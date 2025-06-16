@@ -64,19 +64,6 @@ class MasterScan:
             }
         )
 
-        # for column in data.columns:
-        #     data[column] = data[column].astype(dtype[column])
-
-        # dtype=[
-        #         ("service_id", "int32"),
-        #         ("date", "int64"),
-        #         ("rating", "float32"),
-        #         ("name", "object"),
-        #         ("additional_id", "object"),
-        #         ("text", "object"),
-        #         ("answer", "object"),
-        #         ("label", "int32"),
-        #     ],
 
         data = data.dropna(how="all")
         data = data[~data["text"].isna()]
@@ -98,7 +85,7 @@ class MasterScan:
         os.mkdir(TMP_FOLDER)
 
         result.to_csv(TMP_FOLDER + "parsed_data.csv")
-        # result = pd.read_csv(TMP_FOLDER + "parsed_data.csv", index_col=0)
+        result = pd.read_csv(TMP_FOLDER + "parsed_data.csv", index_col=0)
         
         print()
 
@@ -108,8 +95,8 @@ class MasterScan:
         df = result[result["label"] == 1 + is_ternary]
 
         if is_multilabel:
-            multilabelClasses = (
-                gen_categories(df, mistralKey, "mistral", self.config.metadata)
+            multilabelClasses = (  # deepseekKey, "deepseek", self.config.metadata)
+                gen_categories(df, deepseekKey, "deepseek", self.config.metadata) # mistralKey, "mistral", self.config.metadata)
                 if multilabelClasses is None
                 else multilabelClasses
             )
@@ -122,33 +109,37 @@ class MasterScan:
                 model_name="deepseek",
             )
 
-            df = pd.concat([df, pd.DataFrame(summaries)], axis=1)
+            old_columns = df.columns
+            df = pd.concat([df, pd.DataFrame(summaries, index=df.index)], axis=1)
+            print(df[:10])
+            df = df.dropna(subset=df.columns[~df.columns.isin(old_columns)], how='all')
 
         else:
             summaries = gen_summarization(
                 df,
-                token=mistralKey,
-                model_name="mistral",
+                token=deepseekKey,  # mistralKey,
+                model_name="deepseek" # "mistral",
             )
 
             df["summary"] = summaries
+            df = df[~df['summary'].isna()]
 
         df.to_csv(TMP_FOLDER + "sum_data.csv")
-        # df = pd.read_csv(TMP_FOLDER + "sum_data.csv", index_col=0).dropna(how='all').reset_index(drop=True)
+        # df = pd.read_csv(TMP_FOLDER + "sum_data.csv", index_col=0)
         
         print()
 
         print("CLUSTERIZATION")
         summaries, clusters = MasterClusterization(
-            df, deepseekKey, self.config.metadata, 100, TMP_FOLDER,
+            df, deepseekKey, self.config.metadata, 120, TMP_FOLDER,
             cache_dir=self.config.cache_dir
         )
         
         # summaries = read_csv(
         #     os.path.join(TMP_FOLDER, "clustered_summaries2.csv"), index_col=0
-        # ).dropna(how='all')
+        # )
         # clusters = read_csv(os.path.join(TMP_FOLDER, "categories.csv"),
-        #                     index_col=0).dropna(how='all')
+        #                     index_col=0)
 
         print()
         
