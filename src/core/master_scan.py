@@ -96,7 +96,7 @@ class MasterScan:
 
         if is_multilabel:
             multilabelClasses = (  # deepseekKey, "deepseek", self.config.metadata)
-                gen_categories(df, deepseekKey, "deepseek", self.config.metadata) # mistralKey, "mistral", self.config.metadata)
+                gen_categories(df, mistralKey, "mistral", self.config.metadata)
                 if multilabelClasses is None
                 else multilabelClasses
             )
@@ -117,8 +117,8 @@ class MasterScan:
         else:
             summaries = gen_summarization(
                 df,
-                token=deepseekKey,  # mistralKey,
-                model_name="deepseek" # "mistral",
+                token= mistralKey,
+                model_name="mistral",
             )
 
             df["summary"] = summaries

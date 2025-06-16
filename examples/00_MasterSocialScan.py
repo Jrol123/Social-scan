@@ -31,14 +31,14 @@ if __name__ == "__main__":
     local_ov_config = OtzovikConfig(
         "https://otzovik.com/reviews/sanatoriy_mriya_resort_spa_russia_yalta/"
     )
-    # local_vk_config = VKConfig(q="МРИЯ -купить")
+    local_vk_config = VKConfig(q="МРИЯ -купить")
 
     local_tg_config = TelegramConfig("МРИЯ", ["t.me/mriyaresortchat"])
     local_ym_config = YandexMapsConfig(1303073708)
     
     gmp = GoogleMapsParser(local_gm_config)
     ovp = OtzovikParser(local_ov_config)
-    # vkp = VKParser(secrets["VK_TOKEN"], local_vk_config)
+    vkp = VKParser(secrets["VK_TOKEN"], local_vk_config)
     tgp = TelegramParser(
         local_tg_config,
         int(secrets["TG_ID"]),
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     )
     ymp = YandexMapsParser(local_ym_config)
     
-    parser = MasterParser(gmp, ovp, tgp, ymp)
+    parser = MasterParser(gmp, ovp, tgp, vkp, ymp)
 
     metadata = {
         "company": "МРИЯ",
