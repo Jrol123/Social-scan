@@ -39,118 +39,115 @@ Social Scan — система анализа пользовательских �
 
 - **ML-инженеры:** Готовый пайплайн для экспериментов с NLP и кластеризацией.
 
-## Взаимодействие с программой
+## Пример взаимодействия
 
-[После установки зависимостей](#Используемые-библиотеки-и-модели), есть два варианта взаимодействия с программой: последовательное и через мастер-обработчик.
+### Подготовка среды
 
-### Последовательное
+Версия `python`: 3.11
 
-Последовательное заключается в том, чтобы последовательно исполнить все этапы работы.
-
-### MasterScan
-
-Мастер-обработчик позволяет, при задавании начальных параметров, провести все этапы работы самостоятельно.
-
-Для минимального запуска потребуется:
-
-**1. Подготовить парсеры**
-
-На данном этапе работы невозможно автоматически получить все параметры для парсинга. Даже для относительно простых Google, Yandex и Отзовик. (см. возможные улучшения), поэтому необходимо создать их экземпляры и конфигурации:
-
-Конфигурации, в которые идут ссылки на отызвы, поисковые запросы и т. д.
-```python
-local_gm_config = GoogleMapsConfig(
-    r"https://www.google.com/maps/place/?q=place_id:ChIJ7WjSWynClEARUUiva4PiDzI"
-)
-local_ov_config = OtzovikConfig(
-    "https://otzovik.com/reviews/sanatoriy_mriya_resort_spa_russia_yalta/"
-)
-local_vk_config = VKConfig(q="МРИЯ -купить")
-local_tg_config = TelegramConfig("МРИЯ", ["t.me/mriyaresortchat"])
-local_ym_config = YandexMapsConfig(1303073708)
+```bash
+git clone https://github.com/Jrol123/Social-scan .
+cd Social-scan
+pip install virtualenv
+python -m virtualenv venv
+venv\bin\activate
+pip install -r requirements.txt
 ```
 
-Экземпляры классов, использующие конфигурации.
-```python
-gmp = GoogleMapsParser(local_gm_config)
-ovp = OtzovikParser(local_ov_config)
-vkp = VKParser(secrets["VK_TOKEN"], local_vk_config)
-tgp = TelegramParser(
-    local_tg_config,
-    int(secrets["TG_ID"]),
-    secrets["TG_HASH"],
-    secrets["PHONE"],
-    secrets.get("PASSWORD"),
-)
-ymp = YandexMapsParser(local_ym_config)
-```
+### Подготовка конфигурации
 
-Затем экземпляры парсеров передаются в `MasterParser`.
-```python
-parser = MasterParser(gmp, ovp, tgp, vkp, ymp)
-```
+**Список необходимых переменных в `.env`:**
 
-При необходимости специальной сортировки комментариев, взятия нужного количества отзывов из источника и т. д. можно использовать `MasterParserConfig`.
-```python
-global_config = MasterParserConfig(
-    sort_type="date_descending", min_date= datetime(2024, 1, 1),
-    max_date=datetime(2025, 5, 18), count_items=2000,
-)
-```
-Подробнее о параметрах можно прочесть в документации.
+- `VK_TOKEN` - Токен доступа к VK.
+- `TG_ID` - ID приложения в Telegram.
+- `TG_HASH` - Hash приложения в Telegram.
+- `PHONE` - Телефон аккаунта, через которое приложение будет получать доступ к Telegram каналам.
+- `MISTRAL_API_TOKEN` - Токен доступа к [Mistral](https://api.mistral.ai/).
+- `CHUTES_API_TOKEN` - Токен доступа к [Chutes](https://chutes.ai/), через который получается доступ к DeepSeek.
 
-**2. Подготовить метаданные компании**
+**Список опциональных переменных в `.env`:**
 
-Для улучшения работы мультиклассовой суммаризации, кластеризации и генерации отчёта, необходимо передавать метаданные, состоящие из названия компании и краткого её описания.
+- `PASSWORD` - пароль от аккаунта в Telegram для обхода подтверждения.
+
+Список необходимых метаданных:
+
+- `company` - название компании.
+- `description` - краткое описание компании и её деятельности.
+
+**Список необходимых поисковых данных:**
+
+- `URL` - необходим URL со страницей отзывов для каждого парсера, его использующего. (`GoogleMaps`, `Otzovik`)
+- `ID` - необходим уникальный идентификатор объекта для сервиса, чей парсер его требует. (`YandexMaps`)
+- `QUERY` - поисковый запрос для парсеров его использующих. (`VK`, `Telegram`)
+- `channel_list` - Список каналов, которые будут использовать парсеры. (`Telegram`)
+
+### Сниппет запуска
 
 ```python
-metadata: dict[str, str | dict] = {
-    "company": "МРИЯ",
-    "description": "курорт премиум-класса на южном берегу Крыма",
-}
-```
+from dotenv import dotenv_values
 
-**3. Запуск**
+from src.core import MasterScan, MasterScanConfig
+from src.get_info.parsers.google_maps import GoogleMapsParser, GoogleMapsConfig
+from src.get_info.parsers.otzovik import OtzovikParser, OtzovikConfig
+from src.get_info.parsers.vk import VKParser, VKConfig
+from src.get_info.parsers.telegram import TelegramParser, TelegramConfig
+from src.get_info.parsers.yandex_maps import YandexMapsParser, YandexMapsConfig
+from src.get_info.core import MasterParser
 
-Остаётся только инициализировать `MasterScan` и запустить!
+if __name__ == "__main__":
+    secrets = dotenv_values()
 
-Для этого создадим конфиг и с его помощью создадим экземпляр класса `MasterScan`.
-
-```python
-scanConfig = MasterScanConfig(
-        parser, metadata, cache_dir, global_config
+    local_gm_config = GoogleMapsConfig(
+        r"https://www.google.com/maps/place/?q=place_id:ChIJ7WjSWynClEARUUiva4PiDzI"
     )
+    local_ov_config = OtzovikConfig(
+        "https://otzovik.com/reviews/sanatoriy_mriya_resort_spa_russia_yalta/"
+    )
+    local_vk_config = VKConfig(q="МРИЯ -купить")
 
-scan = MasterScan(scanConfig)
-```
+    local_tg_config = TelegramConfig("МРИЯ", ["t.me/mriyaresortchat"])
+    local_ym_config = YandexMapsConfig(1303073708)
 
-Остаётся только передать нужные секреты и запустить.
+    gmp = GoogleMapsParser(local_gm_config)
+    ovp = OtzovikParser(local_ov_config)
+    vkp = VKParser(secrets["VK_TOKEN"], local_vk_config)
+    tgp = TelegramParser(
+        local_tg_config,
+        int(secrets["TG_ID"]),
+        secrets["TG_HASH"],
+        secrets["PHONE"],
+        secrets.get("PASSWORD"),
+    )
+    ymp = YandexMapsParser(local_ym_config)
 
-```python
-scan.generate_report(
-        "report3.pdf", secrets["MISTRAL_API_TOKEN"], secrets["CHUTES_API_TOKEN"]
+    parser = MasterParser(gmp, ovp, tgp, vkp, ymp)
+
+    metadata: dict[str, str | dict] = {
+        "company": "МРИЯ",
+        "description": "курорт премиум-класса на южном берегу Крыма",
+    }
+
+    scanConfig = MasterScanConfig(
+        parser, metadata
+        )
+
+    scan = MasterScan(scanConfig)
+
+    scan.generate_report(
+        "report.pdf", secrets["MISTRAL_API_TOKEN"], secrets["CHUTES_API_TOKEN"]
     )
 ```
 
-Готово!
+В данном примере в папке, откуда был запущен сервис, будет создан файл `report.pdf`.
 
-**4. Дополнительные параметры**
+### Возможные ошибки
 
-Для всех из описанных ниже этапов были созданы собственные конфиги. Эти самые конфиги можно легко передать в MasterScanConfig для того, чтобы кастомизировать работу программы.
-
-```python
-scanConfig = MasterScanConfig(
-    parser, metadata, cache_dir, global_config,
-    MasterSentimentConfig(
-        modelPath="sismetanin/rubert-ru-sentiment-rusentiment"))
-```
-
-Здесь в качестве примера был задан кастомный MasterSentimentConfig, с выбранной пользователем моделью.
-
-Пример полной подготовки и запуска:
-
-1. [МРИЯ](examples/00_MasterSocialScan.py)
-2. [Манжерок](examples/00_MasterSocialScan2.py)
+1. 0 результатов поиска по запросу в `VK`.
+    - В таком случае стоит подождать некоторое время или поменять запрос.
+2. Ошибка при кластеризации / мультиклассовой суммаризации / Генерации отчёта.
+    - LLM изредка может выдать неправильную структуру вывода. Мы не научились корректно это отлавливать, поэтому остаётся только перезапуск.
+3. Отсутствие подключения к серверам используемой LLM.
+    - Стоит подождать / Использовать VPN.
 
 ## Процесс работы
 

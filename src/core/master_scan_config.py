@@ -16,7 +16,7 @@ class MasterScanConfig(Config):
         self,
         masterParser: MasterParser,
         metadata: dict[str, str | dict],
-        cache_dir: str | None,
+        cache_dir: str | None = None,
         masterParserConfig: MasterParserConfig = None,
         masterSentimentConfig: MasterSentimentConfig = None,
         masterRatingConfig: MasterRatingConfig = None,
