@@ -39,7 +39,7 @@ def gen_report(
         "Твой отчет:\n## {theme}"
     )
     instr2 = (
-        "Ты помощник в составлении отчетово компании \"{company}\". "
+        "Ты помощник в составлении отчетов компании \"{company}\". "
         "Вот краткое описание компании: {desc}.\n\n"
         "Твоя задача - дополнить отчёт на заданную тему (проблему) "
         "из дополнительных отзывов пользователей.\n"
@@ -164,7 +164,8 @@ def form_report(summaries: pd.DataFrame, clusters: pd.DataFrame,
 """
     md2pdf(
         save_to,
-        md_content=f"""# Отчёт по отзывам о компании \"{metadata['company']}\""
+        md_content=f"""# Отчёт по отзывам о компании \"{metadata['company']}\"
+
 
 {reports}
 """,

@@ -809,6 +809,7 @@ def MasterClusterization(
     #     n_jobs=n_jobs,
     # )
     
+    
     embeds, best_alg = None, "kmeans"
     if "summary" in data:
         embeds, best_alg = clustering_selection(
@@ -824,11 +825,11 @@ def MasterClusterization(
         
         df = pd.read_csv(save_folder + "clustered_summaries1.csv", index_col=0)
         df['review_idx'] = df.index
-        df = df[['review_idx', 'summary', 'cluster']]
+        df = df[['review_idx', 'summary', 'cluster']].dropna(how='all')
         df.to_csv(save_folder + "clustered_summaries1.csv")
         
     elif "остальные" in data:
-        if (~data["остальные"].isna()).sum() > 0:
+        if (~data["остальные"].isna()).sum() > 3:
             embeds, best_alg = clustering_selection(
                 data.loc[~data["остальные"].isna(), "остальные"].to_list().copy(),
                 n_trials,
@@ -846,7 +847,7 @@ def MasterClusterization(
             df['review_idx'] = data[~data["остальные"].isna()].index
             df = df[['review_idx', 'summary', 'cluster']]
             for category in data.iloc[:, 8:].columns:
-                if data[category].isna().sum() == 0:
+                if (~data[category].isna()).sum() == 0:
                     continue
                 
                 subdf = data.loc[~data[category].isna(), [category]]
@@ -858,6 +859,7 @@ def MasterClusterization(
                 df = pd.concat([subdf, df], axis=0, ignore_index=True)
                 max_cluster += 1
             
+            df = df.dropna(how='all')
             df.to_csv(save_folder + "clustered_summaries1.csv")
             
             embeds = gen_embeddings(
@@ -868,7 +870,7 @@ def MasterClusterization(
             new_data = []
             max_cluster = 0
             for category in data.iloc[:, 8:].columns:
-                if data[category].isna().sum() == 0:
+                if (~data[category].isna()).sum() == 0:
                     continue
                     
                 for i, line in data.loc[~data[category].isna(), [category]].iterrows():
@@ -878,7 +880,7 @@ def MasterClusterization(
                 
                 max_cluster += 1
             
-            new_data = pd.DataFrame(new_data)
+            new_data = pd.DataFrame(new_data).dropna(how='all')
             new_data.to_csv(save_folder + "clustered_summaries1.csv")
             
             embeds = gen_embeddings(

@@ -212,12 +212,15 @@ def gen_categories(
     print(output)
     try:
         output = [
-            cat.split(". ", 1)[1]
+            cat.split(". ", 1)[1].strip()
+
             for cat in (output.split("\n") if '\n' in output else [output])
         ]
     except Exception:
         return gen_categories(reviews, token, model_name, metadata, batch_size)
     
+    output = [cat.replace('**', '') if '**' in cat else cat for cat in output]
+    output = [cat.split('(', 1)[0] if '(' in cat else cat for cat in output]
     return output
 
 
@@ -230,8 +233,8 @@ def gen_multilabel_summarization(
     batch_size=24000,
 ) -> list[dict[str, str | None]]:
     """Распределение проблем, упоминаемых в отзывах, на заданные категории и остальные"""
-    df = reviews[["text"]].reset_index(drop=True)
-    df = df.dropna(how="all")
+    df = reviews[["text"]]
+    df = df
     df["len"] = df["text"].str.len()
     df["cumlen"] = df["len"].cumsum()
     df["cumlen"] = df["cumlen"] + [6 * i for i in range(len(df))]
@@ -327,7 +330,8 @@ def gen_multilabel_summarization(
     for review in outputs:
         review = review
         review_categories = review.split("\n") if "\n" in review else [review]
-        review_categories = [r.strip() for r in review_categories if r.strip()]
+        review_categories = [r.strip().replace('**', '')
+                             for r in review_categories if r.strip()]
         review_cats = dict.fromkeys(categories + ["остальные"], None)
         print(review_categories)
         for category in review_categories:
@@ -337,9 +341,11 @@ def gen_multilabel_summarization(
             name, enum_problems = category.split(": ", 1)
             if name in review_cats:
                 review_cats[name] = (
-                    enum_problems if enum_problems.strip() != "-" else None
+                    enum_problems
+                    if not enum_problems.strip().startswith("-")
+                    else None
                 )
-                
+
         problems.append(review_cats)
 
     return problems
