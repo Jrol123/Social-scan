@@ -64,7 +64,6 @@ class MasterScan:
             }
         )
 
-
         data = data.dropna(how="all")
         data = data[~data["text"].isna()]
 
@@ -86,6 +85,7 @@ class MasterScan:
 
         result.to_csv(TMP_FOLDER + "parsed_data.csv")
         result = pd.read_csv(TMP_FOLDER + "parsed_data.csv", index_col=0)
+
         
         print()
 
@@ -111,8 +111,8 @@ class MasterScan:
 
             old_columns = df.columns
             df = pd.concat([df, pd.DataFrame(summaries, index=df.index)], axis=1)
-            print(df[:10])
             df = df.dropna(subset=df.columns[~df.columns.isin(old_columns)], how='all')
+
 
         else:
             summaries = gen_summarization(
@@ -126,10 +126,10 @@ class MasterScan:
 
         df.to_csv(TMP_FOLDER + "sum_data.csv")
         # df = pd.read_csv(TMP_FOLDER + "sum_data.csv", index_col=0)
-        
+
         print()
 
-        print("CLUSTERIZATION")
+        print("CLUSTERIZATION")s
         summaries, clusters = MasterClusterization(
             df, deepseekKey, self.config.metadata, 120, TMP_FOLDER,
             cache_dir=self.config.cache_dir
@@ -140,6 +140,7 @@ class MasterScan:
         # )
         # clusters = read_csv(os.path.join(TMP_FOLDER, "categories.csv"),
         #                     index_col=0)
+
 
         print()
         

@@ -213,6 +213,7 @@ def gen_categories(
     try:
         output = [
             cat.split(". ", 1)[1].strip()
+
             for cat in (output.split("\n") if '\n' in output else [output])
         ]
     except Exception:
@@ -220,7 +221,6 @@ def gen_categories(
     
     output = [cat.replace('**', '') if '**' in cat else cat for cat in output]
     output = [cat.split('(', 1)[0] if '(' in cat else cat for cat in output]
-    
     return output
 
 
@@ -345,8 +345,6 @@ def gen_multilabel_summarization(
                     if not enum_problems.strip().startswith("-")
                     else None
                 )
-            else:
-                print(name, review_cats)
 
         problems.append(review_cats)
 

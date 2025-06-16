@@ -166,6 +166,7 @@ def form_report(summaries: pd.DataFrame, clusters: pd.DataFrame,
         save_to,
         md_content=f"""# Отчёт по отзывам о компании \"{metadata['company']}\"
 
+
 {reports}
 """,
         css_file_path="src/get_report/styles.css",  # Updated path

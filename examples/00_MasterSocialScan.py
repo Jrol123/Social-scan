@@ -22,7 +22,7 @@ if __name__ == "__main__":
 
     global_config = MasterParserConfig(
         sort_type="date_descending", min_date= datetime(2024, 1, 1),
-        max_date=datetime(2025, 5, 18), # count_items=1000,
+        max_date=datetime(2025, 5, 18), count_items=2000,
     )  # sort_type="rating_ascending", count_items=10)
     
     local_gm_config = GoogleMapsConfig(
@@ -32,6 +32,7 @@ if __name__ == "__main__":
         "https://otzovik.com/reviews/sanatoriy_mriya_resort_spa_russia_yalta/"
     )
     # local_vk_config = VKConfig(q="МРИЯ -купить")
+
     local_tg_config = TelegramConfig("МРИЯ", ["t.me/mriyaresortchat"])
     local_ym_config = YandexMapsConfig(1303073708)
     
