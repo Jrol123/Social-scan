@@ -1,5 +1,6 @@
 import asyncio
 import time
+from datetime import datetime
 
 import pandas as pd
 from dotenv import load_dotenv
@@ -14,7 +15,6 @@ def gen_report(
     metadata: dict,
     model_name: str = "deepseek-ai/DeepSeek-V3-0324",
     batch_size: int = 32000,
-    are_problems: bool = False
 ):
     """Генерирует отчёт по теме (проблеме), если она является важной (не ошибочной)"""
     instr1 = (
@@ -39,7 +39,7 @@ def gen_report(
         "Твой отчет:\n## {theme}"
     )
     instr2 = (
-        "Ты помощник в составлении отчетово компании \"{company}\". "
+        "Ты помощник в составлении отчетов компании \"{company}\". "
         "Вот краткое описание компании: {desc}.\n\n"
         "Твоя задача - дополнить отчёт на заданную тему (проблему) "
         "из дополнительных отзывов пользователей.\n"
@@ -123,8 +123,7 @@ def gen_report(
 
 
 def form_report(summaries: pd.DataFrame, clusters: pd.DataFrame,
-                token: str, metadata: dict, save_to: str = "report.pdf",
-                are_problems=False):
+                token: str, metadata: dict, save_to: str = "report.pdf"):
     """Формирует отчёт из подотчётов по каждому кластеру и конвертирует в pdf"""
     subreports = []
     for i in range(len(clusters)):
@@ -133,11 +132,23 @@ def form_report(summaries: pd.DataFrame, clusters: pd.DataFrame,
             gen_report(
                 str(clusters.loc[i, "name"]),
                 summaries[summaries["new_cluster"] == clusters.loc[i, "cluster"]],
-                token, metadata, are_problems=are_problems
+                token, metadata
             )
         )
 
     reports = ""
+    for i in sorted(summaries['service_id'].unique().tolist()):
+        reports += metadata['idx_to_service'][i] + ": "
+        reports += str(summaries.loc[summaries['service_id'] == i, 'service_id'].count())
+        reports += " отзывов за период "
+        
+        min_date = summaries.loc[summaries['service_id'] == i, 'date'].min()
+        max_date = summaries.loc[summaries['service_id'] == i, 'date'].max()
+        min_date = datetime.fromtimestamp(min_date).date().strftime("%d-%m-%Y")
+        max_date = datetime.fromtimestamp(max_date).date().strftime("%d-%m-%Y")
+        reports += min_date
+        reports += " - " + max_date + "\n\n" if max_date != min_date else "\n\n"
+        
     for i, line in clusters.iterrows():
         if subreports[i] is None:
             continue
@@ -153,7 +164,8 @@ def form_report(summaries: pd.DataFrame, clusters: pd.DataFrame,
 """
     md2pdf(
         save_to,
-        md_content=f"""# Отчет по отзывам и сообщениям о компании "{company}"
+        md_content=f"""# Отчёт по отзывам о компании \"{metadata['company']}\"
+
 
 {reports}
 """,

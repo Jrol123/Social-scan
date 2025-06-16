@@ -32,6 +32,9 @@ class YandexMapsParser(aParser):
     def __init__(self, local_config: YandexMapsConfig):
         super().__init__(1, local_config)  # TODO: Считывать id из .txt
 
+    def __str__(self):
+        return "Яндекс карты"
+
     def __open_page(self, id_yandex: int):
         url: str = f"https://yandex.ru/maps/org/{id_yandex}/reviews/"
         opts = undetected_chromedriver.ChromeOptions()

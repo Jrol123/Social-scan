@@ -499,18 +499,18 @@ def optimize_clustering(
 
 def clustering_selection(
     data: list[str],
-    n_trials,
+    n_trials: int,
     save_folder="src/clustering/",
     *,
     embeddings_model: str = "ai-forever/FRIDA",
     cache_dir=None,
-    normalize=False,
-    task="paraphrase",
-    large_data_thr=1,
-    metric="euclidean",
-    use_silhouette=True,
-    n_jobs=-1,
-    exclude_algorithms: list[str] = None,
+    normalize: bool = False,
+    task: str | None = "paraphrase",
+    large_data_thr: int | float = 1,
+    metric: str = "euclidean",
+    use_silhouette: bool = True,
+    n_jobs: int = -1,
+    exclude_algorithms: list[str] | None = None,
 ):
     """Подбирает наилучший алгоритм кластеризации по метрике"""
     embeds = gen_embeddings(
@@ -697,6 +697,8 @@ def clustering_correction(
     # TODO: Выводить .csv в нормальный return.
 
     # print(prompt)
+    
+    divide_clusters, union_clusters, delete_clusters = None, None, None
     while True:
         try:
             output = asyncio.run(
@@ -779,31 +781,115 @@ def clustering_correction(
 
     categories = pd.DataFrame(categories)
     categories.to_csv(clusters_folder + "categories.csv")
-    return categories
+    return df, categories
 
 
 def MasterClusterization(
-    data,
-    chutes_token,
-    n_trials=200,
+    data: pd.DataFrame,
+    chutes_token: str,
+    metadata: dict,
+    n_trials: int = 200,
     save_folder="",
-    embeddings_model="ai-forever/FRIDA",
-    cache_dir=None,
-    large_data_thr=1,
-    use_silhouette=True,
-    n_jobs=-1,
-) -> pd.DataFrame:
-    embeds, best_alg = clustering_selection(
-        data["summary"].to_list().copy(),
-        n_trials,
-        save_folder,
-        embeddings_model=embeddings_model,
-        cache_dir=cache_dir,
-        large_data_thr=large_data_thr,
-        use_silhouette=use_silhouette,
-        n_jobs=n_jobs,
+    embeddings_model: str = "ai-forever/FRIDA",
+    cache_dir: str | None = None,
+    large_data_thr: int | float = 1,
+    use_silhouette: bool = True,
+    n_jobs: int = -1,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    
+    # embeds, best_alg = clustering_selection(
+    #     (data["summary"] if "summary" in data
+    #      else data.loc[~data["остальные"].isna(), "остальные"]).to_list().copy(),
+    #     n_trials,
+    #     save_folder,
+    #     embeddings_model=embeddings_model,
+    #     cache_dir=cache_dir,
+    #     large_data_thr=large_data_thr,
+    #     use_silhouette=use_silhouette,
+    #     n_jobs=n_jobs,
+    # )
+    
+    
+    embeds, best_alg = None, "kmeans"
+    if "summary" in data:
+        embeds, best_alg = clustering_selection(
+            data["summary"].to_list().copy(),
+            n_trials,
+            save_folder,
+            embeddings_model=embeddings_model,
+            cache_dir=cache_dir,
+            large_data_thr=large_data_thr,
+            use_silhouette=use_silhouette,
+            n_jobs=n_jobs,
+        )
+        
+        df = pd.read_csv(save_folder + "clustered_summaries1.csv", index_col=0)
+        df['review_idx'] = df.index
+        df = df[['review_idx', 'summary', 'cluster']].dropna(how='all')
+        df.to_csv(save_folder + "clustered_summaries1.csv")
+        
+    elif "остальные" in data:
+        if (~data["остальные"].isna()).sum() > 3:
+            embeds, best_alg = clustering_selection(
+                data.loc[~data["остальные"].isna(), "остальные"].to_list().copy(),
+                n_trials,
+                save_folder,
+                embeddings_model=embeddings_model,
+                cache_dir=cache_dir,
+                large_data_thr=large_data_thr,
+                use_silhouette=use_silhouette,
+                n_jobs=n_jobs,
+            )
+            
+            df = pd.read_csv(save_folder + "clustered_summaries1.csv", index_col=0)
+            max_cluster = 0
+            df['cluster'] += abs(df['cluster'].min()) + len(data.columns[8:])
+            df['review_idx'] = data[~data["остальные"].isna()].index
+            df = df[['review_idx', 'summary', 'cluster']]
+            for category in data.iloc[:, 8:].columns:
+                if (~data[category].isna()).sum() == 0:
+                    continue
+                
+                subdf = data.loc[~data[category].isna(), [category]]
+                subdf = subdf.rename(columns={category: 'summary'})
+                subdf['cluster'] = max_cluster
+                subdf['review_idx'] = subdf.index
+                subdf = subdf[['review_idx', 'summary', 'cluster']]
+                
+                df = pd.concat([subdf, df], axis=0, ignore_index=True)
+                max_cluster += 1
+            
+            df = df.dropna(how='all')
+            df.to_csv(save_folder + "clustered_summaries1.csv")
+            
+            embeds = gen_embeddings(
+                df['summary'].copy().to_list(),embeddings_model,
+                task="paraphrase", cache_dir=cache_dir
+            )
+        else:
+            new_data = []
+            max_cluster = 0
+            for category in data.iloc[:, 8:].columns:
+                if (~data[category].isna()).sum() == 0:
+                    continue
+                    
+                for i, line in data.loc[~data[category].isna(), [category]].iterrows():
+                    new_data.append({'review_idx': i,
+                                     'summary': line[category],
+                                     'cluster': max_cluster})
+                
+                max_cluster += 1
+            
+            new_data = pd.DataFrame(new_data).dropna(how='all')
+            new_data.to_csv(save_folder + "clustered_summaries1.csv")
+            
+            embeds = gen_embeddings(
+                new_data['summary'].copy().to_list(), embeddings_model,
+                task="paraphrase", cache_dir=cache_dir
+            )
+    
+    clustered_data, categories = clustering_correction(
+        save_folder, embeds, model_token=chutes_token,
+        metadata=metadata, best_alg=best_alg
     )
-    res = clustering_correction(
-        save_folder, embeds, model_token=chutes_token, best_alg=best_alg
-    )
-    return res
+    return clustered_data, categories

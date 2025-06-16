@@ -41,8 +41,8 @@ if __name__ == "__main__":
     problems = gen_multilabel_summarization(
         data,
         classes,
-        secrets["CHUTES_API_TOKEN"],
         metadata,
+        secrets["CHUTES_API_TOKEN"],
         model_name="deepseek",
     )
     problems = pd.DataFrame(problems)

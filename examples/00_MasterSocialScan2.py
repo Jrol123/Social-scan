@@ -17,28 +17,28 @@ from src.get_labels.transformers.sentiment import MasterSentimentConfig
 
 if __name__ == "__main__":
     secrets = dotenv_values()
-
-    cache_dir = None # "D:/TRANSFORMERS_MODELS"
-
+    
+    cache_dir = None  # "D:/TRANSFORMERS_MODELS"
+    
     global_config = MasterParserConfig(
-        sort_type="date_descending", min_date= datetime(2024, 1, 1),
-        max_date=datetime(2025, 5, 18), count_items=2000,
-    )  # sort_type="rating_ascending", count_items=10)
-
+        sort_type="date_descending",
+        min_date=datetime(2025, 1, 1),
+        count_items=1000,
+    )
+    
     local_gm_config = GoogleMapsConfig(
-        r"https://www.google.com/maps/place/?q=place_id:ChIJ7WjSWynClEARUUiva4PiDzI"
+        r"https://www.google.com/maps/place/МАНЖЕРОК,+Курорт/@51.8155393,85.807883,17.06z/data=!4m11!3m10!1s0x42c45b01fc3f5529:0xcb4eee4c87c48bb6!5m2!4m1!1i2!8m2!3d51.8154038!4d85.8089071!9m1!1b1!16s%2Fg%2F11h1hyp7_?hl=ru&entry=ttu&g_ep=EgoyMDI1MDYxMS4wIKXMDSoASAFQAw%3D%3D"
     )
     local_ov_config = OtzovikConfig(
-        "https://otzovik.com/reviews/sanatoriy_mriya_resort_spa_russia_yalta/"
+        "https://otzovik.com/reviews/gornolizhniy_kompleks_manzherok_russia_gorniy_altay_manzherok/?ratio=N&order=date_desc"
     )
-    local_vk_config = VKConfig(q="МРИЯ -купить")
-
-    local_tg_config = TelegramConfig("МРИЯ", ["t.me/mriyaresortchat"])
-    local_ym_config = YandexMapsConfig(1303073708)
-
+    # local_vk_config = VKConfig(q="МРИЯ -купить")
+    local_tg_config = TelegramConfig(q="Манжерок", channel_list=["t.me/gkmanjerok"])
+    local_ym_config = YandexMapsConfig(1038646745)
+    
     gmp = GoogleMapsParser(local_gm_config)
     ovp = OtzovikParser(local_ov_config)
-    vkp = VKParser(secrets["VK_TOKEN"], local_vk_config)
+    # vkp = VKParser(secrets["VK_TOKEN"], local_vk_config)
     tgp = TelegramParser(
         local_tg_config,
         int(secrets["TG_ID"]),
@@ -47,21 +47,21 @@ if __name__ == "__main__":
         secrets.get("PASSWORD"),
     )
     ymp = YandexMapsParser(local_ym_config)
-
-    parser = MasterParser(gmp, ovp, tgp, vkp, ymp)
-
+    
+    parser = MasterParser(gmp, ovp, tgp, ymp)
+    
     metadata: dict[str, str | dict] = {
-        "company": "МРИЯ",
-        "description": "курорт премиум-класса на южном берегу Крыма",
+        "company": "Манжерок",
+        "description": "Горнолыжный комплекс, место для семейного отдыха."
     }
-
+    
     scanConfig = MasterScanConfig(
         parser, metadata, cache_dir, global_config,
         MasterSentimentConfig(
             modelPath="sismetanin/rubert-ru-sentiment-rusentiment"))
-
+    
     scan = MasterScan(scanConfig)
-
+    
     scan.generate_report(
-        "report3.pdf", secrets["MISTRAL_API_TOKEN"], secrets["CHUTES_API_TOKEN"]
+        "report4.pdf", secrets["MISTRAL_API_TOKEN"], secrets["CHUTES_API_TOKEN"]
     )
