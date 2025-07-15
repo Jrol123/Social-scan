@@ -9,7 +9,7 @@ datetime==5.4
 requests==2.32.3
 beautifulsoup4==4.12.3
 emoji==2.14.1
-aiohttp==3.10.11
+aiohttp==3.12.14
 torch==2.6.0  # ==2.6.0+cu126  Можно использовать версию с cuda
 tensorflow==2.19.0
 transformers==4.48.0
